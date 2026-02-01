@@ -19,7 +19,7 @@ export default function Footer() {
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center font-bold">
                 D
               </div>
-              <span className="text-xl font-bold">D'Manten</span>
+              <span className="text-xl font-bold">GALERIA WEDDING</span>
             </div>
             <p className="text-gray-300 text-sm">
               Creating unforgettable wedding experiences with elegance,
@@ -162,7 +162,7 @@ export default function Footer() {
           {/* Bottom Footer */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-400">
-              © 2024 D'Manten. All rights reserved.
+              © 2024 GALERIA WEDDING. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm text-gray-400">
               <a href="#" className="hover:text-primary transition-colors">

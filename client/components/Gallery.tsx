@@ -72,6 +72,10 @@ export default function Gallery() {
   const [filter, setFilter] = useState<string>("All");
   const [isVisible, setIsVisible] = useState(false);
 
+    useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+  
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {

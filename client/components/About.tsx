@@ -66,7 +66,7 @@ export default function About() {
 
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                D'Manten adalah tim profesional yang berdedikasi untuk
+                Galeria Wedding adalah tim profesional yang berdedikasi untuk
                 mewujudkan hari istimewa Anda menjadi kenangan yang tak
                 terlupakan. Dengan pengalaman lebih dari 10 tahun di industri
                 wedding planning, kami memahami setiap detail yang membuat

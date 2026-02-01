@@ -53,13 +53,18 @@ export default function WeddingShow() {
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  // ✅ Animasi muncul (tetap seperti awal kamu)
+  useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsSectionVisible(true);
         }
       },
-      { threshold: 0.2 },
+      { threshold: 0.25 }
     );
 
     if (sectionRef.current) {
@@ -68,6 +73,7 @@ export default function WeddingShow() {
 
     return () => observer.disconnect();
   }, []);
+
 
   return (
     <section

@@ -79,7 +79,9 @@ const PACKAGES: Package[] = [
 
 export default function Packages() {
   const [isVisible, setIsVisible] = useState(false);
-
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {

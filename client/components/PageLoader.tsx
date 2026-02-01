@@ -7,7 +7,7 @@ export default function PageLoader() {
     // Simulate page load - hide after 1.5 seconds
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, );
 
     return () => clearTimeout(timer);
   }, []);

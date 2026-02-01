@@ -1,137 +1,87 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: "smooth" });
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    }
     setIsMobileMenuOpen(false);
   };
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm z-50 border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold">
-              D
-            </div>
-            <span className="text-lg font-bold text-foreground">D'Manten</span>
+      <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+
+        {/* ✅ LOGO BISA KLIK KE HOME */}
+        <Link to="/" className="flex items-center gap-2 cursor-pointer">
+          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+            D
           </div>
+          <span className="text-lg font-bold text-foreground">
+            GALERIA WEDDING
+          </span>
+        </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex gap-8">
-            <button
-              onClick={() => scrollToSection("home")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => scrollToSection("about")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              About
-            </button>
-            <button
-              onClick={() => scrollToSection("wedding-show")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Wedding Show
-            </button>
-            <button
-              onClick={() => scrollToSection("gallery")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Gallery
-            </button>
-            <button
-              onClick={() => scrollToSection("packages")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Packages
-            </button>
-            <button
-              onClick={() => scrollToSection("contact")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Contact
-            </button>
-          </div>
+        {/* DESKTOP MENU */}
+        <div className="hidden md:flex gap-8">
+          <button onClick={() => scrollToSection("home")}>Home</button>
+          <button onClick={() => scrollToSection("about")}>About</button>
 
-          {/* CTA Button */}
-          <button
-            onClick={() => scrollToSection("booking")}
-            className="hidden md:flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Book Now
-          </button>
+          <Link to="/wedding-show">Wedding Show</Link>
+          <Link to="/gallery">Gallery</Link>
+          <Link to="/packages">Packages</Link>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </button>
+          <button onClick={() => scrollToSection("contact")}>Contact</button>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 py-4 space-y-3">
-            <button
-              onClick={() => scrollToSection("home")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => scrollToSection("about")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              About
-            </button>
-            <button
-              onClick={() => scrollToSection("wedding-show")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Wedding Show
-            </button>
-            <button
-              onClick={() => scrollToSection("gallery")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Gallery
-            </button>
-            <button
-              onClick={() => scrollToSection("packages")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Packages
-            </button>
-            <button
-              onClick={() => scrollToSection("contact")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Contact
-            </button>
-            <button
-              onClick={() => scrollToSection("booking")}
-              className="block w-full px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Book Now
-            </button>
-          </div>
-        )}
+        {/* CTA */}
+        <button
+          onClick={() => scrollToSection("booking")}
+          className="hidden md:block px-6 py-2 bg-primary text-white rounded-md"
+        >
+          Book Now
+        </button>
+
+        {/* MOBILE TOGGLE */}
+        <button
+          className="md:hidden"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X /> : <Menu />}
+        </button>
       </div>
+
+      {/* MOBILE MENU */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t py-4 space-y-3 px-4">
+          <button onClick={() => scrollToSection("home")}>Home</button>
+          <button onClick={() => scrollToSection("about")}>About</button>
+
+          <Link to="/wedding-show" onClick={() => setIsMobileMenuOpen(false)}>
+            Wedding Show
+          </Link>
+          <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)}>
+            Gallery
+          </Link>
+          <Link to="/packages" onClick={() => setIsMobileMenuOpen(false)}>
+            Packages
+          </Link>
+
+          <button onClick={() => scrollToSection("contact")}>Contact</button>
+          <button onClick={() => scrollToSection("booking")}>Book Now</button>
+        </div>
+      )}
     </nav>
   );
 }
