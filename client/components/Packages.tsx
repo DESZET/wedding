@@ -159,21 +159,19 @@ export default function Packages() {
                   </p>
                 </div>
 
-                {/* CTA Button */}
-                <button
-                  onClick={() =>
-                    document
-                      .getElementById("booking")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                  className={`w-full py-3 rounded-md font-semibold transition-colors mb-8 ${
+                {/* CTA Button - WhatsApp */}
+                <a
+                  href={`https://wa.me/62812345678900?text=Saya%20tertarik%20dengan%20paket%20${encodeURIComponent(pkg.name)}%20sebesar%20${encodeURIComponent(formatPrice(pkg.price))}%20untuk%20wedding%20saya.%20Bisakah%20kita%20diskusi%20lebih%20lanjut?`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`block w-full py-3 rounded-md font-semibold transition-colors mb-8 text-center ${
                     pkg.highlighted
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-primary text-primary-foreground hover:bg-primary/90"
                   }`}
                 >
-                  Choose Package
-                </button>
+                  Chat WhatsApp
+                </a>
 
                 {/* Features List */}
                 <div className="space-y-3">
