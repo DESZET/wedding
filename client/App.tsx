@@ -11,7 +11,11 @@ import NotFound from "./pages/NotFound";
 import WeddingShowPage from "./pages/WeddingShowPage";
 import GalleryPage from "./pages/gallery";
 import PackagesPage from "./pages/PackagesPage";
+import TestimonialsPage from "./pages/testimonials";
+import ContactPage from "./pages/contact";
 import MainLayout from "./layouts/MainLayout";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import BackToTop from "@/components/BackToTop";
 
 const queryClient = new QueryClient();
 
@@ -20,19 +24,23 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-     
-<BrowserRouter>
-  <Routes>
-    <Route element={<MainLayout />}>
-      <Route path="/" element={<Index />} />
-      <Route path="/wedding-show" element={<WeddingShowPage />} />
-      <Route path="/gallery" element={<GalleryPage />} />
-      <Route path="/packages" element={<PackagesPage />} />
-    </Route>
+      <FloatingWhatsApp />
+      <BackToTop />
 
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-</BrowserRouter>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/wedding-show" element={<WeddingShowPage />} />
+            <Route path="/gallery" element={<GalleryPage />} />
+            <Route path="/packages" element={<PackagesPage />} />
+            <Route path="/testimonials" element={<TestimonialsPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

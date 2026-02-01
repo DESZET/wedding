@@ -13,57 +13,49 @@ const GALLERY_ITEMS: GalleryImage[] = [
     id: 1,
     title: "Classic Ballroom",
     category: "Decoration",
-    image:
-      "https://images.unsplash.com/photo-1519167758481-dc80357cbdf1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 2,
     title: "Beach Wedding",
     category: "Decoration",
-    image:
-      "https://images.unsplash.com/photo-1539927497171-e8d08fc6c8df?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 3,
     title: "Elegant Arrangement",
     category: "Decoration",
-    image:
-      "https://images.unsplash.com/photo-1520763185298-1b434c919eba?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 4,
     title: "Garden Venue",
     category: "Venue",
-    image:
-      "https://images.unsplash.com/photo-1506578676481-dd247e18b29f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 5,
     title: "Makeup & Beauty",
     category: "Makeup",
-    image:
-      "https://images.unsplash.com/photo-1499170350967-987ef1d64718?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 6,
     title: "Bridal Fashion",
     category: "Fashion",
-    image:
-      "https://images.unsplash.com/photo-1594784311694-ba32f50f3061?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 7,
     title: "Groom Style",
     category: "Fashion",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
   {
     id: 8,
     title: "Catering",
     category: "Catering",
-    image:
-      "https://images.unsplash.com/photo-1559528276-2b90a48e0c81?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: "/placeholder.svg",
   },
 ];
 

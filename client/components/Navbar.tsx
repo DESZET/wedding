@@ -35,14 +35,44 @@ export default function Navbar() {
 
         {/* DESKTOP MENU */}
         <div className="hidden md:flex gap-8">
-          <button onClick={() => scrollToSection("home")}>Home</button>
-          <button onClick={() => scrollToSection("about")}>About</button>
+          <button
+            onClick={() => scrollToSection("home")}
+            className="text-foreground hover:text-primary transition-colors font-medium"
+          >
+            Home
+          </button>
+          <button
+            onClick={() => scrollToSection("about")}
+            className="text-foreground hover:text-primary transition-colors font-medium"
+          >
+            About
+          </button>
 
-          <Link to="/wedding-show">Wedding Show</Link>
-          <Link to="/gallery">Gallery</Link>
-          <Link to="/packages">Packages</Link>
+          <Link
+            to="/wedding-show"
+            className="text-foreground hover:text-primary transition-colors font-medium"
+          >
+            Wedding Show
+          </Link>
+          <Link
+            to="/gallery"
+            className="text-foreground hover:text-primary transition-colors font-medium"
+          >
+            Gallery
+          </Link>
+          <Link
+            to="/packages"
+            className="text-foreground hover:text-primary transition-colors font-medium"
+          >
+            Packages
+          </Link>
 
-          <button onClick={() => scrollToSection("contact")}>Contact</button>
+          <Link
+            to="/contact"
+            className="text-foreground hover:text-primary transition-colors font-medium"
+          >
+            Contact
+          </Link>
         </div>
 
         {/* CTA */}

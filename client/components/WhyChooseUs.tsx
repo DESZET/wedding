@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { Award, Heart, Shield, Zap, Users, Clock } from "lucide-react";
 
 interface Benefit {
@@ -86,47 +87,85 @@ export default function WhyChooseUs() {
     return () => observer.disconnect();
   }, []);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.9 },
+    visible: { opacity: 1, y: 0, scale: 1 }
+  };
+
+  const statVariants = {
+    hidden: { opacity: 0, scale: 0.5 },
+    visible: { opacity: 1, scale: 1 }
+  };
+
   return (
-    <section ref={sectionRef} className="py-20 px-4 bg-background">
+    <section ref={sectionRef} className="py-20 px-4 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden" data-testid="why-choose-us-section">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          animate={visibleItems.length > 0 ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-responsive-4xl font-bold text-gradient mb-4">
             Mengapa Harus Pilih Kami?
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-responsive-lg text-muted-foreground max-w-2xl mx-auto">
             D'Manten bukan hanya wedding organizer, tapi partner terpercaya
             dalam mewujudkan hari istimewa Anda
           </p>
-        </div>
+        </motion.div>
 
         {/* Benefits Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
+          variants={containerVariants}
+          initial="hidden"
+          animate={visibleItems.length > 0 ? "visible" : "hidden"}
+        >
           {BENEFITS.map((benefit, index) => (
-            <div
+            <motion.div
               key={benefit.id}
-              className={`group relative overflow-hidden rounded-xl transition-all duration-500 transform ${
-                visibleItems.includes(index)
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-10"
-              } hover:-translate-y-2`}
+              variants={cardVariants}
+              whileHover={{
+                y: -10,
+                scale: 1.02,
+                transition: { duration: 0.3 }
+              }}
+              className="group relative overflow-hidden"
             >
               {/* Background gradient */}
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${benefit.color} opacity-0 group-hover:opacity-10 transition-opacity`}
+                className={`absolute inset-0 bg-gradient-to-br ${benefit.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`}
               />
 
               {/* Card Content */}
-              <div className="relative p-8 bg-white border border-gray-200 rounded-xl h-full">
+              <div className="glass rounded-2xl p-8 h-full hover-glow relative z-10">
                 {/* Icon */}
-                <div
-                  className={`inline-flex p-4 rounded-lg mb-6 text-white bg-gradient-to-br ${benefit.color}`}
+                <motion.div
+                  className={`inline-flex p-4 rounded-2xl mb-6 text-white bg-gradient-to-br ${benefit.color} shadow-lg`}
+                  whileHover={{
+                    rotate: [0, -10, 10, 0],
+                    scale: 1.1
+                  }}
+                  transition={{ duration: 0.5 }}
                 >
                   {benefit.icon}
-                </div>
+                </motion.div>
 
                 {/* Title */}
-                <h3 className="text-xl font-bold text-foreground mb-3">
+                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
                   {benefit.title}
                 </h3>
 
@@ -136,61 +175,88 @@ export default function WhyChooseUs() {
                 </p>
 
                 {/* Bottom accent line */}
-                <div
-                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${benefit.color} transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}
+                <motion.div
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${benefit.color} rounded-b-2xl`}
+                  initial={{ scaleX: 0 }}
+                  whileHover={{ scaleX: 1 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ originX: 0 }}
                 />
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-12 border-y border-gray-200">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-4 gap-8 py-12 border-y border-white/20"
+          initial={{ opacity: 0, y: 30 }}
+          animate={visibleItems.length > 0 ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.6, duration: 0.6 }}
+        >
           {[
             { number: "500+", label: "Pernikahan Sukses", delay: 0 },
             { number: "10+", label: "Tahun Pengalaman", delay: 100 },
             { number: "98%", label: "Kepuasan Klien", delay: 200 },
             { number: "100+", label: "Vendor Partner", delay: 300 },
           ].map((stat, index) => (
-            <div
+            <motion.div
               key={index}
-              className={`text-center transition-all duration-700 ${
-                visibleItems.length > 0
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-5"
-              }`}
-              style={{ transitionDelay: `${stat.delay}ms` }}
+              variants={statVariants}
+              className="text-center hover-lift"
+              whileHover={{ scale: 1.1 }}
+              transition={{ delay: stat.delay / 1000 }}
             >
               <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
                 {stat.number}
               </div>
               <p className="text-muted-foreground font-medium">{stat.label}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Call to Action */}
-        <div className="mt-16 text-center">
+        <motion.div
+          className="mt-16 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          animate={visibleItems.length > 0 ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.8, duration: 0.6 }}
+        >
           <div className="inline-block">
-            <h3 className="text-2xl font-bold text-foreground mb-4">
+            <motion.h3
+              className="text-2xl font-bold text-gradient mb-4"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={visibleItems.length > 0 ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
               Siap mewujudkan impian pernikahan Anda?
-            </h3>
-            <p className="text-muted-foreground mb-8 max-w-xl">
+            </motion.h3>
+            <motion.p
+              className="text-muted-foreground mb-8 max-w-xl"
+              initial={{ opacity: 0 }}
+              animate={visibleItems.length > 0 ? { opacity: 1 } : {}}
+              transition={{ delay: 1.2, duration: 0.5 }}
+            >
               Hubungi kami hari ini untuk konsultasi gratis dan temukan paket
               yang sempurna untuk acara Anda
-            </p>
-            <button
+            </motion.p>
+            <motion.button
               onClick={() => {
                 document
                   .getElementById("packages")
                   ?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="px-10 py-4 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-colors text-lg inline-block"
+              className="px-10 py-4 bg-primary text-primary-foreground rounded-xl font-semibold hover-lift hover-glow text-lg"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={visibleItems.length > 0 ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 1.4, duration: 0.5 }}
             >
               Lihat Paket Kami
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

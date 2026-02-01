@@ -209,7 +209,7 @@ export default function Packages() {
                 {/* CTA Buttons */}
                 <div className="space-y-3">
                   <a
-                    href={`https://wa.me/62812345678900?text=Halo%2C%20saya%20tertarik%20dengan%20paket%20${encodeURIComponent(pkg.name)}%20seharga%20${encodeURIComponent(formatPrice(pkg.price))}%20untuk%20wedding%20saya.%20Bisakah%20kita%20diskusi%20lebih%20lanjut%3F`}
+                    href={`https://wa.me/6285329077987?text=Halo%2C%20saya%20tertarik%20dengan%20paket%20${encodeURIComponent(pkg.name)}%20seharga%20${encodeURIComponent(formatPrice(pkg.price))}%20untuk%20wedding%20saya.%20Bisakah%20kita%20diskusi%20lebih%20lanjut%3F`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`block w-full py-3 rounded-lg font-bold transition-colors text-center ${
@@ -224,7 +224,7 @@ export default function Packages() {
                     onClick={() => {
                       const message = `Halo, saya ingin berkonsultasi tentang paket ${pkg.name}. Bisa kita diskusi detail lebih lanjut?`;
                       window.open(
-                        `https://wa.me/62812345678900?text=${encodeURIComponent(message)}`,
+                        `https://wa.me/6285329077987?text=${encodeURIComponent(message)}`,
                         "_blank",
                       );
                     }}
