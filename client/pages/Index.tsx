@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import About from "@/components/About";
 import Gallery from "@/components/Gallery";
 import Packages from "@/components/Packages";
 import Services from "@/components/Services";
@@ -11,6 +12,7 @@ export default function Index() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <Hero />
+      <About />
       <Gallery />
       <Packages />
       <Services />
