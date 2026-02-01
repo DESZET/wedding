@@ -32,6 +32,12 @@ export default function Navbar() {
               Home
             </button>
             <button
+              onClick={() => scrollToSection("about")}
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+            >
+              About
+            </button>
+            <button
               onClick={() => scrollToSection("gallery")}
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"
             >
