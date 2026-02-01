@@ -40,6 +40,18 @@ export default function Footer() {
                 <button
                   onClick={() =>
                     document
+                      .getElementById("about")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="hover:text-primary transition-colors"
+                >
+                  About
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() =>
+                    document
                       .getElementById("gallery")
                       ?.scrollIntoView({ behavior: "smooth" })
                   }
