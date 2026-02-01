@@ -38,6 +38,12 @@ export default function Navbar() {
               About
             </button>
             <button
+              onClick={() => scrollToSection("wedding-show")}
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+            >
+              Wedding Show
+            </button>
+            <button
               onClick={() => scrollToSection("gallery")}
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"
             >
@@ -48,12 +54,6 @@ export default function Navbar() {
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"
             >
               Packages
-            </button>
-            <button
-              onClick={() => scrollToSection("services")}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Services
             </button>
             <button
               onClick={() => scrollToSection("contact")}
