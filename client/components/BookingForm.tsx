@@ -53,8 +53,22 @@ export default function BookingForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    console.log("Form submitted:", formData);
+
+    // Create WhatsApp message with form data
+    const message = `Halo, saya ingin berkonsultasi mengenai layanan wedding organizer.
+
+Nama: ${formData.name}
+Email: ${formData.email}
+Telepon: ${formData.phone}
+Tanggal Event: ${formData.eventDate}
+Jumlah Tamu: ${formData.guestCount}
+Paket: ${formData.package}
+Pesan: ${formData.message}`;
+
+    const whatsappUrl = `https://wa.me/62812345678900?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
+
+    // Show success message
     setIsSubmitted(true);
 
     // Reset form after 3 seconds
