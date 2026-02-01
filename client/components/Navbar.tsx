@@ -94,6 +94,12 @@ export default function Navbar() {
               Home
             </button>
             <button
+              onClick={() => scrollToSection("about")}
+              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
+            >
+              About
+            </button>
+            <button
               onClick={() => scrollToSection("gallery")}
               className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
             >
