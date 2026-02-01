@@ -100,6 +100,12 @@ export default function Navbar() {
               About
             </button>
             <button
+              onClick={() => scrollToSection("wedding-show")}
+              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
+            >
+              Wedding Show
+            </button>
+            <button
               onClick={() => scrollToSection("gallery")}
               className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
             >
@@ -110,12 +116,6 @@ export default function Navbar() {
               className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
             >
               Packages
-            </button>
-            <button
-              onClick={() => scrollToSection("services")}
-              className="block w-full text-left px-4 py-2 text-sm font-medium text-foreground hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Services
             </button>
             <button
               onClick={() => scrollToSection("contact")}
