@@ -103,10 +103,25 @@ export default function Hero() {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 animate-bounce">
         <button onClick={scrollToGallery} className="text-white">
           <ChevronDown className="w-6 h-6" />
         </button>
+      </div>
+
+      {/* Carousel Indicators */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
+        {HERO_IMAGES.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentImageIndex(index)}
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === currentImageIndex
+                ? "bg-white w-8"
+                : "bg-white/50 hover:bg-white/75"
+            }`}
+          />
+        ))}
       </div>
     </section>
   );
