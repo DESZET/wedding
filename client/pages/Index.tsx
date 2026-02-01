@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import WhyChooseUs from "@/components/WhyChooseUs";
@@ -7,39 +8,97 @@ import StatisticsCounter from "@/components/StatisticsCounter";
 import FAQ from "@/components/FAQ";
 import BookingForm from "@/components/BookingForm";
 import Footer from "@/components/Footer";
+import SectionWrapper from "@/components/SectionWrapper";
+import ScrollProgress from "@/components/ScrollProgress";
 
 export default function Index() {
+  useEffect(() => {
+    // Scroll to top on page load
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Scroll Progress Indicator */}
+      <ScrollProgress />
+      
       <Navbar />
 
-      <section id="home">
+      {/* Hero Section - No wrapper needed */}
+      <section 
+        id="home" 
+        className="relative z-section-10"
+      >
         <Hero />
       </section>
 
-      <section id="about">
-        <About />
-      </section>
-
-      <section id="why">
+      {/* Why Choose Us - Appears on scroll */}
+      <SectionWrapper 
+        id="why" 
+        delay={100}
+        threshold={0.1}
+        animationType="fade-in-up"
+        className="z-section-20"
+      >
         <WhyChooseUs />
-      </section>
+      </SectionWrapper>
 
-      <section id="statistics">
+      {/* Statistics - Appears later */}
+      <SectionWrapper 
+        id="statistics" 
+        delay={200}
+        threshold={0.1}
+        animationType="scale-in"
+        className="z-section-30"
+      >
         <StatisticsCounter />
-      </section>
+      </SectionWrapper>
 
-      <section id="faq">
+      {/* About - Appears even later */}
+      <SectionWrapper 
+        id="about" 
+        delay={300}
+        threshold={0.1}
+        animationType="slide-in-left"
+        className="z-section-40"
+      >
+        <About />
+      </SectionWrapper>
+
+      {/* FAQ */}
+      <SectionWrapper 
+        id="faq" 
+        delay={400}
+        threshold={0.1}
+        animationType="fade-in-up"
+        className="z-section-50"
+      >
         <FAQ />
-      </section>
+      </SectionWrapper>
 
-      <section id="contact">
+      {/* Services/Contact */}
+      <SectionWrapper 
+        id="contact" 
+        delay={500}
+        threshold={0.1}
+        animationType="slide-in-right"
+        className="z-section-60"
+      >
         <Services />
-      </section>
+      </SectionWrapper>
 
-      <section id="booking">
+      {/* Booking Form - Last section */}
+      <SectionWrapper 
+        id="booking" 
+        delay={600}
+        threshold={0.1}
+        animationType="fade-in-up"
+        className="z-section-70"
+      >
         <BookingForm />
-      </section>
+      </SectionWrapper>
 
       <Footer />
     </div>

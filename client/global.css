@@ -105,6 +105,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
 
   :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
@@ -193,10 +194,127 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-primary;
   }
+
+  /* Scroll animation classes */
+  .scroll-animate {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .scroll-animate.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scroll-animate-fade-in-up {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .scroll-animate-fade-in-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scroll-animate-slide-left {
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .scroll-animate-slide-left.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .scroll-animate-slide-right {
+    opacity: 0;
+    transform: translateX(50px);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .scroll-animate-slide-right.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .scroll-animate-scale-in {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .scroll-animate-scale-in.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @layer utilities {
-  /* Keyframe animations */
+  /* ANIMASI KEYFRAMES UNTUK SCROLL */
+  
+  /* Keyframes untuk animasi scroll */
+  @keyframes fadeInUpScroll {
+    from {
+      opacity: 0;
+      transform: translateY(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeftScroll {
+    from {
+      opacity: 0;
+      transform: translateX(-50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRightScroll {
+    from {
+      opacity: 0;
+      transform: translateX(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scaleInScroll {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Animasi untuk scroll progress */
+  @keyframes progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Keyframe animations yang sudah ada */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -258,6 +376,83 @@
       transform: translateY(-10px);
     }
   }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Section spacing for fixed navbar */
+  section {
+    scroll-margin-top: 80px;
+  }
+
+  /* Class untuk animasi scroll triggered */
+  .scroll-triggered {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  }
+
+  .scroll-triggered.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Delay untuk staggered animation */
+  .scroll-delay-100 { transition-delay: 100ms !important; }
+  .scroll-delay-200 { transition-delay: 200ms !important; }
+  .scroll-delay-300 { transition-delay: 300ms !important; }
+  .scroll-delay-400 { transition-delay: 400ms !important; }
+  .scroll-delay-500 { transition-delay: 500ms !important; }
+  .scroll-delay-600 { transition-delay: 600ms !important; }
+  .scroll-delay-700 { transition-delay: 700ms !important; }
+  .scroll-delay-800 { transition-delay: 800ms !important; }
+
+  /* Animation type classes */
+  .fade-in-up {
+    transform: translateY(50px);
+  }
+  
+  .fade-in-up.is-visible {
+    transform: translateY(0);
+  }
+  
+  .slide-in-left {
+    transform: translateX(-50px);
+  }
+  
+  .slide-in-left.is-visible {
+    transform: translateX(0);
+  }
+  
+  .slide-in-right {
+    transform: translateX(50px);
+  }
+  
+  .slide-in-right.is-visible {
+    transform: translateX(0);
+  }
+  
+  .scale-in {
+    transform: scale(0.8);
+  }
+  
+  .scale-in.is-visible {
+    transform: scale(1);
+  }
+
+  /* Z-index untuk sections */
+  .z-section-10 { z-index: 10; }
+  .z-section-20 { z-index: 20; }
+  .z-section-30 { z-index: 30; }
+  .z-section-40 { z-index: 40; }
+  .z-section-50 { z-index: 50; }
+  .z-section-60 { z-index: 60; }
+  .z-section-70 { z-index: 70; }
+  .z-section-80 { z-index: 80; }
+  .z-section-90 { z-index: 90; }
+  .z-section-100 { z-index: 100; }
 
   /* Parallax effect */
   .parallax {
