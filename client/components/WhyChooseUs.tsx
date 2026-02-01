@@ -1,12 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import {
-  Award,
-  Heart,
-  Shield,
-  Zap,
-  Users,
-  Clock,
-} from "lucide-react";
+import { Award, Heart, Shield, Zap, Users, Clock } from "lucide-react";
 
 interface Benefit {
   id: number;
@@ -83,7 +76,7 @@ export default function WhyChooseUs() {
           });
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (sectionRef.current) {
@@ -102,8 +95,8 @@ export default function WhyChooseUs() {
             Mengapa Harus Pilih Kami?
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            D'Manten bukan hanya wedding organizer, tapi partner terpercaya dalam
-            mewujudkan hari istimewa Anda
+            D'Manten bukan hanya wedding organizer, tapi partner terpercaya
+            dalam mewujudkan hari istimewa Anda
           </p>
         </div>
 
@@ -162,7 +155,9 @@ export default function WhyChooseUs() {
             <div
               key={index}
               className={`text-center transition-all duration-700 ${
-                visibleItems.length > 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                visibleItems.length > 0
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-5"
               }`}
               style={{ transitionDelay: `${stat.delay}ms` }}
             >

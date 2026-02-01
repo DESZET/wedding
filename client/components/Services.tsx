@@ -107,7 +107,7 @@ export default function Services() {
           setIsVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const section = document.getElementById("services");
@@ -159,7 +159,9 @@ export default function Services() {
               </h3>
 
               {/* Description */}
-              <p className="text-muted-foreground mb-6">{service.description}</p>
+              <p className="text-muted-foreground mb-6">
+                {service.description}
+              </p>
 
               {/* Details List */}
               <ul className="space-y-2">

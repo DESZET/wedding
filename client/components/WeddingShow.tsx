@@ -16,7 +16,8 @@ const VENUES: Venue[] = [
     id: 1,
     title: "Crystal Ballroom",
     category: "Indoor",
-    description: "Elegant indoor venue dengan chandelier mewah dan tata letak fleksibel",
+    description:
+      "Elegant indoor venue dengan chandelier mewah dan tata letak fleksibel",
     image:
       "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
     price: "15-30 juta",
@@ -26,7 +27,8 @@ const VENUES: Venue[] = [
     id: 2,
     title: "Garden Paradise",
     category: "Outdoor",
-    description: "Taman indah dengan pemandangan alam yang memukau untuk wedding outdoor",
+    description:
+      "Taman indah dengan pemandangan alam yang memukau untuk wedding outdoor",
     image:
       "https://images.unsplash.com/photo-1506574216779-a79c4a5b86c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
     price: "10-25 juta",
@@ -36,7 +38,8 @@ const VENUES: Venue[] = [
     id: 3,
     title: "Seaside Pavilion",
     category: "Beach",
-    description: "Venue tepi pantai dengan pemandangan laut yang romantis dan suasana eksotis",
+    description:
+      "Venue tepi pantai dengan pemandangan laut yang romantis dan suasana eksotis",
     image:
       "https://images.unsplash.com/photo-1519225421214-51d4eb6e72d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
     price: "20-35 juta",
@@ -56,7 +59,7 @@ export default function WeddingShow() {
           setIsSectionVisible(true);
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.2 },
     );
 
     if (sectionRef.current) {
@@ -93,9 +96,7 @@ export default function WeddingShow() {
         {/* Video Player Section */}
         <div
           className={`mb-16 transition-all duration-700 ${
-            isSectionVisible
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-95"
+            isSectionVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
           <div className="relative bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg overflow-hidden shadow-2xl">
@@ -106,7 +107,7 @@ export default function WeddingShow() {
                 className="w-full h-full object-cover opacity-60"
               />
               <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors" />
-              
+
               {/* Play Button */}
               <button
                 onClick={() => setIsVideoPlaying(true)}
@@ -124,8 +125,9 @@ export default function WeddingShow() {
                 Menggunjungi Koleksi Wedding Venue Eksklusif
               </h3>
               <p className="text-muted-foreground">
-                Tonton koleksi venue pernikahan terbaik kami yang telah dipercaya
-                oleh ratusan pasangan dalam mewujudkan hari istimewa mereka.
+                Tonton koleksi venue pernikahan terbaik kami yang telah
+                dipercaya oleh ratusan pasangan dalam mewujudkan hari istimewa
+                mereka.
               </p>
             </div>
           </div>
@@ -182,7 +184,7 @@ export default function WeddingShow() {
                     const message = `Halo, saya tertarik dengan venue ${venue.title}. Bisakah kita diskusi lebih lanjut mengenai detail dan ketersediaannya?`;
                     window.open(
                       `https://wa.me/62812345678900?text=${encodeURIComponent(message)}`,
-                      "_blank"
+                      "_blank",
                     );
                   }}
                   className="w-full py-2 bg-primary text-primary-foreground rounded-md font-semibold hover:bg-primary/90 transition-colors"
@@ -225,7 +227,9 @@ export default function WeddingShow() {
             {/* Info Text */}
             <div className="space-y-6">
               <div>
-                <h4 className="text-lg font-bold text-foreground mb-2">Lokasi</h4>
+                <h4 className="text-lg font-bold text-foreground mb-2">
+                  Lokasi
+                </h4>
                 <p className="text-muted-foreground">
                   Jakarta, Indonesia. Semua venue kami berlokasi strategis dan
                   mudah diakses dari berbagai tempat.
@@ -261,7 +265,7 @@ export default function WeddingShow() {
                   const message = `Halo, saya ingin mengetahui lebih banyak tentang semua venue yang tersedia dan ketersediaannya untuk tanggal yang saya inginkan.`;
                   window.open(
                     `https://wa.me/62812345678900?text=${encodeURIComponent(message)}`,
-                    "_blank"
+                    "_blank",
                   );
                 }}
                 className="px-8 py-3 bg-primary text-primary-foreground rounded-md font-semibold hover:bg-primary/90 transition-colors w-full md:w-auto"

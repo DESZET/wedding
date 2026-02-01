@@ -79,7 +79,7 @@ export default function Gallery() {
           setIsVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const section = document.getElementById("gallery");
@@ -88,7 +88,14 @@ export default function Gallery() {
     return () => observer.disconnect();
   }, []);
 
-  const categories = ["All", "Decoration", "Venue", "Makeup", "Fashion", "Catering"];
+  const categories = [
+    "All",
+    "Decoration",
+    "Venue",
+    "Makeup",
+    "Fashion",
+    "Catering",
+  ];
   const filteredItems =
     filter === "All"
       ? GALLERY_ITEMS
@@ -96,16 +103,14 @@ export default function Gallery() {
 
   const handleNext = () => {
     if (selectedIndex !== null) {
-      setSelectedIndex(
-        (selectedIndex + 1) % GALLERY_ITEMS.length
-      );
+      setSelectedIndex((selectedIndex + 1) % GALLERY_ITEMS.length);
     }
   };
 
   const handlePrev = () => {
     if (selectedIndex !== null) {
       setSelectedIndex(
-        selectedIndex === 0 ? GALLERY_ITEMS.length - 1 : selectedIndex - 1
+        selectedIndex === 0 ? GALLERY_ITEMS.length - 1 : selectedIndex - 1,
       );
     }
   };
@@ -151,7 +156,9 @@ export default function Gallery() {
             <div
               key={item.id}
               onClick={() =>
-                setSelectedIndex(GALLERY_ITEMS.findIndex((i) => i.id === item.id))
+                setSelectedIndex(
+                  GALLERY_ITEMS.findIndex((i) => i.id === item.id),
+                )
               }
               className="group cursor-pointer overflow-hidden rounded-lg"
             >

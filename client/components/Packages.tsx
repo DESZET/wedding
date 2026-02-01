@@ -87,7 +87,7 @@ export default function Packages() {
           setIsVisible(true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const section = document.getElementById("packages");
@@ -193,9 +193,11 @@ export default function Packages() {
                           pkg.highlighted ? "text-yellow-300" : "text-primary"
                         }`}
                       />
-                      <span className={`text-sm ${
-                        pkg.highlighted ? "text-gray-100" : "text-foreground"
-                      }`}>
+                      <span
+                        className={`text-sm ${
+                          pkg.highlighted ? "text-gray-100" : "text-foreground"
+                        }`}
+                      >
                         {feature}
                       </span>
                     </div>
@@ -221,7 +223,7 @@ export default function Packages() {
                       const message = `Halo, saya ingin berkonsultasi tentang paket ${pkg.name}. Bisa kita diskusi detail lebih lanjut?`;
                       window.open(
                         `https://wa.me/62812345678900?text=${encodeURIComponent(message)}`,
-                        "_blank"
+                        "_blank",
                       );
                     }}
                     className={`w-full py-2 rounded-lg font-semibold transition-colors text-center text-sm ${

@@ -34,7 +34,8 @@ export default function Hero() {
       className="relative h-screen w-full overflow-hidden bg-gray-900"
     >
       {/* Auto-Carousel Background Images with Overlay */}
-      <div className="absolute inset-0 transition-all duration-1000 ease-in-out"
+      <div
+        className="absolute inset-0 transition-all duration-1000 ease-in-out"
         style={{
           backgroundImage: `url('${HERO_IMAGES[currentImageIndex]}')`,
           backgroundSize: "cover",

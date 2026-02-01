@@ -25,7 +25,7 @@ export default function ProblemsSolutions() {
           });
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (sectionRef.current) {
@@ -63,10 +63,7 @@ export default function ProblemsSolutions() {
         {/* Scroll indicator dots */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
           {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-2 h-2 bg-white rounded-full opacity-60"
-            />
+            <div key={i} className="w-2 h-2 bg-white rounded-full opacity-60" />
           ))}
         </div>
       </div>
@@ -113,7 +110,9 @@ export default function ProblemsSolutions() {
                 ].map((text, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <span className="text-primary font-bold text-xl">✓</span>
-                    <span className="text-muted-foreground text-lg">{text}</span>
+                    <span className="text-muted-foreground text-lg">
+                      {text}
+                    </span>
                   </div>
                 ))}
               </div>

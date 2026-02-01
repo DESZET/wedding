@@ -17,7 +17,7 @@ export default function About() {
           }, 300);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.3 },
     );
 
     if (sectionRef.current) {
@@ -91,11 +91,15 @@ export default function About() {
             <div className="grid grid-cols-3 gap-4 mt-12 pt-8 border-t border-gray-200">
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary mb-2">500+</div>
-                <p className="text-sm text-muted-foreground">Pernikahan Sukses</p>
+                <p className="text-sm text-muted-foreground">
+                  Pernikahan Sukses
+                </p>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary mb-2">10+</div>
-                <p className="text-sm text-muted-foreground">Tahun Pengalaman</p>
+                <p className="text-sm text-muted-foreground">
+                  Tahun Pengalaman
+                </p>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary mb-2">98%</div>
