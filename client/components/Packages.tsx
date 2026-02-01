@@ -123,14 +123,14 @@ export default function Packages() {
         </div>
 
         {/* Packages Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {PACKAGES.map((pkg, index) => (
             <div
               key={pkg.id}
-              className={`rounded-lg overflow-hidden transition-all duration-500 ${
+              className={`rounded-xl overflow-hidden transition-all duration-500 flex flex-col ${
                 pkg.highlighted
-                  ? "md:scale-105 bg-foreground text-white shadow-2xl"
-                  : "bg-white text-foreground shadow-lg hover:shadow-xl"
+                  ? "md:scale-105 bg-gradient-to-br from-foreground to-gray-800 text-white shadow-2xl"
+                  : "bg-white text-foreground shadow-lg hover:shadow-2xl"
               } ${
                 isVisible
                   ? "opacity-100 translate-y-0"
@@ -142,16 +142,17 @@ export default function Packages() {
             >
               {/* Featured Badge */}
               {pkg.highlighted && (
-                <div className="bg-primary text-primary-foreground text-center py-2 font-semibold text-sm">
-                  Most Popular
+                <div className="bg-primary text-primary-foreground text-center py-3 font-bold text-sm">
+                  ⭐ PILIHAN TERPOPULER
                 </div>
               )}
 
               {/* Package Content */}
-              <div className="p-8">
-                <h3 className="text-2xl font-bold mb-2">{pkg.name}</h3>
+              <div className="p-8 flex-grow flex flex-col">
+                {/* Title & Subtitle */}
+                <h3 className="text-3xl font-bold mb-2">{pkg.name}</h3>
                 <p
-                  className={`text-sm mb-6 ${
+                  className={`text-sm mb-6 font-medium ${
                     pkg.highlighted ? "text-gray-200" : "text-muted-foreground"
                   }`}
                 >
@@ -159,41 +160,78 @@ export default function Packages() {
                 </p>
 
                 {/* Price */}
-                <div className="mb-6">
-                  <p className="text-4xl font-bold">{formatPrice(pkg.price)}</p>
+                <div className="mb-8 pb-8 border-b border-gray-300 border-opacity-20">
+                  <p className="text-5xl font-bold mb-1">
+                    {formatPrice(pkg.price)}
+                  </p>
                   <p
-                    className={`text-sm mt-2 ${
+                    className={`text-xs font-semibold ${
                       pkg.highlighted
-                        ? "text-gray-200"
+                        ? "text-gray-300"
                         : "text-muted-foreground"
                     }`}
                   >
-                    Complete package
+                    Paket lengkap untuk hari istimewa Anda
                   </p>
                 </div>
 
-                {/* CTA Button - WhatsApp */}
-                <a
-                  href={`https://wa.me/62812345678900?text=Saya%20tertarik%20dengan%20paket%20${encodeURIComponent(pkg.name)}%20sebesar%20${encodeURIComponent(formatPrice(pkg.price))}%20untuk%20wedding%20saya.%20Bisakah%20kita%20diskusi%20lebih%20lanjut?`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`block w-full py-3 rounded-md font-semibold transition-colors mb-8 text-center ${
-                    pkg.highlighted
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                {/* Long Description */}
+                <p
+                  className={`text-sm leading-relaxed mb-8 ${
+                    pkg.highlighted ? "text-gray-100" : "text-muted-foreground"
                   }`}
                 >
-                  Chat WhatsApp
-                </a>
+                  {pkg.longDescription}
+                </p>
 
                 {/* Features List */}
-                <div className="space-y-3">
+                <div className="space-y-3 mb-8 flex-grow">
                   {pkg.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-primary" />
-                      <span className="text-sm">{feature}</span>
+                      <Check
+                        className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                          pkg.highlighted ? "text-yellow-300" : "text-primary"
+                        }`}
+                      />
+                      <span className={`text-sm ${
+                        pkg.highlighted ? "text-gray-100" : "text-foreground"
+                      }`}>
+                        {feature}
+                      </span>
                     </div>
                   ))}
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="space-y-3">
+                  <a
+                    href={`https://wa.me/62812345678900?text=Halo%2C%20saya%20tertarik%20dengan%20paket%20${encodeURIComponent(pkg.name)}%20seharga%20${encodeURIComponent(formatPrice(pkg.price))}%20untuk%20wedding%20saya.%20Bisakah%20kita%20diskusi%20lebih%20lanjut%3F`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`block w-full py-3 rounded-lg font-bold transition-colors text-center ${
+                      pkg.highlighted
+                        ? "bg-yellow-400 text-foreground hover:bg-yellow-300"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    }`}
+                  >
+                    Pilih Paket Ini
+                  </a>
+                  <button
+                    onClick={() => {
+                      const message = `Halo, saya ingin berkonsultasi tentang paket ${pkg.name}. Bisa kita diskusi detail lebih lanjut?`;
+                      window.open(
+                        `https://wa.me/62812345678900?text=${encodeURIComponent(message)}`,
+                        "_blank"
+                      );
+                    }}
+                    className={`w-full py-2 rounded-lg font-semibold transition-colors text-center text-sm ${
+                      pkg.highlighted
+                        ? "bg-white/20 text-white hover:bg-white/30 border border-white/30"
+                        : "bg-gray-100 text-foreground hover:bg-gray-200"
+                    }`}
+                  >
+                    Konsultasi Sekarang
+                  </button>
                 </div>
               </div>
             </div>
