@@ -1,77 +1,26 @@
 import { useEffect, useState, useRef } from "react";
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Users,
-  DollarSign,
-  Zap,
-} from "lucide-react";
 
-interface Problem {
-  id: number;
-  icon: React.ReactNode;
-  problem: string;
-  solution: string;
-}
-
-const PROBLEMS: Problem[] = [
-  {
-    id: 1,
-    icon: <Clock className="w-8 h-8" />,
-    problem: "Waktu Terbatas untuk Merencanakan",
-    solution:
-      "Kami menangani semua detail planning dengan timeline yang terstruktur dan profesional",
-  },
-  {
-    id: 2,
-    icon: <Users className="w-8 h-8" />,
-    problem: "Mengoordinasikan Banyak Vendor",
-    solution:
-      "Network vendor terpercaya kami siap membantu dengan koordinasi sempurna",
-  },
-  {
-    id: 3,
-    icon: <DollarSign className="w-8 h-8" />,
-    problem: "Budget yang Tidak Jelas",
-    solution:
-      "Kami tawarkan paket transparan dengan breakdown jelas sesuai budget Anda",
-  },
-  {
-    id: 4,
-    icon: <AlertCircle className="w-8 h-8" />,
-    problem: "Stress dan Kebingungan di Hari H",
-    solution:
-      "Koordinator profesional kami handle semua di hari H, Anda hanya tinggal enjoy",
-  },
-  {
-    id: 5,
-    icon: <Zap className="w-8 h-8" />,
-    problem: "Detail yang Terlewatkan",
-    solution:
-      "Checklist detail kami memastikan tidak ada yang terlewatkan sampai hari istimewa",
-  },
-  {
-    id: 6,
-    icon: <CheckCircle className="w-8 h-8" />,
-    problem: "Kualitas Hasil yang Diragukan",
-    solution:
-      "Portfolio 500+ pernikahan sukses kami membuktikan kualitas dan profesionalisme",
-  },
+const SHOWCASE_IMAGES = [
+  "https://images.unsplash.com/photo-1519225421214-51d4eb6e72d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1506574216779-a79c4a5b86c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1519167758481-dc80357cbdf1?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
 ];
 
 export default function ProblemsSolutions() {
-  const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [visibleImages, setVisibleImages] = useState<number[]>([]);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Trigger animations sequentially
-          PROBLEMS.forEach((_, index) => {
+          // Trigger image animations sequentially
+          SHOWCASE_IMAGES.forEach((_, index) => {
             setTimeout(() => {
-              setVisibleItems((prev) => [...prev, index]);
+              setVisibleImages((prev) => [...prev, index]);
             }, index * 100);
           });
         }
@@ -87,82 +36,142 @@ export default function ProblemsSolutions() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 px-4 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+    <section ref={sectionRef} className="bg-background">
+      {/* Hero Banner Section */}
+      <div className="relative h-96 md:h-[500px] overflow-hidden bg-gray-900">
+        {/* Background image */}
+        <img
+          src="https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+          alt="Problem Solution Banner"
+          className="w-full h-full object-cover opacity-60"
+        />
+
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/70" />
+
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 animate-fade-in">
             Anda Sedang Mengalami Ini?
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          </h1>
+          <p className="text-lg md:text-xl text-gray-100 max-w-2xl animate-fade-in animation-delay-200">
             Kami memahami tantangan dalam merencanakan pernikahan impian. Itulah
             mengapa kami ada untuk solusinya.
           </p>
         </div>
 
-        {/* Problems & Solutions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {PROBLEMS.map((item, index) => (
+        {/* Scroll indicator dots */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
+          {[0, 1, 2].map((i) => (
             <div
-              key={item.id}
-              className={`bg-white rounded-lg shadow-lg p-8 border-l-4 border-primary transition-all duration-500 transform hover:shadow-2xl hover:-translate-y-2 ${
-                visibleItems.includes(index)
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-10"
-              }`}
-            >
-              {/* Problem Section */}
-              <div className="mb-6 pb-6 border-b border-gray-200">
-                <div className="flex items-start gap-4 mb-3">
-                  <div className="flex-shrink-0 p-3 bg-red-100 rounded-lg text-red-600">
-                    <AlertCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">
-                      TANTANGAN
-                    </p>
-                  </div>
-                </div>
-                <p className="text-foreground font-bold text-lg">
-                  {item.problem}
-                </p>
-              </div>
-
-              {/* Solution Section */}
-              <div>
-                <div className="flex items-start gap-4 mb-3">
-                  <div className="flex-shrink-0 p-3 bg-green-100 rounded-lg text-green-600">
-                    <CheckCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">
-                      SOLUSI KAMI
-                    </p>
-                  </div>
-                </div>
-                <p className="text-muted-foreground">{item.solution}</p>
-              </div>
-            </div>
+              key={i}
+              className="w-2 h-2 bg-white rounded-full opacity-60"
+            />
           ))}
         </div>
+      </div>
 
-        {/* CTA Section */}
-        <div className="mt-16 text-center">
-          <p className="text-xl text-muted-foreground mb-6">
-            Biarkan kami menangani kompleksitas perencanaan pernikahan Anda
-          </p>
-          <button
-            onClick={() => {
-              document
-                .getElementById("booking")
-                ?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="px-10 py-4 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-colors text-lg"
-          >
-            Hubungi Kami Sekarang
-          </button>
+      {/* Image Grid Section */}
+      <div className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Grid of showcase images */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+            {SHOWCASE_IMAGES.map((image, index) => (
+              <div
+                key={index}
+                className={`relative overflow-hidden rounded-lg shadow-lg aspect-square group cursor-pointer transition-all duration-500 transform ${
+                  visibleImages.includes(index)
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-95"
+                }`}
+              >
+                <img
+                  src={image}
+                  alt={`Showcase ${index + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+              </div>
+            ))}
+          </div>
+
+          {/* Details Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
+            {/* Left - Text */}
+            <div className="flex flex-col justify-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+                Mengapa Memilih D'Manten?
+              </h2>
+              <div className="space-y-4">
+                {[
+                  "Pengalaman 10+ tahun dalam industri wedding",
+                  "Tim profesional yang berdedikasi penuh",
+                  "Network vendor terpercaya dan berkualitas",
+                  "Koordinasi detail yang sempurna",
+                  "Harga transparan dan kompetitif",
+                  "Dukungan 24/7 untuk kepuasan Anda",
+                ].map((text, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <span className="text-primary font-bold text-xl">✓</span>
+                    <span className="text-muted-foreground text-lg">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right - Image */}
+            <div className="rounded-lg overflow-hidden shadow-xl">
+              <img
+                src="https://images.unsplash.com/photo-1519225421214-51d4eb6e72d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                alt="Why Choose Us"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+
+          {/* CTA Section */}
+          <div className="bg-gradient-to-r from-primary to-yellow-400 rounded-xl p-12 text-center">
+            <h3 className="text-3xl font-bold text-white mb-4">
+              Siap Mewujudkan Pernikahan Impian Anda?
+            </h3>
+            <p className="text-white/90 text-lg mb-8 max-w-2xl mx-auto">
+              Hubungi kami hari ini untuk konsultasi gratis dan temukan paket
+              yang sempurna untuk acara istimewa Anda
+            </p>
+            <button
+              onClick={() => {
+                document
+                  .getElementById("booking")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="px-10 py-4 bg-white text-primary rounded-lg font-bold hover:bg-gray-100 transition-colors text-lg inline-block"
+            >
+              Hubungi Kami Sekarang
+            </button>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.8s ease-out forwards;
+        }
+
+        .animation-delay-200 {
+          animation-delay: 200ms;
+        }
+      `}</style>
     </section>
   );
 }
