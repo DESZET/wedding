@@ -1,11 +1,27 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+const HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80",
+  "https://images.unsplash.com/photo-1519225421214-51d4eb6e72d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80",
+  "https://images.unsplash.com/photo-1506574216779-a79c4a5b86c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80",
+];
+
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     setIsVisible(true);
+  }, []);
+
+  // Auto-carousel for images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 5000); // Change image every 5 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const scrollToGallery = () => {
@@ -17,12 +33,12 @@ export default function Hero() {
       id="home"
       className="relative h-screen w-full overflow-hidden bg-gray-900"
     >
-      {/* Background Image with Overlay */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
+      {/* Auto-Carousel Background Images with Overlay */}
+      <div className="absolute inset-0 transition-all duration-1000 ease-in-out"
         style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')",
+          backgroundImage: `url('${HERO_IMAGES[currentImageIndex]}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
         <div className="absolute inset-0 bg-black/40" />
