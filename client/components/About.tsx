@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useSettings } from "../hooks/useSettings";
 
 export default function About() {
+  const { settings } = useSettings();
   const [isImageVisible, setIsImageVisible] = useState(false);
   const [isTextVisible, setIsTextVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -211,7 +213,7 @@ export default function About() {
               animate={isTextVisible ? { opacity: 1, x: 0 } : {}}
               transition={{ delay: 1, duration: 0.6 }}
             >
-              Layanan Premium Kami
+              {settings['about-services-title'] || 'Layanan Premium Kami'}
             </motion.h3>
 
             <motion.div
@@ -222,16 +224,16 @@ export default function About() {
             >
               {[
                 {
-                  title: "Konsultasi Gratis",
-                  desc: "Kami menawarkan konsultasi lengkap untuk memahami visi dan budget Anda"
+                  title: settings['about-service-1-title'] || "Konsultasi Gratis",
+                  desc: settings['about-service-1-desc'] || "Kami menawarkan konsultasi lengkap untuk memahami visi dan budget Anda"
                 },
                 {
-                  title: "Vendor Terpercaya",
-                  desc: "Jaringan vendor terbaik untuk memastikan kualitas layanan"
+                  title: settings['about-service-2-title'] || "Vendor Terpercaya",
+                  desc: settings['about-service-2-desc'] || "Jaringan vendor terbaik untuk memastikan kualitas layanan"
                 },
                 {
-                  title: "Koordinasi Lengkap",
-                  desc: "Tim profesional kami menangani semua detail dari awal hingga akhir"
+                  title: settings['about-service-3-title'] || "Koordinasi Lengkap",
+                  desc: settings['about-service-3-desc'] || "Tim profesional kami menangani semua detail dari awal hingga akhir"
                 }
               ].map((service, index) => (
                 <motion.div

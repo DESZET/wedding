@@ -6,8 +6,10 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
+import { useSettings } from "../hooks/useSettings";
 
 export default function Footer() {
+  const { settings } = useSettings();
   return (
     <footer id="contact" className="bg-foreground text-background">
       {/* Main Footer Content */}
@@ -19,11 +21,10 @@ export default function Footer() {
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center font-bold">
                 D
               </div>
-              <span className="text-xl font-bold">GALERIA WEDDING</span>
+              <span className="text-xl font-bold">{settings['site-name'] || 'GALERIA WEDDING'}</span>
             </div>
             <p className="text-gray-300 text-sm">
-              Creating unforgettable wedding experiences with elegance,
-              professionalism, and passion for every detail.
+              {settings['description'] || 'Creating unforgettable wedding experiences with elegance, professionalism, and passion for every detail.'}
             </p>
           </div>
 
@@ -112,15 +113,15 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3 text-gray-300">
                 <Phone className="w-5 h-5 flex-shrink-0 mt-0.5 text-primary" />
-                <span>+62 812 3456 7890</span>
+                <span>{settings['phone'] || '+62 812 3456 7890'}</span>
               </li>
               <li className="flex items-start gap-3 text-gray-300">
                 <Mail className="w-5 h-5 flex-shrink-0 mt-0.5 text-primary" />
-                <span>hello@dmanten.com</span>
+                <span>{settings['email'] || 'hello@dmanten.com'}</span>
               </li>
               <li className="flex items-start gap-3 text-gray-300">
                 <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5 text-primary" />
-                <span>Jakarta, Indonesia</span>
+                <span>{settings['address'] || 'Jakarta, Indonesia'}</span>
               </li>
             </ul>
           </div>
@@ -130,7 +131,7 @@ export default function Footer() {
             <h3 className="font-semibold text-lg mb-4">Follow Us</h3>
             <div className="flex gap-4">
               <a
-                href="https://facebook.com"
+                href={settings['facebook'] || 'https://facebook.com'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3 bg-primary/20 text-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -138,7 +139,7 @@ export default function Footer() {
                 <Facebook className="w-5 h-5" />
               </a>
               <a
-                href="https://instagram.com"
+                href={settings['instagram'] || 'https://instagram.com'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3 bg-primary/20 text-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -146,7 +147,7 @@ export default function Footer() {
                 <Instagram className="w-5 h-5" />
               </a>
               <a
-                href="https://twitter.com"
+                href={settings['youtube'] || 'https://youtube.com'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3 bg-primary/20 text-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"

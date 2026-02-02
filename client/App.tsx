@@ -18,39 +18,48 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BackToTop from "@/components/BackToTop";
 import AdminPanel from "./pages/admin";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useSettings } from "./hooks/useSettings";
 const queryClient = new QueryClient();
+
+// Settings Provider Component
+const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+  useSettings(); // Load and apply settings on app startup
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <FloatingWhatsApp />
-      <BackToTop />
+    <SettingsProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <FloatingWhatsApp />
+        <BackToTop />
 
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/wedding-show" element={<WeddingShowPage />} />
-            <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/packages" element={<PackagesPage />} />
-            <Route path="/testimonials" element={<TestimonialsPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-          </Route>
-  {/* Admin Route (Protected) */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          } 
-        />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/wedding-show" element={<WeddingShowPage />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/packages" element={<PackagesPage />} />
+              <Route path="/testimonials" element={<TestimonialsPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+            </Route>
+    {/* Admin Route (Protected) */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </SettingsProvider>
   </QueryClientProvider>
 );
 

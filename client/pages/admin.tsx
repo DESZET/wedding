@@ -38,6 +38,7 @@ import {
   ApiResponse,
   ListResponse
 } from "../../shared/api";
+import { useSettings } from "../hooks/useSettings";
 
 // API functions
 const API_BASE = '/api';
@@ -1305,72 +1306,388 @@ const WeddingShowContent = ({ items, onEdit, onDelete, onUpdate }: any) => {
   );
 };
 
-const SettingsContent = () => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <h3 className="text-lg font-bold mb-6">Pengaturan Umum</h3>
+const SettingsContent = () => {
+  const { settings, loading, updateSettings } = useSettings();
+  const [saving, setSaving] = useState(false);
 
-    <div className="space-y-6">
-      <div>
-        <h4 className="font-semibold mb-3">Informasi Kontak</h4>
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Nomor Telepon"
-            className="w-full p-3 border rounded-lg"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-3 border rounded-lg"
-          />
-          <input
-            type="text"
-            placeholder="Alamat"
-            className="w-full p-3 border rounded-lg"
-          />
-        </div>
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      const result = await updateSettings(settings);
+      if (result.success) {
+        alert('Pengaturan berhasil disimpan!');
+      } else {
+        alert('Gagal menyimpan pengaturan: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Terjadi kesalahan saat menyimpan pengaturan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateSetting = (key: string, value: string) => {
+    updateSettings({
+      ...settings,
+      [key]: value
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="text-center">Loading settings...</div>
       </div>
+    );
+  }
 
-      <div>
-        <h4 className="font-semibold mb-3">Sosial Media</h4>
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Instagram URL"
-            className="w-full p-3 border rounded-lg"
-          />
-          <input
-            type="text"
-            placeholder="Facebook URL"
-            className="w-full p-3 border rounded-lg"
-          />
-          <input
-            type="text"
-            placeholder="YouTube URL"
-            className="w-full p-3 border rounded-lg"
-          />
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <h3 className="text-lg font-bold mb-6">Pengaturan Website</h3>
+
+      <div className="space-y-8">
+        {/* Theme Colors */}
+        <div>
+          <h4 className="font-semibold mb-4">🎨 Tema Warna</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Warna Primer</label>
+              <input
+                type="color"
+                value={settings['primary-color'] || '#8B5CF6'}
+                onChange={(e) => updateSetting('primary-color', e.target.value)}
+                className="w-full h-12 border rounded-lg cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Warna Sekunder</label>
+              <input
+                type="color"
+                value={settings['secondary-color'] || '#F59E0B'}
+                onChange={(e) => updateSetting('secondary-color', e.target.value)}
+                className="w-full h-12 border rounded-lg cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Warna Aksen</label>
+              <input
+                type="color"
+                value={settings['accent-color'] || '#EC4899'}
+                onChange={(e) => updateSetting('accent-color', e.target.value)}
+                className="w-full h-12 border rounded-lg cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Warna Background</label>
+              <input
+                type="color"
+                value={settings['background-color'] || '#FFFFFF'}
+                onChange={(e) => updateSetting('background-color', e.target.value)}
+                className="w-full h-12 border rounded-lg cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <h4 className="font-semibold mb-3">Tema Warna</h4>
-        <div className="flex gap-3">
-          <div className="w-10 h-10 bg-primary rounded cursor-pointer"></div>
-          <div className="w-10 h-10 bg-secondary rounded cursor-pointer"></div>
-          <div className="w-10 h-10 bg-accent rounded cursor-pointer"></div>
+        {/* Contact Information */}
+        <div>
+          <h4 className="font-semibold mb-4">📞 Informasi Kontak</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Nomor Telepon</label>
+              <input
+                type="text"
+                placeholder="08123456789"
+                className="w-full p-3 border rounded-lg"
+                value={settings['phone'] || ''}
+                onChange={(e) => updateSetting('phone', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Email</label>
+              <input
+                type="email"
+                placeholder="info@galeriawedding.com"
+                className="w-full p-3 border rounded-lg"
+                value={settings['email'] || ''}
+                onChange={(e) => updateSetting('email', e.target.value)}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2">Alamat</label>
+              <textarea
+                placeholder="Jl. Contoh No. 123, Jakarta"
+                className="w-full p-3 border rounded-lg"
+                rows={3}
+                value={settings['address'] || ''}
+                onChange={(e) => updateSetting('address', e.target.value)}
+              />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="flex gap-3 pt-4">
-        <button className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90">
-          Simpan Pengaturan
-        </button>
-        <button className="px-6 py-3 border rounded-lg hover:bg-gray-50">
-          Reset
-        </button>
+        {/* Social Media */}
+        <div>
+          <h4 className="font-semibold mb-4">📱 Sosial Media</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-2">Instagram URL</label>
+              <input
+                type="url"
+                placeholder="https://instagram.com/galeriawedding"
+                className="w-full p-3 border rounded-lg"
+                value={settings['instagram'] || ''}
+                onChange={(e) => updateSetting('instagram', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Facebook URL</label>
+              <input
+                type="url"
+                placeholder="https://facebook.com/galeriawedding"
+                className="w-full p-3 border rounded-lg"
+                value={settings['facebook'] || ''}
+                onChange={(e) => updateSetting('facebook', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">YouTube URL</label>
+              <input
+                type="url"
+                placeholder="https://youtube.com/@galeriawedding"
+                className="w-full p-3 border rounded-lg"
+                value={settings['youtube'] || ''}
+                onChange={(e) => updateSetting('youtube', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">WhatsApp</label>
+              <input
+                type="text"
+                placeholder="6281234567890"
+                className="w-full p-3 border rounded-lg"
+                value={settings['whatsapp'] || ''}
+                onChange={(e) => updateSetting('whatsapp', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Hero Section Content */}
+        <div>
+          <h4 className="font-semibold mb-4">🎯 Konten Hero Section</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-2">Judul Utama Hero</label>
+              <input
+                type="text"
+                placeholder="Your Perfect Wedding Awaits"
+                className="w-full p-3 border rounded-lg"
+                value={settings['hero-title'] || 'Your Perfect Wedding Awaits'}
+                onChange={(e) => updateSetting('hero-title', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Subjudul Hero</label>
+              <textarea
+                placeholder="Create unforgettable memories with our premium wedding planning and design services"
+                className="w-full p-3 border rounded-lg"
+                rows={2}
+                value={settings['hero-subtitle'] || 'Create unforgettable memories with our premium wedding planning and design services'}
+                onChange={(e) => updateSetting('hero-subtitle', e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Tombol Primary</label>
+                <input
+                  type="text"
+                  placeholder="Start Planning"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['hero-button-primary'] || 'Start Planning'}
+                  onChange={(e) => updateSetting('hero-button-primary', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Tombol Secondary</label>
+                <input
+                  type="text"
+                  placeholder="View Gallery"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['hero-button-secondary'] || 'View Gallery'}
+                  onChange={(e) => updateSetting('hero-button-secondary', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* About Section Content */}
+        <div>
+          <h4 className="font-semibold mb-4">📖 Konten About Section</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-2">Judul About</label>
+              <input
+                type="text"
+                placeholder="Tentang Kami"
+                className="w-full p-3 border rounded-lg"
+                value={settings['about-title'] || 'Tentang Kami'}
+                onChange={(e) => updateSetting('about-title', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Paragraf 1 About</label>
+              <textarea
+                placeholder="Galeria Wedding adalah tim profesional..."
+                className="w-full p-3 border rounded-lg"
+                rows={3}
+                value={settings['about-paragraph-1'] || 'Galeria Wedding adalah tim profesional yang berdedikasi untuk mewujudkan hari istimewa Anda menjadi kenangan yang tak terlupakan. Dengan pengalaman lebih dari 10 tahun di industri wedding planning, kami memahami setiap detail yang membuat pernikahan Anda sempurna.'}
+                onChange={(e) => updateSetting('about-paragraph-1', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Paragraf 2 About</label>
+              <textarea
+                placeholder="Kami percaya bahwa setiap pernikahan adalah unik..."
+                className="w-full p-3 border rounded-lg"
+                rows={3}
+                value={settings['about-paragraph-2'] || 'Kami percaya bahwa setiap pernikahan adalah unik dan istimewa. Oleh karena itu, kami menyediakan solusi kustomisasi penuh untuk memastikan bahwa visi Anda menjadi kenyataan dengan sempurna.'}
+                onChange={(e) => updateSetting('about-paragraph-2', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Paragraf 3 About</label>
+              <textarea
+                placeholder="Tim kami yang berpengalaman siap membantu Anda..."
+                className="w-full p-3 border rounded-lg"
+                rows={3}
+                value={settings['about-paragraph-3'] || 'Tim kami yang berpengalaman siap membantu Anda dari tahap perencanaan awal hingga hari spesial tiba. Kami berkomitmen untuk memberikan layanan terbaik dengan attention to detail yang luar biasa.'}
+                onChange={(e) => updateSetting('about-paragraph-3', e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Statistik 1 (Nilai)</label>
+                <input
+                  type="text"
+                  placeholder="500+"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['about-stat-1-value'] || '500+'}
+                  onChange={(e) => updateSetting('about-stat-1-value', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Statistik 1 (Label)</label>
+                <input
+                  type="text"
+                  placeholder="Pernikahan Sukses"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['about-stat-1-label'] || 'Pernikahan Sukses'}
+                  onChange={(e) => updateSetting('about-stat-1-label', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Statistik 2 (Nilai)</label>
+                <input
+                  type="text"
+                  placeholder="10+"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['about-stat-2-value'] || '10+'}
+                  onChange={(e) => updateSetting('about-stat-2-value', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Statistik 2 (Label)</label>
+                <input
+                  type="text"
+                  placeholder="Tahun Pengalaman"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['about-stat-2-label'] || 'Tahun Pengalaman'}
+                  onChange={(e) => updateSetting('about-stat-2-label', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Statistik 3 (Nilai)</label>
+                <input
+                  type="text"
+                  placeholder="98%"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['about-stat-3-value'] || '98%'}
+                  onChange={(e) => updateSetting('about-stat-3-value', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Statistik 3 (Label)</label>
+                <input
+                  type="text"
+                  placeholder="Kepuasan Klien"
+                  className="w-full p-3 border rounded-lg"
+                  value={settings['about-stat-3-label'] || 'Kepuasan Klien'}
+                  onChange={(e) => updateSetting('about-stat-3-label', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Website Information */}
+        <div>
+          <h4 className="font-semibold mb-4">🌐 Informasi Website</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-2">Nama Website</label>
+              <input
+                type="text"
+                placeholder="Galeria Wedding"
+                className="w-full p-3 border rounded-lg"
+                value={settings['site-name'] || 'Galeria Wedding'}
+                onChange={(e) => updateSetting('site-name', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Tagline</label>
+              <input
+                type="text"
+                placeholder="Mewujudkan Pernikahan Impian Anda"
+                className="w-full p-3 border rounded-lg"
+                value={settings['tagline'] || 'Mewujudkan Pernikahan Impian Anda'}
+                onChange={(e) => updateSetting('tagline', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Deskripsi Website</label>
+              <textarea
+                placeholder="Deskripsi singkat tentang layanan wedding organizer"
+                className="w-full p-3 border rounded-lg"
+                rows={3}
+                value={settings['description'] || 'Deskripsi singkat tentang layanan wedding organizer'}
+                onChange={(e) => updateSetting('description', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4 border-t">
+          <button
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="flex-1 bg-primary text-white py-3 rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 border rounded-lg hover:bg-gray-50"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Admin;

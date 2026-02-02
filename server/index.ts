@@ -12,6 +12,7 @@ import { getVideos, getVideo, createVideo, updateVideo, deleteVideo } from "./ro
 import { getWeddingShowVideos, getWeddingShowVideo, createWeddingShowVideo, updateWeddingShowVideo, deleteWeddingShowVideo } from "./routes/wedding-show-videos";
 import { getStats, getStat, createStat, updateStat, deleteStat } from "./routes/stats";
 import { getSectionImages, getSectionImage, createSectionImage, updateSectionImage, deleteSectionImage } from "./routes/section-images";
+import { getSettings, getSetting, updateSetting, updateSettings } from "./routes/settings";
 import { initDatabase } from "./database";
 
 // Configure multer for file uploads
@@ -132,6 +133,12 @@ export function createServer() {
   app.post("/api/section-images", createSectionImage);
   app.put("/api/section-images/:id", updateSectionImage);
   app.delete("/api/section-images/:id", deleteSectionImage);
+
+  // Settings routes
+  app.get("/api/settings", getSettings);
+  app.get("/api/settings/:key", getSetting);
+  app.put("/api/settings/:key", updateSetting);
+  app.post("/api/settings", updateSettings);
 
   return app;
 }

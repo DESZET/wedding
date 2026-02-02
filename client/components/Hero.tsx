@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { ChevronDown, Sparkles, Heart } from "lucide-react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { useSettings } from "../hooks/useSettings";
 
 const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80",
@@ -9,6 +10,7 @@ const HERO_IMAGES = [
 ];
 
 export default function Hero() {
+  const { settings } = useSettings();
   const [isVisible, setIsVisible] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -146,27 +148,7 @@ export default function Hero() {
             className="text-responsive-5xl font-bold text-white leading-tight"
             variants={itemVariants}
           >
-            Your Perfect{" "}
-            <motion.span
-              className="text-gradient"
-              animate={{
-                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-              style={{
-                background: "linear-gradient(45deg, #fff, #f0f0f0, #fff)",
-                backgroundSize: "200% 200%",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Wedding
-            </motion.span>{" "}
-            Awaits
+            {settings['hero-title'] || 'Your Perfect Wedding Awaits'}
           </motion.h1>
 
           {/* Subheading */}
@@ -174,8 +156,7 @@ export default function Hero() {
             className="text-responsive-xl text-gray-100"
             variants={itemVariants}
           >
-            Create unforgettable memories with our premium wedding planning and
-            design services
+            {settings['hero-subtitle'] || 'Create unforgettable memories with our premium wedding planning and design services'}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -193,7 +174,7 @@ export default function Hero() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Start Planning
+              {settings['hero-button-primary'] || 'Start Planning'}
             </motion.button>
             <motion.button
               onClick={() =>
@@ -205,7 +186,7 @@ export default function Hero() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              View Gallery
+              {settings['hero-button-secondary'] || 'View Gallery'}
             </motion.button>
           </motion.div>
         </motion.div>
