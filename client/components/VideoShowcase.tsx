@@ -1,41 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { VideoItem } from '@shared/api';
 
-interface Video {
-  id: number;
-  title: string;
-  thumbnail: string;
-  videoUrl: string;
-  description: string;
-}
 
-const VIDEOS: Video[] = [
-  {
-    id: 1,
-    title: 'Sarah & David Wedding Highlight',
-    thumbnail: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=400&fit=crop',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    description: 'A beautiful beach wedding celebration',
-  },
-  {
-    id: 2,
-    title: 'Garden Wedding - Maya & Rudi',
-    thumbnail: 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&h=400&fit=crop',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    description: 'Elegant garden ceremony',
-  },
-  {
-    id: 3,
-    title: 'Grand Ballroom - Rina & Ahmad',
-    thumbnail: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&h=400&fit=crop',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    description: 'Luxury ballroom reception',
-  },
-];
 
 export default function VideoShowcase() {
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await fetch('/api/videos');
+        const data = await response.json();
+        if (data.success) {
+          setVideos(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
 
   return (
     <section
@@ -62,7 +53,7 @@ export default function VideoShowcase() {
 
         {/* Video Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {VIDEOS.map((video, index) => (
+          {videos.length > 0 ? videos.map((video, index) => (
             <motion.div
               key={video.id}
               initial={{ opacity: 0, y: 30 }}
@@ -94,7 +85,11 @@ export default function VideoShowcase() {
                 <p className="text-sm text-gray-400">{video.description}</p>
               </div>
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-full text-center text-gray-400">
+              Loading videos...
+            </div>
+          )}
         </div>
       </div>
 
@@ -124,11 +119,10 @@ export default function VideoShowcase() {
                 ✕
               </button>
               <div className="aspect-video">
-                <iframe
-                  src={selectedVideo.videoUrl}
+                <video
+                  src={selectedVideo.videoPath}
                   title={selectedVideo.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
+                  controls
                   className="w-full h-full"
                 />
               </div>

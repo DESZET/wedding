@@ -1,87 +1,34 @@
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
-
-interface Package {
-  id: number;
-  name: string;
-  price: number;
-  description: string;
-  features: string[];
-  highlighted: boolean;
-  longDescription: string;
-}
-
-const PACKAGES: Package[] = [
-  {
-    id: 1,
-    name: "Silver",
-    price: 5000000,
-    description: "Paket terjangkau untuk acara intim",
-    longDescription:
-      "Paket Silver dirancang untuk pasangan yang menginginkan pernikahan yang elegan namun tetap terjangkau. Dengan layanan koordinasi penuh, dekorasi sederhana namun berkelas, dan catering berkualitas, kami memastikan hari istimewa Anda berjalan sempurna.",
-    features: [
-      "Konsultasi gratis dengan wedding planner",
-      "Dekorasi venue dengan tema pilihan Anda",
-      "Koordinasi dengan venue dan vendor",
-      "Makeup dan styling untuk pengantin",
-      "Catering untuk hingga 100 tamu",
-      "DJ dan sound system",
-      "Dokumentasi foto dasar",
-      "Koordinator hari H",
-    ],
-    highlighted: false,
-  },
-  {
-    id: 2,
-    name: "Gold",
-    price: 10000000,
-    description: "Pilihan terpopuler dengan layanan premium",
-    longDescription:
-      "Paket Gold kami adalah pilihan terbaik untuk pernikahan yang benar-benar spesial. Dengan tim profesional berpengalaman, dekorasi mewah, catering premium, dan layanan lengkap, kami pastikan setiap detail sempurna dan tamu Anda terkesan.",
-    features: [
-      "Konsultasi mendalam dan theme design",
-      "Dekorasi premium dengan tema eksklusif",
-      "Koordinasi lengkap vendor dan venue",
-      "Paket makeup dan styling profesional",
-      "Catering premium untuk hingga 300 tamu",
-      "DJ, lighting, dan sound system premium",
-      "Paket fotografi profesional",
-      "Video highlights",
-      "Koordinator dan asisten hari H",
-      "Rehearsal dinner coordination",
-    ],
-    highlighted: true,
-  },
-  {
-    id: 3,
-    name: "Platinum",
-    price: 20000000,
-    description: "Kemewahan tanpa batas untuk hari istimewa Anda",
-    longDescription:
-      "Paket Platinum adalah ultimate experience untuk pernikahan impian Anda. Dengan layanan white-glove service, desain kustom, vendor pilihan terbaik, dan perhatian detail yang luar biasa, kami ciptakan pernikahan yang tak terlupakan seumur hidup.",
-    features: [
-      "Wedding planning & design konsultasi eksklusif",
-      "Bespoke decoration design dengan konsep unik",
-      "Seleksi venue premium dan koordinasi lengkap",
-      "Elite makeup & styling team dengan makeup artist terkenal",
-      "Catering mewah dengan menu kustom untuk unlimited tamu",
-      "Live band, DJ premium, dan entertainment profesional",
-      "Paket fotografi dan videografi premium",
-      "Drone footage dan cinematic video",
-      "Koordinator dedicated dan team besar hari H",
-      "Pre-wedding photoshoot & konsultasi fashion",
-      "Post-wedding event coordination",
-      "24/7 support sebelum dan sesudah pernikahan",
-    ],
-    highlighted: false,
-  },
-];
+import { PackageItem } from "../../shared/api";
 
 export default function Packages() {
   const [isVisible, setIsVisible] = useState(false);
+  const [packages, setPackages] = useState<PackageItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const response = await fetch('/api/packages');
+        const data = await response.json();
+        if (data.success) {
+          setPackages(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching packages:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, []);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -126,7 +73,7 @@ export default function Packages() {
 
         {/* Packages Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {PACKAGES.map((pkg, index) => (
+          {packages.map((pkg, index) => (
             <div
               key={pkg.id}
               className={`rounded-xl overflow-hidden transition-all duration-500 flex flex-col ${
@@ -183,12 +130,12 @@ export default function Packages() {
                     pkg.highlighted ? "text-gray-100" : "text-muted-foreground"
                   }`}
                 >
-                  {pkg.longDescription}
+                  {pkg.longDescription || pkg.description || 'No description available'}
                 </p>
 
                 {/* Features List */}
                 <div className="space-y-3 mb-8 flex-grow">
-                  {pkg.features.map((feature, idx) => (
+                  {(pkg.features || []).map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-3">
                       <Check
                         className={`w-5 h-5 flex-shrink-0 mt-0.5 ${

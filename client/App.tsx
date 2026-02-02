@@ -16,7 +16,8 @@ import ContactPage from "./pages/contact";
 import MainLayout from "./layouts/MainLayout";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BackToTop from "@/components/BackToTop";
-
+import AdminPanel from "./pages/admin";
+import ProtectedRoute from "./components/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -37,7 +38,15 @@ const App = () => (
             <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Route>
-
+  {/* Admin Route (Protected) */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          } 
+        />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

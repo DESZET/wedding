@@ -70,7 +70,7 @@ export default function Index() {
       {/* FAQ */}
       <SectionWrapper 
         id="faq" 
-        delay={400}
+        delay={300}
         threshold={0.1}
         animationType="fade-in-up"
         className="z-section-50"
@@ -81,7 +81,7 @@ export default function Index() {
       {/* Services/Contact */}
       <SectionWrapper 
         id="contact" 
-        delay={500}
+        delay={300}
         threshold={0.1}
         animationType="slide-in-right"
         className="z-section-60"
@@ -92,7 +92,7 @@ export default function Index() {
       {/* Booking Form - Last section */}
       <SectionWrapper 
         id="booking" 
-        delay={600}
+        delay={300}
         threshold={0.1}
         animationType="fade-in-up"
         className="z-section-70"

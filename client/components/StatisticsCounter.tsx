@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { apiRequest } from '../../shared/api';
+import { StatItem } from '../../shared/api';
 
 interface CounterProps {
   end: number;
@@ -65,6 +67,25 @@ export function AnimatedCounter({ end, duration = 2, suffix = '', prefix = '' }:
 
 export default function StatisticsCounter() {
   const [isVisible, setIsVisible] = useState(false);
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const response = await apiRequest('/stats');
+        if (response.success) {
+          setStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading statistics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -82,12 +103,30 @@ export default function StatisticsCounter() {
     return () => observer.disconnect();
   }, []);
 
-  const stats = [
-    { label: 'Pernikahan Sukses', value: 500, suffix: '+', icon: '💒' },
-    { label: 'Tahun Pengalaman', value: 10, suffix: '+', icon: '⭐' },
-    { label: 'Kepuasan Klien', value: 98, suffix: '%', icon: '😊' },
-    { label: 'Vendor Partner', value: 100, suffix: '+', icon: '🤝' },
-  ];
+  // Default icons for stats
+  const getIcon = (index: number) => {
+    const icons = ['💒', '⭐', '😊', '🤝', '🎉', '🏆', '💎', '🌟'];
+    return icons[index % icons.length];
+  };
+
+  // Determine suffix based on label and value
+  const getSuffix = (label: string, value: number) => {
+    // Special cases based on category
+    if (label.includes('Tahun') || label.includes('Pengalaman')) return ' +';
+    if (label.includes('Kepuasan') || label.includes('Klien')) return '%';
+    if (label.includes('Partner') || label.includes('Vendor')) return '+';
+    if (label.includes('Event') || label.includes('Berhasil')) return '+';
+    if (label.includes('Foto') || label.includes('Portfolio')) return '+';
+    if (label.includes('Video') || label.includes('Dokumentasi')) return '+';
+    if (label.includes('Testimonial')) return '+';
+    if (label.includes('Lokasi') || label.includes('Venue')) return '+';
+    if (label.includes('Pernikahan') || label.includes('Sukses')) return '+';
+
+    // Default fallback based on value
+    if (value >= 100) return '+';
+    if (value <= 100 && value >= 0) return '%';
+    return '';
+  };
 
   return (
     <section
@@ -111,9 +150,13 @@ export default function StatisticsCounter() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((stat, index) => (
+          {loading ? (
+            <div className="col-span-full text-center text-primary-foreground/70">
+              Loading statistics...
+            </div>
+          ) : stats.length > 0 ? stats.map((stat, index) => (
             <motion.div
-              key={stat.label}
+              key={stat.id}
               initial={{ opacity: 0, scale: 0.5 }}
               animate={isVisible ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -124,12 +167,12 @@ export default function StatisticsCounter() {
                 whileHover={{ scale: 1.1, rotate: 10 }}
                 className="text-6xl mb-4"
               >
-                {stat.icon}
+                {getIcon(index)}
               </motion.div>
               <div className="text-5xl md:text-6xl font-bold mb-2">
                 <AnimatedCounter
                   end={stat.value}
-                  suffix={stat.suffix}
+                  suffix={getSuffix(stat.label, stat.value)}
                   duration={2.5}
                 />
               </div>
@@ -137,7 +180,11 @@ export default function StatisticsCounter() {
                 {stat.label}
               </p>
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-full text-center text-primary-foreground/70">
+              No statistics available
+            </div>
+          )}
         </div>
       </div>
     </section>

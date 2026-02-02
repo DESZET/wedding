@@ -2,59 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { Play, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useScroll, useTransform } from "framer-motion";
-
-interface Venue {
-  id: number;
-  title: string;
-  category: string;
-  description: string;
-  image: string;
-  price: string;
-  capacity: string;
-}
-
-const VENUES: Venue[] = [
-  {
-    id: 1,
-    title: "Crystal Ballroom",
-    category: "Indoor",
-    description:
-      "Elegant indoor venue dengan chandelier mewah dan tata letak fleksibel",
-    image:
-      "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    price: "15-30 juta",
-    capacity: "100-500 tamu",
-  },
-  {
-    id: 2,
-    title: "Garden Paradise",
-    category: "Outdoor",
-    description:
-      "Taman indah dengan pemandangan alam yang memukau untuk wedding outdoor",
-    image:
-      "https://images.unsplash.com/photo-1506574216779-a79c4a5b86c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    price: "10-25 juta",
-    capacity: "50-300 tamu",
-  },
-  {
-    id: 3,
-    title: "Seaside Pavilion",
-    category: "Beach",
-    description:
-      "Venue tepi pantai dengan pemandangan laut yang romantis dan suasana eksotis",
-    image:
-      "https://images.unsplash.com/photo-1519225421214-51d4eb6e72d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    price: "20-35 juta",
-    capacity: "80-400 tamu",
-  },
-];
+import { VenueItem, WeddingShowVideoItem } from "../../shared/api";
 
 export default function WeddingShow() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
-  const [isVideoVisible, setIsVideoVisible] = useState(false);
-  const [isVenuesVisible, setIsVenuesVisible] = useState(false);
-  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [isVideoVisible, setIsVideoVisible] = useState(true);
+  const [isVenuesVisible, setIsVenuesVisible] = useState(true);
+  const [isInfoVisible, setIsInfoVisible] = useState(true);
+  const [venues, setVenues] = useState<VenueItem[]>([]);
+  const [weddingShowVideo, setWeddingShowVideo] = useState<WeddingShowVideoItem | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const sectionRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -64,6 +22,37 @@ export default function WeddingShow() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  // Fetch venues and wedding show video from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch venues
+        const venuesResponse = await fetch('/api/venues');
+        const venuesData = await venuesResponse.json();
+        if (venuesData.success) {
+          setVenues(venuesData.data);
+        }
+
+        // Fetch wedding show video
+        const weddingShowVideosResponse = await fetch('/api/wedding-show-videos');
+        const weddingShowVideosData = await weddingShowVideosResponse.json();
+        if (weddingShowVideosData.success && weddingShowVideosData.data.length > 0) {
+          // Take the first wedding show video
+          setWeddingShowVideo(weddingShowVideosData.data[0]);
+        }
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Parallax effect for background
@@ -190,8 +179,7 @@ export default function WeddingShow() {
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.6,
-        ease: [0.25, 0.46, 0.45, 0.94]
+        duration: 0.6
       }
     }
   };
@@ -202,8 +190,7 @@ export default function WeddingShow() {
       opacity: 1,
       x: 0,
       transition: {
-        duration: 0.6,
-        ease: [0.25, 0.46, 0.45, 0.94]
+        duration: 0.6
       }
     }
   };
@@ -214,8 +201,7 @@ export default function WeddingShow() {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.7,
-        ease: [0.25, 0.46, 0.45, 0.94]
+        duration: 0.7
       }
     }
   };
@@ -267,7 +253,7 @@ export default function WeddingShow() {
                   initial={{ opacity: 0.6, scale: 1 }}
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.3 }}
-                  src="https://images.unsplash.com/photo-1519167758481-dc80357cbdf1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+                  src={weddingShowVideo?.thumbnail || "https://images.unsplash.com/photo-1519167758481-dc80357cbdf1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"}
                   alt="Wedding Show"
                   className="w-full h-full object-cover opacity-60"
                 />
@@ -332,7 +318,7 @@ export default function WeddingShow() {
               </motion.p>
             </div>
             
-            {VENUES.map((venue, index) => (
+            {venues.map((venue, index) => (
               <motion.div
                 key={venue.id}
                 variants={cardVariants}
@@ -532,13 +518,23 @@ export default function WeddingShow() {
                 />
               </svg>
             </motion.button>
-            <iframe
-              className="w-full h-full rounded-lg"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-              title="Wedding Show"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {weddingShowVideo ? (
+              <video
+                className="w-full h-full rounded-lg"
+                src={weddingShowVideo.videoPath}
+                controls
+                autoPlay
+                title="Wedding Show Video"
+              />
+            ) : (
+              <iframe
+                className="w-full h-full rounded-lg"
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+                title="Wedding Show"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )}
           </motion.div>
         </motion.div>
       )}

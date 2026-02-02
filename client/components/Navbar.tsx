@@ -54,6 +54,7 @@ export default function Navbar() {
           >
             Wedding Show
           </Link>
+     
           <Link
             to="/gallery"
             className="text-foreground hover:text-primary transition-colors font-medium"
@@ -74,7 +75,16 @@ export default function Navbar() {
             Contact
           </Link>
         </div>
+{/* ... other nav links ... */}
 
+{process.env.NODE_ENV === 'development' && (
+  <a
+    href="/admin"
+    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+  >
+    Admin
+  </a>
+)}
         {/* CTA */}
         <button
           onClick={() => scrollToSection("booking")}

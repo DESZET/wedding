@@ -8,61 +8,12 @@ interface GalleryImage {
   image: string;
 }
 
-const GALLERY_ITEMS: GalleryImage[] = [
-  {
-    id: 1,
-    title: "Classic Ballroom",
-    category: "Decoration",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 2,
-    title: "Beach Wedding",
-    category: "Decoration",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 3,
-    title: "Elegant Arrangement",
-    category: "Decoration",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 4,
-    title: "Garden Venue",
-    category: "Venue",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 5,
-    title: "Makeup & Beauty",
-    category: "Makeup",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 6,
-    title: "Bridal Fashion",
-    category: "Fashion",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 7,
-    title: "Groom Style",
-    category: "Fashion",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 8,
-    title: "Catering",
-    category: "Catering",
-    image: "/placeholder.svg",
-  },
-];
-
 export default function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [filter, setFilter] = useState<string>("All");
   const [isVisible, setIsVisible] = useState(false);
+  const [galleryItems, setGalleryItems] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
 
     useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -84,6 +35,24 @@ export default function Gallery() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const response = await fetch('/api/gallery');
+        const data = await response.json();
+        if (data.success) {
+          setGalleryItems(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching gallery:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGallery();
+  }, []);
+
   const categories = [
     "All",
     "Decoration",
@@ -94,19 +63,19 @@ export default function Gallery() {
   ];
   const filteredItems =
     filter === "All"
-      ? GALLERY_ITEMS
-      : GALLERY_ITEMS.filter((item) => item.category === filter);
+      ? galleryItems
+      : galleryItems.filter((item) => item.category === filter);
 
   const handleNext = () => {
     if (selectedIndex !== null) {
-      setSelectedIndex((selectedIndex + 1) % GALLERY_ITEMS.length);
+      setSelectedIndex((selectedIndex + 1) % galleryItems.length);
     }
   };
 
   const handlePrev = () => {
     if (selectedIndex !== null) {
       setSelectedIndex(
-        selectedIndex === 0 ? GALLERY_ITEMS.length - 1 : selectedIndex - 1,
+        selectedIndex === 0 ? galleryItems.length - 1 : selectedIndex - 1,
       );
     }
   };
@@ -153,7 +122,7 @@ export default function Gallery() {
               key={item.id}
               onClick={() =>
                 setSelectedIndex(
-                  GALLERY_ITEMS.findIndex((i) => i.id === item.id),
+                  galleryItems.findIndex((i) => i.id === item.id),
                 )
               }
               className="group cursor-pointer overflow-hidden rounded-lg"
@@ -195,16 +164,16 @@ export default function Gallery() {
 
           <div className="max-w-4xl w-full">
             <img
-              src={GALLERY_ITEMS[selectedIndex].image}
-              alt={GALLERY_ITEMS[selectedIndex].title}
+              src={galleryItems[selectedIndex].image}
+              alt={galleryItems[selectedIndex].title}
               className="w-full rounded-lg max-h-[80vh] object-contain"
             />
             <div className="text-center text-white mt-4">
               <p className="text-xl font-semibold">
-                {GALLERY_ITEMS[selectedIndex].title}
+                {galleryItems[selectedIndex].title}
               </p>
               <p className="text-gray-300">
-                {GALLERY_ITEMS[selectedIndex].category}
+                {galleryItems[selectedIndex].category}
               </p>
             </div>
           </div>

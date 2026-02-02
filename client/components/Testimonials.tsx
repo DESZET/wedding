@@ -5,56 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface Testimonial {
   id: number;
   name: string;
-  role: string;
-  image: string;
-  rating: number;
   text: string;
+  rating: number;
   date: string;
 }
-
-const TESTIMONIALS: Testimonial[] = [
-  {
-    id: 1,
-    name: 'Sarah & David',
-    role: 'Pasangan Pengantin - Jakarta',
-    image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=400&h=400&fit=crop',
-    rating: 5,
-    text: 'Galeria Wedding membuat hari pernikahan kami benar-benar sempurna! Dari perencanaan hingga eksekusi, semuanya berjalan lancar. Tim mereka sangat profesional dan memperhatikan setiap detail. Tamu-tamu kami masih memuji keindahan dekorasi dan kelancaran acara hingga sekarang.',
-    date: 'Desember 2024',
-  },
-  {
-    id: 2,
-    name: 'Rina & Ahmad',
-    role: 'Pasangan Pengantin - Bandung',
-    image: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&h=400&fit=crop',
-    rating: 5,
-    text: 'Kami sangat merekomendasikan Galeria Wedding! Mereka mengubah visi kami menjadi kenyataan yang melebihi ekspektasi. Koordinasi dengan vendor sangat baik, dan kami bisa menikmati hari spesial kami tanpa stress. Worth every penny!',
-    date: 'November 2024',
-  },
-  {
-    id: 3,
-    name: 'Maya & Rudi',
-    role: 'Pasangan Pengantin - Surabaya',
-    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=400&fit=crop',
-    rating: 5,
-    text: 'Tim Galeria Wedding sangat membantu kami dalam setiap tahap persiapan. Mereka sabar, kreatif, dan selalu siap membantu. Pernikahan kami berjalan sempurna dan semua tamu terkesan dengan dekorasi dan pelayanannya. Terima kasih Galeria!',
-    date: 'Oktober 2024',
-  },
-  {
-    id: 4,
-    name: 'Dian & Budi',
-    role: 'Pasangan Pengantin - Yogyakarta',
-    image: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=400&h=400&fit=crop',
-    rating: 5,
-    text: 'Pengalaman luar biasa dengan Galeria Wedding! Mereka sangat profesional dan detail oriented. Budget kami dikelola dengan baik dan hasilnya melebihi ekspektasi. Kami sangat puas dengan layanan mereka!',
-    date: 'September 2024',
-  },
-];
 
 export default function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [direction, setDirection] = useState(0);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -72,23 +33,43 @@ export default function Testimonials() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const response = await fetch('/api/testimonials');
+        const data = await response.json();
+        if (data.success) {
+          setTestimonials(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching testimonials:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
+
   // Auto-play carousel
   useEffect(() => {
-    const timer = setInterval(() => {
-      handleNext();
-    }, 5000);
+    if (testimonials.length > 0) {
+      const timer = setInterval(() => {
+        handleNext();
+      }, 5000);
 
-    return () => clearInterval(timer);
-  }, [currentIndex]);
+      return () => clearInterval(timer);
+    }
+  }, [currentIndex, testimonials.length]);
 
   const handleNext = () => {
     setDirection(1);
-    setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS.length);
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
   };
 
   const handlePrev = () => {
     setDirection(-1);
-    setCurrentIndex((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length);
+    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   const variants = {
@@ -130,20 +111,21 @@ export default function Testimonials() {
 
         {/* Testimonial Carousel */}
         <div className="relative max-w-4xl mx-auto">
-          <AnimatePresence initial={false} custom={direction} mode="wait">
-            <motion.div
-              key={currentIndex}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: 'spring', stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
-              }}
-              className="bg-white rounded-3xl shadow-2xl p-8 md:p-12"
-            >
+          {testimonials.length > 0 ? (
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={currentIndex}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: 'spring', stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 },
+                }}
+                className="bg-white rounded-3xl shadow-2xl p-8 md:p-12"
+              >
               {/* Quote Icon */}
               <div className="flex justify-center mb-6">
                 <div className="bg-primary/10 p-4 rounded-full">
@@ -157,7 +139,7 @@ export default function Testimonials() {
                   <Star
                     key={i}
                     className={`w-6 h-6 ${
-                      i < TESTIMONIALS[currentIndex].rating
+                      i < testimonials[currentIndex].rating
                         ? 'fill-yellow-400 text-yellow-400'
                         : 'text-gray-300'
                     }`}
@@ -167,28 +149,33 @@ export default function Testimonials() {
 
               {/* Testimonial Text */}
               <p className="text-center text-lg md:text-xl text-foreground leading-relaxed mb-8 italic">
-                "{TESTIMONIALS[currentIndex].text}"
+                "{testimonials[currentIndex].text}"
               </p>
 
               {/* Client Info */}
               <div className="flex flex-col items-center">
                 <img
-                  src={TESTIMONIALS[currentIndex].image}
-                  alt={TESTIMONIALS[currentIndex].name}
+                  src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=400&h=400&fit=crop"
+                  alt={testimonials[currentIndex].name}
                   className="w-20 h-20 rounded-full object-cover mb-4 border-4 border-primary/20"
                 />
                 <h4 className="text-xl font-bold text-foreground mb-1">
-                  {TESTIMONIALS[currentIndex].name}
+                  {testimonials[currentIndex].name}
                 </h4>
                 <p className="text-sm text-muted-foreground mb-1">
-                  {TESTIMONIALS[currentIndex].role}
+                  Pasangan Pengantin
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {TESTIMONIALS[currentIndex].date}
+                  {testimonials[currentIndex].date}
                 </p>
               </div>
             </motion.div>
           </AnimatePresence>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Loading testimonials...
+            </div>
+          )}
 
           {/* Navigation Buttons */}
           <button
@@ -209,7 +196,7 @@ export default function Testimonials() {
 
         {/* Indicators */}
         <div className="flex justify-center gap-2 mt-8">
-          {TESTIMONIALS.map((_, index) => (
+          {testimonials.map((_, index) => (
             <button
               key={index}
               onClick={() => {

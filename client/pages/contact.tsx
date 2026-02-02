@@ -3,11 +3,13 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BackToTop from "@/components/BackToTop";
 import Footer from "@/components/Footer";
 import FAQ from "@/components/FAQ";
+import Testimonials from "@/components/Testimonials";
 
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <Testimonials />
       <FAQ />
       <div className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">

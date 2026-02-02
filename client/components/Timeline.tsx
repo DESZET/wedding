@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Users, Palette, CheckCircle, Sparkles, Heart } from 'lucide-react';
+import TrustBadges from './TrustBadges';
 
 interface TimelineStep {
   id: number;
@@ -177,6 +178,9 @@ export default function Timeline() {
             Mulai Perencanaan Sekarang
           </button>
         </motion.div>
+
+        {/* TrustBadges Integrated */}
+        <TrustBadges />
       </div>
     </section>
   );

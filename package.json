@@ -21,8 +21,13 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@types/multer": "^2.0.0",
+    "@types/sqlite3": "^5.1.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {

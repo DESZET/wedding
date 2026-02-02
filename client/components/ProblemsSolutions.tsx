@@ -97,7 +97,7 @@ export default function ProblemsSolutions() {
             {/* Left - Text */}
             <div className="flex flex-col justify-center">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Mengapa Memilih D'Manten?
+                Mengapa Memilih Galeria wedding?
               </h2>
               <div className="space-y-4">
                 {[
