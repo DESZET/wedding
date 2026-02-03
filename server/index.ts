@@ -13,6 +13,7 @@ import { getWeddingShowVideos, getWeddingShowVideo, createWeddingShowVideo, upda
 import { getStats, getStat, createStat, updateStat, deleteStat } from "./routes/stats";
 import { getSectionImages, getSectionImage, createSectionImage, updateSectionImage, deleteSectionImage } from "./routes/section-images";
 import { getSettings, getSetting, updateSetting, updateSettings } from "./routes/settings";
+import { adminLogin, getAdminCredentials, updateAdminCredentials, initAdminCredentials, restartDb } from "./routes/admin-auth";
 import { initDatabase } from "./database";
 
 // Configure multer for file uploads
@@ -28,7 +29,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-export function createServer() {
+export async function createServer() {
   const app = express();
 
   // Middleware
@@ -39,8 +40,9 @@ export function createServer() {
   // Serve static files from public directory
   app.use('/uploads', express.static('public/uploads'));
 
-  // Initialize database
-  initDatabase();
+  // Initialize database and admin credentials
+  await initDatabase();
+  await initAdminCredentials();
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
@@ -139,6 +141,12 @@ export function createServer() {
   app.get("/api/settings/:key", getSetting);
   app.put("/api/settings/:key", updateSetting);
   app.post("/api/settings", updateSettings);
+
+  // Admin routes
+  app.post("/api/admin/login", adminLogin);
+  app.get("/api/admin/credentials", getAdminCredentials);
+  app.put("/api/admin/credentials", updateAdminCredentials);
+  app.post("/api/admin/restart-db", restartDb);
 
   return app;
 }

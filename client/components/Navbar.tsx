@@ -77,14 +77,12 @@ export default function Navbar() {
         </div>
 {/* ... other nav links ... */}
 
-{process.env.NODE_ENV === 'development' && (
-  <a
-    href="/admin"
-    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-  >
-    Admin
-  </a>
-)}
+<Link
+  to="/login"
+  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+>
+  Admin
+</Link>
         {/* CTA */}
         <button
           onClick={() => scrollToSection("booking")}
@@ -120,6 +118,9 @@ export default function Navbar() {
 
           <button onClick={() => scrollToSection("contact")}>Contact</button>
           <button onClick={() => scrollToSection("booking")}>Book Now</button>
+          <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 bg-primary text-white rounded-lg text-center">
+            Admin
+          </Link>
         </div>
       )}
     </nav>

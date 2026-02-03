@@ -149,9 +149,56 @@ export async function initDatabase(): Promise<void> {
       )
     `);
 
+    // Admin credentials table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS admin_credentials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
+    throw error;
+  }
+}
+
+// Restart database
+export async function restartDatabase(): Promise<void> {
+  try {
+    // Close existing connection
+    if (db) {
+      await db.close();
+      db = null;
+    }
+
+    // Drop all tables
+    const tables = [
+      'gallery',
+      'testimonials',
+      'packages',
+      'venues',
+      'stats',
+      'section_images',
+      'videos',
+      'wedding_show_videos',
+      'settings'
+    ];
+
+    for (const table of tables) {
+      await dbRun(`DROP TABLE IF EXISTS ${table}`);
+    }
+
+    // Reinitialize database
+    await initDatabase();
+
+    console.log('Database restarted successfully');
+  } catch (error) {
+    console.error('Error restarting database:', error);
     throw error;
   }
 }
