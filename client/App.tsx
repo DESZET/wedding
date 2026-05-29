@@ -13,20 +13,17 @@ import GalleryPage from "./pages/gallery";
 import PackagesPage from "./pages/PackagesPage";
 import TestimonialsPage from "./pages/testimonials";
 import ContactPage from "./pages/contact";
+import UmrahHaji from "./pages/UmrahHaji";
+import Printing from "./pages/Printing";
 import MainLayout from "./layouts/MainLayout";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BackToTop from "@/components/BackToTop";
 import Admin from "./pages/admin";
 import LoginPage from "./pages/login";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { useSettings } from "./hooks/useSettings";
-const queryClient = new QueryClient();
+import { SettingsProvider } from "./hooks/useSettings.tsx";
 
-// Settings Provider Component
-const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
-  useSettings(); // Load and apply settings on app startup
-  return <>{children}</>;
-};
+const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -44,19 +41,21 @@ const App = () => (
               <Route path="/wedding-show" element={<WeddingShowPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/packages" element={<PackagesPage />} />
+              <Route path="/umrah-haji" element={<UmrahHaji />} />
+              <Route path="/printing" element={<Printing />} />
               <Route path="/testimonials" element={<TestimonialsPage />} />
               <Route path="/contact" element={<ContactPage />} />
             </Route>
             <Route path="/login" element={<LoginPage />} />
-    {/* Admin Route (Protected) */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <Admin />
-              </ProtectedRoute>
-            }
-          />
+            {/* Admin Route (Protected) */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

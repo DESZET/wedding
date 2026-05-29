@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { apiRequest } from '../../shared/api';
 import { StatItem } from '../../shared/api';
+import { useSettings } from '../hooks/useSettings';
 
 interface CounterProps {
   end: number;
@@ -66,6 +67,7 @@ export function AnimatedCounter({ end, duration = 2, suffix = '', prefix = '' }:
 }
 
 export default function StatisticsCounter() {
+  const { settings } = useSettings();
   const [isVisible, setIsVisible] = useState(false);
   const [stats, setStats] = useState<StatItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,10 +144,10 @@ export default function StatisticsCounter() {
           className="text-center mb-12"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Prestasi Kami dalam Angka
+            {settings['stats-title'] || 'Prestasi Kami dalam Angka'}
           </h2>
           <p className="text-lg text-primary-foreground/90">
-            Kepercayaan klien adalah bukti kualitas layanan kami
+            {settings['stats-subtitle'] || 'Kepercayaan klien adalah bukti kualitas layanan kami'}
           </p>
         </motion.div>
 

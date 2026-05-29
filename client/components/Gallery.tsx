@@ -55,11 +55,11 @@ export default function Gallery() {
 
   const categories = [
     "All",
-    "Decoration",
-    "Venue",
+    "Dekorasi",
+    "Tratag/Tarub",
     "Makeup",
-    "Fashion",
-    "Catering",
+    "Percetakan",
+    "Umrah",
   ];
   const filteredItems =
     filter === "All"

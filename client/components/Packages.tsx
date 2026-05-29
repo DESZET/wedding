@@ -64,7 +64,7 @@ export default function Packages() {
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Our Packages
+            Paket Wedding
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Choose the perfect package for your dream wedding
@@ -120,7 +120,7 @@ export default function Packages() {
                         : "text-muted-foreground"
                     }`}
                   >
-                    Paket lengkap untuk hari istimewa Anda
+                    Paket Wedding
                   </p>
                 </div>
 

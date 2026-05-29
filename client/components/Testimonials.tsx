@@ -10,7 +10,7 @@ interface Testimonial {
   date: string;
 }
 
-export default function Testimonials() {
+export default function Testimonials({ refreshKey = 0 }: { refreshKey?: number }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [direction, setDirection] = useState(0);
@@ -35,11 +35,13 @@ export default function Testimonials() {
 
   useEffect(() => {
     const fetchTestimonials = async () => {
+      setLoading(true);
       try {
         const response = await fetch('/api/testimonials');
         const data = await response.json();
         if (data.success) {
           setTestimonials(data.data);
+          setCurrentIndex(0);
         }
       } catch (error) {
         console.error('Error fetching testimonials:', error);
@@ -49,7 +51,7 @@ export default function Testimonials() {
     };
 
     fetchTestimonials();
-  }, []);
+  }, [refreshKey]);
 
   // Auto-play carousel
   useEffect(() => {

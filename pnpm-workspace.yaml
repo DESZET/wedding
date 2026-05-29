@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - '@swc/core'
+  - bcrypt
+  - better-sqlite3
+  - esbuild
+  - sqlite3

@@ -14,6 +14,16 @@ import { getStats, getStat, createStat, updateStat, deleteStat } from "./routes/
 import { getSectionImages, getSectionImage, createSectionImage, updateSectionImage, deleteSectionImage } from "./routes/section-images";
 import { getSettings, getSetting, updateSetting, updateSettings } from "./routes/settings";
 import { adminLogin, getAdminCredentials, updateAdminCredentials, initAdminCredentials, restartDb } from "./routes/admin-auth";
+import { getUmrahPackages, getUmrahPackage, createUmrahPackage, updateUmrahPackage, deleteUmrahPackage } from "./routes/umrah-packages";
+import { getHajiPackages, getHajiPackage, createHajiPackage, updateHajiPackage, deleteHajiPackage } from "./routes/haji-packages";
+import { getServiceFAQs, getServiceFAQ, createServiceFAQ, updateServiceFAQ, deleteServiceFAQ } from "./routes/service-faqs";
+import { getPrintingCategories, getPrintingCategory, createPrintingCategory, updatePrintingCategory, deletePrintingCategory } from "./routes/printing-categories";
+import { getPrintingProducts, getPrintingProduct, createPrintingProduct, updatePrintingProduct, deletePrintingProduct } from "./routes/printing-products";
+import { getPrintingPackages, getPrintingPackage, createPrintingPackage, updatePrintingPackage, deletePrintingPackage } from "./routes/printing-packages";
+import customersRouter from "./routes/customers";
+import customerDebtsRouter from "./routes/customer-debts";
+import { getReligiousBookings, getReligiousBooking, createReligiousBooking, updateReligiousBooking, deleteReligiousBooking } from "./routes/religious-bookings";
+import { getPrintingOrders, getPrintingOrder, createPrintingOrder, updatePrintingOrder, deletePrintingOrder } from "./routes/printing-orders";
 import { initDatabase } from "./database";
 
 // Configure multer for file uploads
@@ -40,9 +50,16 @@ export async function createServer() {
   // Serve static files from public directory
   app.use('/uploads', express.static('public/uploads'));
 
-  // Initialize database and admin credentials
-  await initDatabase();
-  await initAdminCredentials();
+  // Initialize database and admin credentials.
+  // Important: During Vite config evaluation, sqlite3 native bindings may not be available.
+  // Guard DB init so the SPA dev server can still start.
+  try {
+    await initDatabase();
+    await initAdminCredentials();
+  } catch (err) {
+    console.error('[server] DB init skipped (sqlite3 bindings missing or failed to load):', err);
+  }
+
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
@@ -147,6 +164,68 @@ export async function createServer() {
   app.get("/api/admin/credentials", getAdminCredentials);
   app.put("/api/admin/credentials", updateAdminCredentials);
   app.post("/api/admin/restart-db", restartDb);
+
+  // Umrah packages routes
+  app.get("/api/umrah-packages", getUmrahPackages);
+  app.get("/api/umrah-packages/:id", getUmrahPackage);
+  app.post("/api/umrah-packages", createUmrahPackage);
+  app.put("/api/umrah-packages/:id", updateUmrahPackage);
+  app.delete("/api/umrah-packages/:id", deleteUmrahPackage);
+
+  // Haji packages routes
+  app.get("/api/haji-packages", getHajiPackages);
+  app.get("/api/haji-packages/:id", getHajiPackage);
+  app.post("/api/haji-packages", createHajiPackage);
+  app.put("/api/haji-packages/:id", updateHajiPackage);
+  app.delete("/api/haji-packages/:id", deleteHajiPackage);
+
+  // Service FAQs routes
+  app.get("/api/service-faqs", getServiceFAQs);
+  app.get("/api/service-faqs/:id", getServiceFAQ);
+  app.post("/api/service-faqs", createServiceFAQ);
+  app.put("/api/service-faqs/:id", updateServiceFAQ);
+  app.delete("/api/service-faqs/:id", deleteServiceFAQ);
+
+  // Printing categories routes
+  app.get("/api/printing/categories", getPrintingCategories);
+  app.get("/api/printing/categories/:id", getPrintingCategory);
+  app.post("/api/printing/categories", createPrintingCategory);
+  app.put("/api/printing/categories/:id", updatePrintingCategory);
+  app.delete("/api/printing/categories/:id", deletePrintingCategory);
+
+  // Printing products routes
+  app.get("/api/printing/products", getPrintingProducts);
+  app.get("/api/printing/products/:id", getPrintingProduct);
+  app.post("/api/printing/products", createPrintingProduct);
+  app.put("/api/printing/products/:id", updatePrintingProduct);
+  app.delete("/api/printing/products/:id", deletePrintingProduct);
+
+  // Printing packages routes
+  app.get("/api/printing-packages", getPrintingPackages);
+  app.get("/api/printing-packages/:id", getPrintingPackage);
+  app.post("/api/printing-packages", createPrintingPackage);
+  app.put("/api/printing-packages/:id", updatePrintingPackage);
+  app.delete("/api/printing-packages/:id", deletePrintingPackage);
+
+  // Customers routes
+  app.use("/api/customers", customersRouter);
+
+  // Customer debts routes
+  app.use("/api/customer-debts", customerDebtsRouter);
+
+  // Religious bookings routes (Umrah & Haji)
+  app.get("/api/religious-bookings", getReligiousBookings);
+  app.get("/api/religious-bookings/:id", getReligiousBooking);
+  app.post("/api/religious-bookings", createReligiousBooking);
+  app.put("/api/religious-bookings/:id", updateReligiousBooking);
+  app.delete("/api/religious-bookings/:id", deleteReligiousBooking);
+
+  // Printing orders routes
+  app.get("/api/printing/orders", getPrintingOrders);
+  app.get("/api/printing/orders/:id", getPrintingOrder);
+  app.post("/api/printing/orders", createPrintingOrder);
+  app.put("/api/printing/orders/:id", updatePrintingOrder);
+  app.delete("/api/printing/orders/:id", deletePrintingOrder);
 
   return app;
 }

@@ -5,7 +5,7 @@
  */
 
 // API functions
-const API_BASE = '/api';
+const API_BASE = process.env.NODE_ENV === 'production' ? '/.netlify/functions/api' : '/api';
 
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const response = await fetch(`${API_BASE}${endpoint}`, {
