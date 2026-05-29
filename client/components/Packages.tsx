@@ -1,11 +1,13 @@
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PackageItem } from "../../shared/api";
+import { useSettings } from "../hooks/useSettings.tsx";
 
 export default function Packages() {
   const [isVisible, setIsVisible] = useState(false);
   const [packages, setPackages] = useState<PackageItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSettings();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -156,7 +158,11 @@ export default function Packages() {
                 {/* CTA Buttons */}
                 <div className="space-y-3">
                   <a
-                    href={`https://wa.me/6285329077987?text=Halo%2C%20saya%20tertarik%20dengan%20paket%20${encodeURIComponent(pkg.name)}%20seharga%20${encodeURIComponent(formatPrice(pkg.price))}%20untuk%20wedding%20saya.%20Bisakah%20kita%20diskusi%20lebih%20lanjut%3F`}
+                    href={`https://wa.me/${settings["wedding-whatsapp"] ? settings["wedding-whatsapp"].replace(/\D/g, "") : (settings["whatsapp"] ? settings["whatsapp"].replace(/\D/g, "") : "6285329077987")}?text=${encodeURIComponent(
+                      (settings["wedding-whatsapp-pkg-message"] || "Halo, saya tertarik dengan paket {packageName} seharga {packagePrice} untuk wedding saya. Bisakah kita diskusi lebih lanjut?")
+                        .replace("{packageName}", pkg.name)
+                        .replace("{packagePrice}", formatPrice(pkg.price))
+                    )}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`block w-full py-3 rounded-lg font-bold transition-colors text-center ${
@@ -169,9 +175,11 @@ export default function Packages() {
                   </a>
                   <button
                     onClick={() => {
-                      const message = `Halo, saya ingin berkonsultasi tentang paket ${pkg.name}. Bisa kita diskusi detail lebih lanjut?`;
+                      const template = settings["wedding-whatsapp-consult-message"] || "Halo, saya ingin berkonsultasi tentang paket {packageName}. Bisa kita diskusi detail lebih lanjut?";
+                      const message = template.replace("{packageName}", pkg.name);
+                      const waNum = settings["wedding-whatsapp"] ? settings["wedding-whatsapp"].replace(/\D/g, "") : (settings["whatsapp"] ? settings["whatsapp"].replace(/\D/g, "") : "6285329077987");
                       window.open(
-                        `https://wa.me/6285329077987?text=${encodeURIComponent(message)}`,
+                        `https://wa.me/${waNum}?text=${encodeURIComponent(message)}`,
                         "_blank",
                       );
                     }}

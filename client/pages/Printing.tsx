@@ -1,5 +1,6 @@
 // pages/printing.tsx
 import { useState, useEffect } from "react";
+import { useSettings } from "@/hooks/useSettings";
 import { 
   Printer, ShoppingCart, Upload, Filter, Search, 
   ChevronDown, X, Palette, Ruler, Layers, 
@@ -58,6 +59,7 @@ interface OrderCalculator {
 
 export default function Printing() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const { settings } = useSettings();
   const [categories, setCategories] = useState<PrintingCategory[]>([]);
   const [products, setProducts] = useState<PrintingProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<PrintingProduct[]>([]);
@@ -85,7 +87,7 @@ export default function Printing() {
   const [isLoading, setIsLoading] = useState(true);
   
   // Data untuk WhatsApp
-  const whatsappNumber = "6285329077987"; // Ganti dengan nomor WhatsApp admin
+  const whatsappNumber = settings["printing-whatsapp"] ? settings["printing-whatsapp"].replace(/\D/g, "") : (settings["whatsapp"] ? settings["whatsapp"].replace(/\D/g, "") : "6285329077987");
   const adminName = "Admin Percetakan Galeria Wedding";
 
   // Load data dari database
@@ -183,8 +185,8 @@ export default function Printing() {
   const sendToWhatsApp = (type: 'product' | 'design') => {
     if (!selectedProduct) return;
 
-    let message = `*Halo ${adminName}!* 👋\n\n`;
-    message += `Saya ingin memesan produk percetakan:\n\n`;
+    const intro = settings["printing-order-intro"] || `*Halo Admin Percetakan Galeria Wedding!* 👋\n\nSaya ingin memesan produk percetakan:`;
+    let message = `${intro}\n\n`;
     
     message += `*📦 Produk:* ${selectedProduct.name}\n`;
     message += `*🏷️ Kategori:* ${calculator.category || selectedProduct.category_name || '-'}\n`;
@@ -212,7 +214,9 @@ export default function Printing() {
     message += `1. Konsultasi desain\n`;
     message += `2. Konfirmasi harga final\n`;
     message += `3. Pembayaran DP 50%\n\n`;
-    message += `Mohon informasikan langkah selanjutnya. Terima kasih! 😊`;
+    
+    const outro = settings["printing-order-outro"] || `Mohon informasikan langkah selanjutnya. Terima kasih! 😊`;
+    message += outro;
 
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -268,28 +272,74 @@ export default function Printing() {
     return icons[iconName] || Printer;
   };
 
+  const stats = [
+    { icon: <Users className="w-12 h-12 mx-auto mb-3 text-yellow-300" />, value: settings["printing-stat-1-val"] || "500+", label: settings["printing-stat-1-lbl"] || "Klien Percetakan" },
+    { icon: <Package className="w-12 h-12 mx-auto mb-3 text-green-300" />, value: settings["printing-stat-2-val"] || "2,000+", label: settings["printing-stat-2-lbl"] || "Order Terselesaikan" },
+    { icon: <Clock className="w-12 h-12 mx-auto mb-3 text-blue-300" />, value: settings["printing-stat-3-val"] || "3-5", label: settings["printing-stat-3-lbl"] || "Hari Pengerjaan" },
+    { icon: <Award className="w-12 h-12 mx-auto mb-3 text-purple-300" />, value: settings["printing-stat-4-val"] || "100%", label: settings["printing-stat-4-lbl"] || "Garansi Kualitas" }
+  ];
+
+  const processes = [
+    { 
+      icon: <ShoppingCart className="w-12 h-12 text-white" />, 
+      step: "1", 
+      title: settings["printing-proc-1-title"] || "Pilih Produk", 
+      desc: settings["printing-proc-1-desc"] || "Pilih produk " 
+    },
+    { 
+      icon: <Phone className="w-12 h-12 text-white" />, 
+      step: "2", 
+      title: settings["printing-proc-2-title"] || "Konfirmasi WhatsApp", 
+      desc: settings["printing-proc-2-desc"] || "Konfirmasi detail dan pembayaran via WhatsApp" 
+    },
+    { 
+      icon: <Truck className="w-12 h-12 text-white" />, 
+      step: "3", 
+      title: settings["printing-proc-3-title"] || "Produk Dikirim", 
+      desc: settings["printing-proc-3-desc"] || "Produk dikirim sesuai estimasi waktu" 
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-primary text-white py-24">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
+        {settings["printing-hero-bg"] ? (
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-black/60 z-10"></div>
+            <img 
+              src={settings["printing-hero-bg"]}
+              alt="Hero Background"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-black opacity-20 z-0"></div>
+        )}
         
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
               <Sparkles size={16} />
-              <span className="text-sm font-medium">✨ Percetakan Digital Terbaik</span>
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-pink-300">
-                Percetakan & Desain
+              <span className="text-sm font-medium">
+                {settings["printing-hero-badge"] || "✨ Percetakan Digital Terbaik"}
               </span>
-              <br />
-              <span className="text-white">Profesional</span>
-            </h1>
+            </div>
+            {settings["printing-hero-title"] ? (
+              <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                {settings["printing-hero-title"]}
+              </h1>
+            ) : (
+              <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-pink-300">
+                  Percetakan & Desain
+                </span>
+                <br />
+                <span className="text-white">Profesional</span>
+              </h1>
+            )}
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-              Layanan percetakan lengkap untuk kebutuhan bisnis, acara, dan personal.
-              Desain gratis untuk order minimal Rp 300.000.
+              {settings["printing-hero-subtitle"] || "Layanan percetakan lengkap untuk kebutuhan bisnis, acara, dan personal. Desain gratis untuk order minimal Rp 300.000."}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <button 
@@ -301,7 +351,7 @@ export default function Printing() {
                 <ArrowRight size={20} />
               </button>
               <a 
-                href={`https://wa.me/${whatsappNumber}`}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(settings["printing-whatsapp-message"] || "Halo! Saya ingin bertanya mengenai layanan percetakan di Galeria Wedding.")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-8 py-3 bg-green-500 text-white rounded-full font-bold text-lg hover:bg-green-600 transition-all transform hover:-translate-y-1 flex items-center gap-2"
@@ -316,26 +366,13 @@ export default function Printing() {
         {/* Stats */}
         <div className="max-w-7xl mx-auto px-4 mt-16 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-              <Users className="w-12 h-12 mx-auto mb-3 text-yellow-300" />
-              <p className="text-3xl font-bold">500+</p>
-              <p className="text-white/80">Klien Percetakan</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-              <Package className="w-12 h-12 mx-auto mb-3 text-green-300" />
-              <p className="text-3xl font-bold">2,000+</p>
-              <p className="text-white/80">Order Terselesaikan</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-              <Clock className="w-12 h-12 mx-auto mb-3 text-blue-300" />
-              <p className="text-3xl font-bold">3-5</p>
-              <p className="text-white/80">Hari Pengerjaan</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-              <Award className="w-12 h-12 mx-auto mb-3 text-purple-300" />
-              <p className="text-3xl font-bold">100%</p>
-              <p className="text-white/80">Garansi Kualitas</p>
-            </div>
+            {stats.map((stat, idx) => (
+              <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
+                {stat.icon}
+                <p className="text-3xl font-bold">{stat.value}</p>
+                <p className="text-white/80">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -345,33 +382,20 @@ export default function Printing() {
         <div className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Cara <span className="text-blue-600">Memesan</span></h2>
+              <h2 className="text-4xl font-bold mb-4">
+                {settings["printing-proc-header"] ? (
+                  settings["printing-proc-header"]
+                ) : (
+                  <>Cara <span className="text-blue-600">Memesan</span></>
+                )}
+              </h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
-                Proses pemesanan yang mudah dan transparan
+                {settings["printing-proc-subheader"] || "Proses pemesanan yang mudah dan transparan"}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { 
-                  icon: <ShoppingCart className="w-12 h-12 text-white" />, 
-                  step: "1", 
-                  title: "Pilih Produk", 
-                  desc: "Pilih produk " 
-                },
-                { 
-                  icon: <Phone className="w-12 h-12 text-white" />, 
-                  step: "2", 
-                  title: "Konfirmasi WhatsApp", 
-                  desc: "Konfirmasi detail dan pembayaran via WhatsApp" 
-                },
-                { 
-                  icon: <Truck className="w-12 h-12 text-white" />, 
-                  step: "3", 
-                  title: "Produk Dikirim", 
-                  desc: "Produk dikirim sesuai estimasi waktu" 
-                }
-              ].map((item, index) => (
+              {processes.map((item, index) => (
                 <div key={index} className="text-center">
                   <div className="relative z-10">
                     <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25">
@@ -562,7 +586,10 @@ export default function Printing() {
                           <button 
                             onClick={() => {
                               // Direct to WhatsApp without showing modal
-                              const message = `*Halo ${adminName}!* 👋\n\nSaya ingin memesan produk percetakan:\n\n*📦 Produk:* ${product.name}\n*🏷️ Kategori:* ${product.category_name || '-'}\n\nMohon informasikan langkah selanjutnya. Terima kasih! 😊`;
+                              const template = settings["printing-direct-message"] || "*Halo Admin Percetakan Galeria Wedding!* 👋\n\nSaya ingin memesan produk percetakan:\n\n*📦 Produk:* {productName}\n*🏷️ Kategori:* {categoryName}\n\nMohon informasikan langkah selanjutnya. Terima kasih! 😊";
+                              const message = template
+                                .replace("{productName}", product.name)
+                                .replace("{categoryName}", product.category_name || '-');
                               const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
                               window.open(whatsappUrl, '_blank');
                             }}
@@ -1083,31 +1110,39 @@ export default function Printing() {
         <div className="py-16 bg-gradient-to-b from-gray-50 to-white">
           <div className="max-w-4xl mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">FAQ <span className="text-blue-600">Percetakan</span></h2>
-              <p className="text-gray-600">Pertanyaan yang sering diajukan</p>
+              <h2 className="text-4xl font-bold mb-4">
+                {settings["printing-faq-title"] ? (
+                  settings["printing-faq-title"]
+                ) : (
+                  <>FAQ <span className="text-blue-600">Percetakan</span></>
+                )}
+              </h2>
+              <p className="text-gray-600">
+                {settings["printing-faq-subtitle"] || "Pertanyaan yang sering diajukan"}
+              </p>
             </div>
             
             <div className="space-y-4">
               {[
                 {
-                  q: "Berapa lama waktu pengerjaan?",
-                  a: "Waktu pengerjaan bervariasi tergantung jenis produk. Undangan 3-5 hari, kaos 5-7 hari, banner 2-3 hari. Untuk order kilat tersedia dengan biaya tambahan 50%."
+                  q: settings["printing-faq-1-q"] || "Berapa lama waktu pengerjaan?",
+                  a: settings["printing-faq-1-a"] || "Waktu pengerjaan bervariasi tergantung jenis produk. Undangan 3-5 hari, kaos 5-7 hari, banner 2-3 hari. Untuk order kilat tersedia dengan biaya tambahan 50%."
                 },
                 {
-                  q: "Bagaimana cara pembayaran?",
-                  a: "Pembayaran dilakukan via transfer bank (BCA, Mandiri, BRI) atau COD untuk area tertentu. DP minimal 50% untuk memulai pengerjaan."
+                  q: settings["printing-faq-2-q"] || "Bagaimana cara pembayaran?",
+                  a: settings["printing-faq-2-a"] || "Pembayaran dilakukan via transfer bank (BCA, Mandiri, BRI) atau COD untuk area tertentu. DP minimal 50% untuk memulai pengerjaan."
                 },
                 {
-                  q: "Apakah ada biaya desain?",
-                  a: "Desain gratis untuk order minimal Rp 300.000. Untuk order di bawah itu, biaya desain mulai dari Rp 50.000 tergantung kompleksitas."
+                  q: settings["printing-faq-3-q"] || "Apakah ada biaya desain?",
+                  a: settings["printing-faq-3-a"] || "Desain gratis untuk order minimal Rp 300.000. Untuk order di bawah itu, biaya desain mulai dari Rp 50.000 tergantung kompleksitas."
                 },
                 {
-                  q: "Bagaimana jika desain tidak sesuai?",
-                  a: "Kami memberikan 2x revisi gratis. Setelah itu, revisi tambahan dikenakan biaya Rp 25.000 per revisi."
+                  q: settings["printing-faq-4-q"] || "Bagaimana jika desain tidak sesuai?",
+                  a: settings["printing-faq-4-a"] || "Kami memberikan 2x revisi gratis. Setelah itu, revisi tambahan dikenakan biaya Rp 25.000 per revisi."
                 },
                 {
-                  q: "Apakah ada pengiriman ke seluruh Indonesia?",
-                  a: "Ya, kami melayani pengiriman ke seluruh Indonesia dengan kurir pilihan (JNE, J&T, SiCepat, GoSend). Biaya pengiriman ditanggung pembeli."
+                  q: settings["printing-faq-5-q"] || "Apakah ada pengiriman ke seluruh Indonesia?",
+                  a: settings["printing-faq-5-a"] || "Ya, kami melayani pengiriman ke seluruh Indonesia dengan kurir pilihan (JNE, J&T, SiCepat, GoSend). Biaya pengiriman ditanggung pembeli."
                 }
               ].map((faq, index) => (
                 <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden">

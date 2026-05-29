@@ -4,27 +4,30 @@ import {
   MessageCircle, Instagram, Facebook, Youtube,
   Star, CheckCircle2, Quote,
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import FloatingWhatsApp from "@/components/FloatingWhatsApp";
-import BackToTop from "@/components/BackToTop";
 import Footer from "@/components/Footer";
 import FAQ from "@/components/FAQ";
 import Testimonials from "@/components/Testimonials";
 import { useSettings } from "@/hooks/useSettings";
+import { usePageLoader } from "@/hooks/usePageLoader";
 
 export default function ContactPage() {
   const { settings } = useSettings();
+  const { isPageLoading } = usePageLoader();
   const mapRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    if (isPageLoading) {
+      setIsVisible(false);
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
       { threshold: 0.1 }
     );
     if (mapRef.current) observer.observe(mapRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [isPageLoading]);
 
   const address  = settings["address"]   || "Jl. Contoh No. 123, Purwokerto, Jawa Tengah";
   const phone    = settings["phone"]     || "+62 812 3456 7890";
@@ -92,7 +95,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-primary/10 to-primary/5 pt-28 pb-16 px-4 text-center">
@@ -320,8 +322,6 @@ export default function ContactPage() {
       <Testimonials refreshKey={testimonialsRefreshKey} />
       <FAQ />
 
-      <FloatingWhatsApp />
-      <BackToTop />
       <Footer />
     </div>
   );

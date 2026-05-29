@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from "react";
+import { useSettings } from "@/hooks/useSettings";
 import {
   Globe, Calendar, Users, MapPin, Plane, Hotel, Utensils, Shield, Check,
   Star, Clock, Award, ChevronRight, Heart, Share2, ZoomIn, X, MessageCircle,
   FileText, CreditCard, Smartphone, Headphones, Truck, BookOpen,
   CheckCircle, Bookmark, Filter, ArrowRight, Video, Instagram,
   Facebook, Twitter, Mail, Phone, Map, Download, Play, Pause,
-  Search, ArrowUp
+  Search
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import UmrahHajiTimeline from "@/components/UmrahHajiTimeline";
+import SectionWrapper from "@/components/SectionWrapper";
 
 
 interface UmrahPackage {
@@ -103,6 +105,7 @@ interface GalleryItem {
 
 export default function ModernUmrahHaji() {
   const [activeTab, setActiveTab] = useState<'umrah' | 'haji'>('umrah');
+  const { settings } = useSettings();
   const [umrahPackages, setUmrahPackages] = useState<UmrahPackage[]>([]);
   const [hajiPackages, setHajiPackages] = useState<HajiPackage[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -338,30 +341,24 @@ export default function ModernUmrahHaji() {
 
   const handleBookingClick = (pkg: UmrahPackage | HajiPackage, type: 'umrah' | 'haji') => {
     try {
-      const whatsappNumber = '6285329077987';
+      const whatsappNumber = settings["umrah-whatsapp"] ? settings["umrah-whatsapp"].replace(/\D/g, "") : (settings["whatsapp"] ? settings["whatsapp"].replace(/\D/g, "") : '6285329077987');
       const packageType = type === 'umrah' ? 'Umrah' : 'Haji';
 
-      let message = `Halo! Saya tertarik dengan paket ${packageType}: ${pkg.name}
-
-Detail Paket:
-- Nama Paket: ${pkg.name}
-- Harga: Rp ${pkg.discount_price ? pkg.discount_price.toLocaleString() : pkg.price.toLocaleString()}`;
+      const template = settings["umrah-booking-message"] || "Halo! Saya tertarik dengan paket {packageType}: {packageName}\n\nDetail Paket:\n- Nama Paket: {packageName}\n- Harga: {packagePrice}";
+      let message = template
+        .replace(/{packageType}/g, packageType)
+        .replace(/{packageName}/g, pkg.name)
+        .replace(/{packagePrice}/g, `Rp ${pkg.discount_price ? pkg.discount_price.toLocaleString() : pkg.price.toLocaleString()}`);
 
       if (type === 'umrah') {
         const umrahPkg = pkg as UmrahPackage;
-        message += `
-- Durasi: ${umrahPkg.duration || 'N/A'} hari
-- Keberangkatan dari: ${umrahPkg.departure_city || 'Jakarta'}`;
+        message += `\n- Durasi: ${umrahPkg.duration || 'N/A'} hari\n- Keberangkatan dari: ${umrahPkg.departure_city || 'Jakarta'}`;
       } else {
         const HajiPkg = pkg as HajiPackage;
-        message += `
-- Kuota Tahun: ${HajiPkg.quota_year || 'N/A'}
-- Kuota Tersedia: ${HajiPkg.available_quota || 'N/A'}`;
+        message += `\n- Kuota Tahun: ${HajiPkg.quota_year || 'N/A'}\n- Kuota Tersedia: ${HajiPkg.available_quota || 'N/A'}`;
       }
 
-      message += `
-
-Mohon informasi lebih lanjut dan cara pendaftaran. Terima kasih!`;
+      message += `\n\nMohon informasi lebih lanjut dan cara pendaftaran. Terima kasih!`;
 
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
@@ -930,20 +927,83 @@ Mohon informasi lebih lanjut dan cara pendaftaran. Terima kasih!`;
     </div>
   );
 
+  const displayFaqs = [
+    {
+      question: settings["umrah-faq-1-q"] || "Apa saja persyaratan pendaftaran Umrah?",
+      answer: settings["umrah-faq-1-a"] || "Persyaratan utama meliputi paspor asli dengan masa berlaku minimal 6 bulan, foto kopi KTP & KK, pasfoto 4x6 latar belakang putih (2 lembar), serta bukti vaksinasi sesuai ketentuan."
+    },
+    {
+      question: settings["umrah-faq-2-q"] || "Apakah harga paket sudah termasuk visa dan tiket pesawat?",
+      answer: settings["umrah-faq-2-a"] || "Ya, semua paket Umrah dan Haji kami bersifat all-inclusive (all-in). Sudah termasuk tiket pesawat PP kelas ekonomi, visa Umrah/Haji, akomodasi hotel di Mekah & Madinah, konsumsi 3x sehari, transportasi bus AC, mutawwif (pembimbing), air zam-zam, serta perlengkapan ibadah lengkap."
+    },
+    {
+      question: settings["umrah-faq-3-q"] || "Bagaimana jika saya ingin sekamar berdua atau bertiga saja?",
+      answer: settings["umrah-faq-3-a"] || "Sangat bisa. Default harga paket biasanya didasarkan pada kamar Quad (sekamar berempat). Jika Anda menginginkan sekamar bertiga (Triple) or berdua (Double), silakan pilih opsi tipe kamar saat booking dengan penyesuaian biaya tambahan sesuai katalog."
+    },
+    {
+      question: settings["umrah-faq-4-q"] || "Bagaimana sistem pembatalan dan pengembalian dana?",
+      answer: settings["umrah-faq-4-a"] || "Pembatalan setelah booking seat dikenakan biaya administrasi. Pembatalan 30 hari sebelum keberangkatan dikenakan potongan 50% dari harga paket, sedangkan pembatalan kurang dari 15 hari sebelum keberangkatan tidak dapat di-refund karena tiket pesawat dan hotel sudah di-issued."
+    }
+  ];
+
+  const whyUs = [
+    {
+      icon: Shield,
+      title: settings["umrah-why-1-title"] || "Legal & Terpercaya",
+      description: settings["umrah-why-1-desc"] || "Berizin resmi Kemenag RI dengan sertifikasi lengkap",
+      features: [
+        settings["umrah-why-1-f1"] || "Izin PPIU No. 123/2023",
+        settings["umrah-why-1-f2"] || "Sertifikat Halal",
+        settings["umrah-why-1-f3"] || "Asuransi Lengkap"
+      ]
+    },
+    {
+      icon: Hotel,
+      title: settings["umrah-why-2-title"] || "Akomodasi Premium",
+      description: settings["umrah-why-2-desc"] || "Hotel bintang 4 & 5 dekat Masjidil Haram & Nabawi",
+      features: [
+        settings["umrah-why-2-f1"] || "Jarak <500m",
+        settings["umrah-why-2-f2"] || "Free WiFi",
+        settings["umrah-why-2-f3"] || "Breakfast Buffet"
+      ]
+    },
+    {
+      icon: Users,
+      title: settings["umrah-why-3-title"] || "Bimbingan Eksklusif",
+      description: settings["umrah-why-3-desc"] || "Dibimbing ustadz/ustadzah kompeten berpengalaman",
+      features: [
+        settings["umrah-why-3-f1"] || "Talaqqi Quran",
+        settings["umrah-why-3-f2"] || "Bimbingan Manasik",
+        settings["umrah-why-3-f3"] || "Konsultasi Ibadah"
+      ]
+    },
+    {
+      icon: Headphones,
+      title: settings["umrah-why-4-title"] || "Layanan 24/7",
+      description: settings["umrah-why-4-desc"] || "Tim pendamping siap membantu selama perjalanan",
+      features: [
+        settings["umrah-why-4-f1"] || "Medical Support",
+        settings["umrah-why-4-f2"] || "Customer Care",
+        settings["umrah-why-4-f3"] || "Emergency Response"
+      ]
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background">
       {/* Enhanced Hero Section with Parallax */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black/50"></div>
+          <div className="absolute inset-0 bg-black/50 z-10"></div>
           <video
+            key={settings["umrah-hero-video"] || "/umrah-hero-video.mp4"}
             autoPlay
             muted
             loop
             className="w-full h-full object-cover"
-            poster="/umrah-hero-poster.jpg"
+            poster={settings["umrah-hero-poster"] || "/umrah-hero-poster.jpg"}
           >
-            <source src="/umrah-hero-video.mp4" type="video/mp4" />
+            <source src={settings["umrah-hero-video"] || "/umrah-hero-video.mp4"} type="video/mp4" />
           </video>
         </div>
         
@@ -951,17 +1011,26 @@ Mohon informasi lebih lanjut dan cara pendaftaran. Terima kasih!`;
           <div className="animate-fade-in-up">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-2 rounded-full mb-6">
               <Globe className="w-6 h-6" />
-              <span className="font-semibold">Travel Terpercaya Sejak 2005</span>
-            </div>
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              Journey of a<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">
-                Lifetime
+              <span className="font-semibold">
+                {settings["umrah-hero-badge"] || "Travel Terpercaya Sejak 2005"}
               </span>
-            </h1>
+            </div>
+            
+            {settings["umrah-hero-title"] ? (
+              <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+                {settings["umrah-hero-title"]}
+              </h1>
+            ) : (
+              <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+                Journey of a<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">
+                  Lifetime
+                </span>
+              </h1>
+            )}
+
             <p className="text-xl md:text-2xl max-w-3xl mx-auto mb-8 opacity-90">
-              Menyempurnakan ibadah Anda dengan layanan premium, akomodasi terbaik, 
-              dan bimbingan spiritual yang mendalam.
+              {settings["umrah-hero-subtitle"] || "Menyempurnakan ibadah Anda dengan layanan premium, akomodasi terbaik, dan bimbingan spiritual yang mendalam."}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -983,10 +1052,10 @@ Mohon informasi lebih lanjut dan cara pendaftaran. Terima kasih!`;
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto animate-slide-up">
             {[
-              { icon: Users, value: "10,000+", label: "Jamaah Berangkat" },
-              { icon: Award, value: "98.5%", label: "Kepuasan Jamaah" },
-              { icon: Calendar, value: "18+", label: "Tahun Pengalaman" },
-              { icon: Shield, value: "100%", label: "Legal & Terpercaya" },
+              { icon: Users, value: settings["umrah-stat-1-val"] || "10,000+", label: settings["umrah-stat-1-lbl"] || "Jamaah Berangkat" },
+              { icon: Award, value: settings["umrah-stat-2-val"] || "98.5%", label: settings["umrah-stat-2-lbl"] || "Kepuasan Jamaah" },
+              { icon: Calendar, value: settings["umrah-stat-3-val"] || "18+", label: settings["umrah-stat-3-lbl"] || "Tahun Pengalaman" },
+              { icon: Shield, value: settings["umrah-stat-4-val"] || "100%", label: settings["umrah-stat-4-lbl"] || "Legal & Terpercaya" },
             ].map((stat, idx) => (
               <div key={idx} className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl">
                 <stat.icon className="w-8 h-8 mx-auto mb-2" />
@@ -1045,173 +1114,164 @@ Mohon informasi lebih lanjut dan cara pendaftaran. Terima kasih!`;
       </section>
 
       {/* Packages Grid */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center mb-12">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900">
-                {activeTab === 'umrah' ? '🕋 Paket Umrah Terbaik' : '🕌 Paket Haji Reguler & Plus'}
-              </h2>
-              <p className="text-gray-600 mt-2">
-                Pilih paket yang sesuai dengan kebutuhan dan anggaran Anda
-              </p>
+      <SectionWrapper id="umrah-packages" delay={100} animationType="fade-in-up">
+        <div className="py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-center mb-12">
+              <div>
+                <h2 className="text-4xl font-bold text-gray-900">
+                  {activeTab === 'umrah' ? '🕋 Paket Umrah Terbaik' : '🕌 Paket Haji Reguler & Plus'}
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  Pilih paket yang sesuai dengan kebutuhan dan anggaran Anda
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">
+                  Lihat Semua
+                </button>
+                <button 
+                  onClick={() => setShowGallery(true)}
+                  className="px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 flex items-center gap-2"
+                >
+                  <Video className="w-5 h-5" />
+                  Galeri
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">
-                Lihat Semua
-              </button>
-              <button 
-                onClick={() => setShowGallery(true)}
-                className="px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 flex items-center gap-2"
-              >
-                <Video className="w-5 h-5" />
-                Galeri
-              </button>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {activeTab === 'umrah'
-              ? umrahPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderUmrahPackageCard)
-              : hajiPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderHajiPackageCard)
-            }
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {activeTab === 'umrah'
+                ? umrahPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderUmrahPackageCard)
+                : hajiPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderHajiPackageCard)
+              }
+            </div>
           </div>
         </div>
-      </section>
-      <UmrahHajiTimeline />
+      </SectionWrapper>
+      <SectionWrapper id="umrah-timeline" delay={200} animationType="fade-in-up">
+        <UmrahHajiTimeline />
+      </SectionWrapper>
 
       {/* Why Choose Us - Enhanced */}
-      <section className="py-16 bg-gradient-to-r from-blue-50 to-emerald-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Mengapa Memilih Kami?</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Komitmen kami adalah memberikan pengalaman ibadah yang sempurna dengan layanan terbaik
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Shield,
-                title: "Legal & Terpercaya",
-                description: "Berizin resmi Kemenag RI dengan sertifikasi lengkap",
-                features: ["Izin PPIU No. 123/2023", "Sertifikat Halal", "Asuransi Lengkap"]
-              },
-              {
-                icon: Hotel,
-                title: "Akomodasi Premium",
-                description: "Hotel bintang 4 & 5 dekat Masjidil Haram & Nabawi",
-                features: ["Jarak <500m", "Free WiFi", "Breakfast Buffet"]
-              },
-              {
-                icon: Users,
-                title: "Bimbingan Eksklusif",
-                description: "Dibimbing ustadz/ustadzah kompeten berpengalaman",
-                features: ["Talaqqi Quran", "Bimbingan Manasik", "Konsultasi Ibadah"]
-              },
-              {
-                icon: Headphones,
-                title: "Layanan 24/7",
-                description: "Tim pendamping siap membantu selama perjalanan",
-                features: ["Medical Support", "Customer Care", "Emergency Response"]
-              }
-            ].map((feature, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-6">
-                  <feature.icon className="w-8 h-8 text-blue-600" />
+      <SectionWrapper id="umrah-why" delay={100} animationType="fade-in-up">
+        <div className="py-16 bg-gradient-to-r from-blue-50 to-emerald-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4">
+                {settings["umrah-why-title"] || "Mengapa Memilih Kami?"}
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                {settings["umrah-why-desc"] || "Komitmen kami adalah memberikan pengalaman ibadah yang sempurna dengan layanan terbaik"}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {whyUs.map((feature, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-6">
+                    <feature.icon className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 mb-4">{feature.description}</p>
+                  <ul className="space-y-2">
+                    {feature.features.map((feat, featIdx) => (
+                      <li key={featIdx} className="flex items-center gap-2 text-sm text-gray-700">
+                        <Check className="w-4 h-4 text-green-500" />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-gray-600 mb-4">{feature.description}</p>
-                <ul className="space-y-2">
-                  {feature.features.map((feat, featIdx) => (
-                    <li key={featIdx} className="flex items-center gap-2 text-sm text-gray-700">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </section>
+      </SectionWrapper>
 
       {/* Testimonials Carousel */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Kata Jamaah Kami</h2>
-            <p className="text-gray-600">Pengalaman langsung dari Jamaah yang telah berangkat</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.slice(0, 3).map((testimonial) => (
-              <div key={testimonial.id} className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                <div className="flex items-center gap-4 mb-4">
-                  <img 
-                    src={testimonial.image} 
-                    alt={testimonial.name}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div>
-                    <h4 className="font-bold">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-600">{testimonial.city} • {testimonial.package}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                      ))}
+      <SectionWrapper id="umrah-testimonials" delay={100} animationType="fade-in-up">
+        <div className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4">Kata Jamaah Kami</h2>
+              <p className="text-gray-600">Pengalaman langsung dari Jamaah yang telah berangkat</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.slice(0, 3).map((testimonial) => (
+                <div key={testimonial.id} className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                  <div className="flex items-center gap-4 mb-4">
+                    <img 
+                      src={testimonial.image} 
+                      alt={testimonial.name}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                    <div>
+                      <h4 className="font-bold">{testimonial.name}</h4>
+                      <p className="text-sm text-gray-600">{testimonial.city} • {testimonial.package}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  <p className="text-gray-700 italic">"{testimonial.comment}"</p>
+                  <p className="text-sm text-gray-500 mt-4">{testimonial.date}</p>
                 </div>
-                <p className="text-gray-700 italic">"{testimonial.comment}"</p>
-                <p className="text-sm text-gray-500 mt-4">{testimonial.date}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </section>
+      </SectionWrapper>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Pertanyaan Umum</h2>
-            <p className="text-gray-600">Temukan jawaban untuk pertanyaan yang sering diajukan</p>
-          </div>
-          
-          <div className="space-y-4">
-            {faqs.slice(0, 5).map((faq) => (
-              <div key={faq.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <button className="w-full p-6 text-left flex justify-between items-center hover:bg-gray-50 transition-colors">
-                  <span className="font-semibold text-lg">{faq.question}</span>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </button>
-                <div className="px-6 pb-6">
-                  <p className="text-gray-600">{faq.answer}</p>
+      <SectionWrapper id="umrah-faq" delay={100} animationType="fade-in-up">
+        <div className="py-16 bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4">
+                {settings["umrah-faq-title"] || "Pertanyaan Umum"}
+              </h2>
+              <p className="text-gray-600">
+                {settings["umrah-faq-subtitle"] || "Temukan jawaban untuk pertanyaan yang sering diajukan"}
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              {displayFaqs.map((faq, index) => (
+                <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <button 
+                    className="w-full p-6 text-left flex justify-between items-center hover:bg-gray-50 transition-colors"
+                    onClick={(e) => {
+                      const content = e.currentTarget.nextElementSibling;
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (content && icon) {
+                        content.classList.toggle('hidden');
+                        icon.classList.toggle('rotate-90');
+                      }
+                    }}
+                  >
+                    <span className="font-semibold text-lg">{faq.question}</span>
+                    <ChevronRight className="w-5 h-5 text-gray-400 transition-transform" />
+                  </button>
+                  <div className="hidden px-6 pb-6">
+                    <p className="text-gray-600">{faq.answer}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </section>
+      </SectionWrapper>
 
       <Footer />
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-3">
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="w-14 h-14 bg-gray-800 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-gray-900 transition-colors"
-        >
-          <ArrowUp className="w-7 h-7" />
-        </button>
-      </div>
 
       {/* Modals */}
       {showBookingModal && renderBookingModal()}
       {showGallery && selectedGalleryItem && renderGalleryModal()}
       {showCompare && renderCompareModal()}
     </div>
-    
   );
 }

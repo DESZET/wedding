@@ -1,20 +1,12 @@
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePageLoader } from "@/hooks/usePageLoader";
 
 export default function PageLoader() {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1200);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const { isPageLoading } = usePageLoader();
 
   return (
     <AnimatePresence>
-      {isLoading && (
+      {isPageLoading && (
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ 

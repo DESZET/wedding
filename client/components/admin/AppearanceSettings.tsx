@@ -147,6 +147,27 @@ function PanelGeneral() {
             <ColorField key={key} label={label} settingKey={key} />
           ))}
         </div>
+
+        {/* Panduan Informasi Warna (Premium Glassmorphic Info Banner) */}
+        <div className="mt-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 space-y-2 text-xs leading-relaxed text-slate-600">
+          <p className="font-semibold text-primary flex items-center gap-1.5 text-sm mb-1">
+            <Info className="w-4 h-4" /> Panduan Memilih Warna Website:
+          </p>
+          <ul className="space-y-1.5 list-disc pl-4">
+            <li>
+              <strong className="text-slate-800">Warna Primer:</strong> Warna utama identitas brand Anda. Digunakan untuk tombol utama, link penting, dan fokus visual utama (default: kuning/amber hangat).
+            </li>
+            <li>
+              <strong className="text-slate-800">Warna Sekunder:</strong> Warna pendukung untuk latar belakang gelap atau bagian penyeimbang visual (seperti banner atau footer).
+            </li>
+            <li>
+              <strong className="text-slate-800">Warna Aksen:</strong> Warna sorotan cerah untuk menarik perhatian mata secara cepat (seperti badge promo, ikon aktif, bintang rating, dll).
+            </li>
+            <li>
+              <strong className="text-slate-800">Warna Background:</strong> Warna dasar untuk latar belakang keseluruhan halaman website Anda (default: putih bersih atau krem lembut).
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -250,16 +271,58 @@ function PanelAbout() {
   return (
     <div className="space-y-5">
       <div className={sectionCls}>
-        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Teks About</p>
-        <Field label="Paragraf 1" settingKey="about-paragraph-1" rows={3} placeholder="Galeria Wedding adalah..." />
-        <Field label="Paragraf 2" settingKey="about-paragraph-2" rows={3} placeholder="Kami percaya bahwa..." />
-        <Field label="Paragraf 3" settingKey="about-paragraph-3" rows={3} placeholder="Tim kami yang berpengalaman..." />
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Header & Cerita Utama (About)</p>
+        <Field label="Badge Kecil Hero About" settingKey="about-hero-badge" placeholder="Kreator Pernikahan Impian Anda" />
+        <Field label="Judul Utama Section" settingKey="about-hero-title" placeholder="Seni Merajut Kisah Cinta Menjadi Kenangan Abadi" />
+        <Field label="Paragraf 1 (Cerita Utama)" settingKey="about-paragraph-1" rows={3} placeholder="Di Galeria Wedding, kami percaya..." />
+        <Field label="Paragraf 2 (Kutipan/Quote)" settingKey="about-paragraph-2" rows={3} placeholder="Kami tidak membuat replika pernikahan orang lain..." />
+        <Field label="Paragraf 3 (Penutup)" settingKey="about-paragraph-3" rows={3} placeholder="Didukung oleh tim lapangan bersertifikat..." />
+        
+        {/* Floating Badge Fields */}
+        <div className="border-t pt-4 grid grid-cols-2 gap-4">
+          <Field label="Angka Badge Melayang (Kiri Gambar)" settingKey="about-badge-value" placeholder="10+" />
+          <Field label="Teks Badge Melayang (Kiri Gambar)" settingKey="about-badge-label" placeholder="Tahun Dedikasi" />
+        </div>
       </div>
 
       <div className={sectionCls}>
         <p className={headingCls}><ImageIcon className="w-4 h-4 text-primary" /> Gambar About</p>
-        <ImageField label="Gambar Kiri (Foto Tim)" settingKey="about-image-1" />
-        <ImageField label="Gambar Kanan (Foto Layanan)" settingKey="about-image-2" />
+        <div className="space-y-4">
+          <div>
+            <ImageField label="Gambar Kiri (Foto Collage Frame)" settingKey="about-image-1" />
+            <Field label="Deskripsi / Alt Gambar Kiri" settingKey="about-image-1-alt" placeholder="Seni Pernikahan Galeria Wedding" />
+          </div>
+          <div className="border-t pt-4">
+            <ImageField label="Gambar Kanan (Foto Layanan Pendampingan)" settingKey="about-image-2" />
+            <Field label="Deskripsi / Alt Gambar Kanan" settingKey="about-image-2-alt" placeholder="Mitra Vendor Pernikahan Terbaik" />
+          </div>
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Pilar Layanan Utama Kami (3 Kartu Keunggulan)</p>
+        <Field label="Judul Bagian Pilar" settingKey="about-pillar-title" placeholder="Pilar Layanan Utama Kami" />
+        <Field label="Subjudul Bagian Pilar" settingKey="about-pillar-desc" placeholder="Karakteristik kerja yang membedakan kami..." rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          <div className="p-3 bg-white/50 rounded-lg space-y-2 border">
+            <p className="font-semibold text-xs text-primary">Kartu Pilar 1</p>
+            <Field label="Judul Pilar 1" settingKey="about-pillar-1-title" placeholder="Desain Orisinal & Estetik" />
+            <Field label="Deskripsi Pilar 1" settingKey="about-pillar-1-desc" rows={2} placeholder="Kami menentang dekorasi templatis..." />
+          </div>
+
+          <div className="p-3 bg-white/50 rounded-lg space-y-2 border">
+            <p className="font-semibold text-xs text-primary">Kartu Pilar 2</p>
+            <Field label="Judul Pilar 2" settingKey="about-pillar-2-title" placeholder="Perencanaan Tanpa Hambatan" />
+            <Field label="Deskripsi Pilar 2" settingKey="about-pillar-2-desc" rows={2} placeholder="Dari koordinasi vendor katering..." />
+          </div>
+
+          <div className="p-3 bg-white/50 rounded-lg space-y-2 border">
+            <p className="font-semibold text-xs text-primary">Kartu Pilar 3</p>
+            <Field label="Judul Pilar 3" settingKey="about-pillar-3-title" placeholder="Komitmen Anggaran Transparan" />
+            <Field label="Deskripsi Pilar 3" settingKey="about-pillar-3-desc" rows={2} placeholder="Tidak ada biaya tersembunyi..." />
+          </div>
+        </div>
       </div>
 
       <div className={sectionCls}>
@@ -268,19 +331,21 @@ function PanelAbout() {
           {[1, 2, 3].map((n) => (
             <div key={n} className="space-y-2">
               <Field label={`Nilai ${n}`} settingKey={`about-stat-${n}-value`} placeholder={["500+", "10+", "98%"][n - 1]} />
-              <Field label={`Label ${n}`} settingKey={`about-stat-${n}-label`} placeholder={["Pernikahan Sukses", "Tahun Pengalaman", "Kepuasan Klien"][n - 1]} />
+              <Field label={`Label ${n}`} settingKey={`about-stat-${n}-label`} placeholder={["Resepsi Sukses", "Tahun Pengalaman", "Kepuasan Klien"][n - 1]} />
             </div>
           ))}
         </div>
       </div>
 
       <div className={sectionCls}>
-        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Layanan Premium</p>
-        <Field label="Judul Bagian" settingKey="about-services-title" placeholder="Layanan Premium Kami" />
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Layanan Pendampingan Menyeluruh</p>
+        <Field label="Judul Bagian Pendampingan" settingKey="about-services-title" placeholder="Pendampingan Menyeluruh" />
+        <Field label="Deskripsi Bagian Pendampingan" settingKey="about-services-desc" placeholder="Kami merancang sistem kerja terintegrasi..." rows={2} />
         {[1, 2, 3].map((n) => (
-          <div key={n} className="grid grid-cols-2 gap-3">
-            <Field label={`Layanan ${n} — Judul`} settingKey={`about-service-${n}-title`} placeholder={["Konsultasi Gratis", "Vendor Terpercaya", "Koordinasi Lengkap"][n - 1]} />
-            <Field label={`Layanan ${n} — Deskripsi`} settingKey={`about-service-${n}-desc`} placeholder="Deskripsi layanan..." />
+          <div key={n} className="grid grid-cols-2 gap-3 p-3 bg-white/50 rounded-lg border mb-3 last:mb-0 animate-fade-in">
+            <div className="col-span-2"><p className="font-semibold text-xs text-primary font-serif">Layanan {n}</p></div>
+            <Field label={`Judul Layanan ${n}`} settingKey={`about-service-${n}-title`} placeholder={["Konsultasi Tanpa Batas", "Mitra Vendor Kredibel", "Manajemen Hari H yang Solid"][n - 1]} />
+            <Field label={`Deskripsi Layanan ${n}`} settingKey={`about-service-${n}-desc`} rows={2} placeholder="Deskripsi layanan pendampingan..." />
           </div>
         ))}
       </div>
@@ -288,37 +353,7 @@ function PanelAbout() {
   );
 }
 
-function PanelWhyChooseUs() {
-  return (
-    <div className="space-y-5">
-      <div className={sectionCls}>
-        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Header Section</p>
-        <Field label="Judul" settingKey="why-title" placeholder="Mengapa Harus Pilih Kami?" />
-        <Field label="Subjudul" settingKey="why-subtitle" placeholder="Galeria Wedding bukan hanya wedding organizer..." rows={2} />
-      </div>
-      <div className={sectionCls}>
-        <p className={headingCls}><LayoutTemplate className="w-4 h-4 text-primary" /> 6 Kartu Keunggulan</p>
-        {[1, 2, 3, 4, 5, 6].map((n) => (
-          <div key={n} className="grid grid-cols-2 gap-3 pb-3 border-b last:border-0">
-            <Field label={`Kartu ${n} — Judul`} settingKey={`why-benefit-${n}-title`} placeholder={["10+ Tahun Pengalaman", "Passion & Dedikasi", "Terpercaya & Profesional", "Solusi Cepat & Efisien", "Network Vendor Terbaik", "Dukungan 24/7"][n - 1]} />
-            <Field label={`Kartu ${n} — Deskripsi`} settingKey={`why-benefit-${n}-desc`} placeholder="Deskripsi keunggulan..." />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-function PanelStatistics() {
-  return (
-    <div className={sectionCls}>
-      <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Section Statistik</p>
-      <Field label="Judul" settingKey="stats-title" placeholder="Prestasi Kami dalam Angka" />
-      <Field label="Subjudul" settingKey="stats-subtitle" placeholder="Kepercayaan klien adalah bukti kualitas layanan kami" />
-      <p className="text-xs text-gray-400 mt-1">Data angka statistik dikelola di menu <strong>Statistics</strong> di sidebar.</p>
-    </div>
-  );
-}
 
 function PanelContact() {
   return (
@@ -326,7 +361,8 @@ function PanelContact() {
       <div className={sectionCls}>
         <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Informasi Kontak</p>
         <Field label="Nomor Telepon" settingKey="phone" placeholder="+62 812 3456 7890" />
-        <Field label="WhatsApp (angka saja)" settingKey="whatsapp" placeholder="6281234567890" />
+        <Field label="WhatsApp Utama (angka saja)" settingKey="whatsapp" placeholder="6281234567890" />
+        <Field label="Format Pesan WhatsApp Otomatis (Floating Button)" settingKey="whatsapp-message" placeholder="Halo! Saya tertarik dengan layanan wedding organizer Galeria Wedding..." rows={2} />
         <Field label="Email" settingKey="email" placeholder="info@galeriawedding.com" />
         <Field label="Alamat" settingKey="address" placeholder="Jl. Contoh No. 123, Purwokerto" rows={2} />
       </div>
@@ -351,15 +387,269 @@ function PanelContact() {
   );
 }
 
+function PanelWedding() {
+  return (
+    <div className="space-y-5">
+      <div className={sectionCls}>
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Hero Halaman Wedding & Kontak WhatsApp</p>
+        <Field label="Badge Hero" settingKey="wedding-hero-badge" placeholder="Penyelenggara Pernikahan Premium" />
+        <Field label="Judul Utama" settingKey="wedding-hero-title" placeholder="Wujudkan Pernikahan Impian Sempurna & Berkesan" />
+        <Field label="Subjudul" settingKey="wedding-hero-subtitle" placeholder="Nikmati perjalanan menuju hari bahagia..." rows={3} />
+        <Field label="WhatsApp Khusus Halaman Wedding (opsional, angka saja)" settingKey="wedding-whatsapp" placeholder="Contoh: 6285329077987" />
+        <Field label="Format Pesan Konsultasi Anggaran" settingKey="wedding-whatsapp-message" placeholder="Halo! Saya tertarik untuk berkonsultasi mengenai paket pernikahan..." rows={2} />
+        <Field label="Format Pesan Tombol Pilih Paket (mendukung {packageName} & {packagePrice})" settingKey="wedding-whatsapp-pkg-message" placeholder="Halo, saya tertarik dengan paket {packageName} seharga {packagePrice}..." rows={2} />
+        <Field label="Format Pesan Tombol Konsultasi Paket (mendukung {packageName})" settingKey="wedding-whatsapp-consult-message" placeholder="Halo, saya ingin berkonsultasi tentang paket {packageName}..." rows={2} />
+        <ImageField label="Gambar Latar Belakang Hero" settingKey="wedding-hero-bg" />
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Info className="w-4 h-4 text-primary" /> Statistik Halaman Wedding (4 Kartu Statistik)</p>
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Statistik {n}</p>
+              <Field label="Angka" settingKey={`wedding-stat-${n}-val`} placeholder={["500+", "10+", "98%", "100%"][n - 1]} />
+              <Field label="Label" settingKey={`wedding-stat-${n}-lbl`} placeholder={["Pernikahan Sukses", "Tahun Pengalaman", "Kepuasan Klien", "Vendor Berlisensi"][n - 1]} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><LayoutTemplate className="w-4 h-4 text-primary" /> Alur Proses Perencanaan (3 Langkah)</p>
+        <Field label="Judul Bagian Proses" settingKey="wedding-process-title" placeholder="Langkah Mudah Mewujudkannya" />
+        <Field label="Deskripsi Bagian Proses" settingKey="wedding-process-desc" placeholder="Alur perencanaan terstruktur..." rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Langkah {n}</p>
+              <Field label="Judul Langkah" settingKey={`wedding-proc-${n}-title`} placeholder={["Konsultasi Konsep", "Pemilihan Vendor", "Koordinasi Hari H"][n - 1]} />
+              <Field label="Deskripsi Langkah" settingKey={`wedding-proc-${n}-desc`} rows={2} placeholder="Deskripsi detail..." />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><LayoutTemplate className="w-4 h-4 text-primary" /> Mengapa Memilih Kami? (4 Kartu Keunggulan)</p>
+        <Field label="Judul Bagian Keunggulan" settingKey="wedding-why-title" placeholder="Mengapa Memilih Galeria Wedding?" />
+        <Field label="Deskripsi Bagian Keunggulan" settingKey="wedding-why-desc" placeholder="Komitmen penuh kami dalam merancang..." rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Keunggulan {n}</p>
+              <Field label="Judul Keunggulan" settingKey={`wedding-why-${n}-title`} placeholder={["Kustomisasi Desain & Paket", "Jaringan Vendor Premium", "Tim Organizer Terlatih", "Transparansi Biaya & Kontrak"][n - 1]} />
+              <Field label="Deskripsi Keunggulan" settingKey={`wedding-why-${n}-desc`} rows={2} placeholder="Deskripsi..." />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Ajakan Bertindak (CTA)</p>
+        <Field label="Judul CTA" settingKey="wedding-cta-title" placeholder="Siap Mewujudkan Pernikahan Impian Anda?" />
+        <Field label="Deskripsi CTA" settingKey="wedding-cta-desc" placeholder="Konsultasikan konsep tema impian..." rows={3} />
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Info className="w-4 h-4 text-primary" /> FAQ Halaman Wedding (4 Tanya Jawab)</p>
+        <Field label="Judul FAQ" settingKey="wedding-faq-title" placeholder="Pertanyaan Umum" />
+        <Field label="Subjudul FAQ" settingKey="wedding-faq-subtitle" placeholder="Jawaban lengkap seputar perencanaan pernikahan..." rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">FAQ {n}</p>
+              <Field label="Pertanyaan" settingKey={`wedding-faq-${n}-q`} placeholder={[
+                "Apakah item di dalam paket pernikahan bisa diubah atau dikustomisasi?",
+                "Kapan waktu terbaik untuk mulai menggunakan jasa wedding organizer?",
+                "Apakah Galeria Wedding melayani pernikahan di luar kota?",
+                "Bagaimana sistem pembayaran dan terminasi kontrak?"
+              ][n - 1]} />
+              <Field label="Jawaban" settingKey={`wedding-faq-${n}-a`} rows={3} placeholder={[
+                "Tentu saja! Kami sangat fleksibel. Semua paket pernikahan kami bersifat kustomisasi penuh...",
+                "Waktu terbaik adalah sekitar 6 hingga 12 bulan sebelum hari pernikahan...",
+                "Ya, kami sangat senang melayani pernikahan destinasi di luar kota maupun luar pulau...",
+                "Pembayaran dilakukan secara bertahap untuk kemudahan Anda: Booking fee awal..."
+              ][n - 1]} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PanelPrinting() {
+  return (
+    <div className="space-y-5">
+      <div className={sectionCls}>
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Hero Halaman Percetakan & Kontak WhatsApp</p>
+        <Field label="Badge Hero" settingKey="printing-hero-badge" placeholder="✨ Percetakan Digital Terbaik" />
+        <Field label="Judul Utama" settingKey="printing-hero-title" placeholder="Percetakan & Desain Profesional" />
+        <Field label="Subjudul" settingKey="printing-hero-subtitle" placeholder="Layanan percetakan lengkap..." rows={3} />
+        <Field label="WhatsApp Khusus Halaman Percetakan (opsional, angka saja)" settingKey="printing-whatsapp" placeholder="Contoh: 6285329077987" />
+        <Field label="Format Pesan Konsultasi Umum Percetakan" settingKey="printing-whatsapp-message" placeholder="Halo! Saya ingin bertanya mengenai layanan percetakan di Galeria Wedding." rows={2} />
+        <Field label="Format Pesan Tombol Pesan Langsung (mendukung {productName} & {categoryName})" settingKey="printing-direct-message" placeholder="*Halo Admin Percetakan Galeria Wedding!* 👋\n\nSaya ingin memesan produk percetakan:\n\n*📦 Produk:* {productName}..." rows={3} />
+        <Field label="Pembuka Pesan Detail Order (Intro)" settingKey="printing-order-intro" placeholder="*Halo Admin Percetakan Galeria Wedding!* 👋\n\nSaya ingin memesan produk percetakan:" rows={2} />
+        <Field label="Penutup Pesan Detail Order (Outro)" settingKey="printing-order-outro" placeholder="Mohon informasikan langkah selanjutnya. Terima kasih! 😊" rows={2} />
+        <ImageField label="Gambar Latar Belakang Hero" settingKey="printing-hero-bg" />
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Info className="w-4 h-4 text-primary" /> Statistik Halaman Percetakan (4 Kartu Statistik)</p>
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Statistik {n}</p>
+              <Field label="Angka" settingKey={`printing-stat-${n}-val`} placeholder={["500+", "2,000+", "3-5", "100%"][n - 1]} />
+              <Field label="Label" settingKey={`printing-stat-${n}-lbl`} placeholder={["Klien Percetakan", "Order Terselesaikan", "Hari Pengerjaan", "Garansi Kualitas"][n - 1]} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><LayoutTemplate className="w-4 h-4 text-primary" /> Cara Memesan (3 Langkah)</p>
+        <Field label="Judul Bagian Cara Memesan" settingKey="printing-proc-header" placeholder="Cara Memesan" />
+        <Field label="Deskripsi Bagian Cara Memesan" settingKey="printing-proc-subheader" placeholder="Proses pemesanan yang mudah..." rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Langkah {n}</p>
+              <Field label="Judul Langkah" settingKey={`printing-proc-${n}-title`} placeholder={["Pilih Produk", "Konfirmasi WhatsApp", "Produk Dikirim"][n - 1]} />
+              <Field label="Deskripsi Langkah" settingKey={`printing-proc-${n}-desc`} rows={2} placeholder="Deskripsi..." />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Info className="w-4 h-4 text-primary" /> FAQ Halaman Percetakan (5 Tanya Jawab)</p>
+        <Field label="Judul FAQ" settingKey="printing-faq-title" placeholder="FAQ Percetakan" />
+        <Field label="Subjudul FAQ" settingKey="printing-faq-subtitle" placeholder="Pertanyaan yang sering diajukan" rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">FAQ {n}</p>
+              <Field label="Pertanyaan" settingKey={`printing-faq-${n}-q`} placeholder={[
+                "Berapa lama waktu pengerjaan?",
+                "Bagaimana cara pembayaran?",
+                "Apakah ada biaya desain?",
+                "Bagaimana jika desain tidak sesuai?",
+                "Apakah ada pengiriman ke seluruh Indonesia?"
+              ][n - 1]} />
+              <Field label="Jawaban" settingKey={`printing-faq-${n}-a`} rows={3} placeholder={[
+                "Waktu pengerjaan bervariasi tergantung jenis produk. Undangan 3-5 hari, kaos 5-7 hari, banner 2-3 hari...",
+                "Pembayaran dilakukan via transfer bank (BCA, Mandiri, BRI) atau COD untuk area tertentu. DP minimal 50%...",
+                "Desain gratis untuk order minimal Rp 300.000. Untuk order di bawah itu, biaya desain mulai dari...",
+                "Kami memberikan 2x revisi gratis. Setelah itu, revisi tambahan dikenakan biaya Rp 25.000 per revisi...",
+                "Ya, kami melayani pengiriman ke seluruh Indonesia dengan kurir pilihan (JNE, J&T, SiCepat, GoSend)..."
+              ][n - 1]} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PanelUmrah() {
+  return (
+    <div className="space-y-5">
+      <div className={sectionCls}>
+        <p className={headingCls}><Type className="w-4 h-4 text-primary" /> Hero Halaman Umrah & Haji & Kontak WhatsApp</p>
+        <Field label="Badge Hero" settingKey="umrah-hero-badge" placeholder="Travel Terpercaya Sejak 2005" />
+        <Field label="Judul Utama" settingKey="umrah-hero-title" placeholder="Journey of a Lifetime" />
+        <Field label="Subjudul" settingKey="umrah-hero-subtitle" placeholder="Menyempurnakan ibadah Anda..." rows={3} />
+        <Field label="WhatsApp Khusus Halaman Umrah & Haji (opsional, angka saja)" settingKey="umrah-whatsapp" placeholder="Contoh: 6285329077987" />
+        <Field label="Format Pesan Tombol Pesan Paket (mendukung {packageType}, {packageName}, & {packagePrice})" settingKey="umrah-booking-message" placeholder="Halo! Saya tertarik dengan paket {packageType}: {packageName}..." rows={3} />
+        <ImageField label="Poster Video Latar Belakang" settingKey="umrah-hero-poster" />
+        <Field label="URL Video Latar Belakang" settingKey="umrah-hero-video" placeholder="/umrah-hero-video.mp4" />
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Info className="w-4 h-4 text-primary" /> Statistik Halaman Umrah & Haji (4 Kartu Statistik)</p>
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Statistik {n}</p>
+              <Field label="Angka" settingKey={`umrah-stat-${n}-val`} placeholder={["10,000+", "98.5%", "18+", "100%"][n - 1]} />
+              <Field label="Label" settingKey={`umrah-stat-${n}-lbl`} placeholder={["Jamaah Berangkat", "Kepuasan Jamaah", "Tahun Pengalaman", "Legal & Terpercaya"][n - 1]} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><LayoutTemplate className="w-4 h-4 text-primary" /> Mengapa Memilih Kami? (4 Kartu Keunggulan)</p>
+        <Field label="Judul Keunggulan" settingKey="umrah-why-title" placeholder="Mengapa Memilih Kami?" />
+        <Field label="Deskripsi Keunggulan" settingKey="umrah-why-desc" placeholder="Komitmen kami adalah memberikan pengalaman ibadah yang sempurna..." rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">Kartu {n}</p>
+              <Field label="Judul" settingKey={`umrah-why-${n}-title`} placeholder={["Legal & Terpercaya", "Akomodasi Premium", "Bimbingan Eksklusif", "Layanan 24/7"][n - 1]} />
+              <Field label="Deskripsi" settingKey={`umrah-why-${n}-desc`} rows={2} placeholder={[
+                "Berizin resmi Kemenag RI dengan sertifikasi lengkap",
+                "Hotel bintang 4 & 5 dekat Masjidil Haram & Nabawi",
+                "Dibimbing ustadz/ustadzah kompeten berpengalaman",
+                "Tim pendamping siap membantu selama perjalanan"
+              ][n - 1]} />
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="Fitur 1" settingKey={`umrah-why-${n}-f1`} placeholder={["Izin PPIU No. 123/2023", "Jarak <500m", "Talaqqi Quran", "Medical Support"][n - 1]} />
+                <Field label="Fitur 2" settingKey={`umrah-why-${n}-f2`} placeholder={["Sertifikat Halal", "Free WiFi", "Bimbingan Manasik", "Customer Care"][n - 1]} />
+                <Field label="Fitur 3" settingKey={`umrah-why-${n}-f3`} placeholder={["Asuransi Lengkap", "Breakfast Buffet", "Konsultasi Ibadah", "Emergency Response"][n - 1]} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionCls}>
+        <p className={headingCls}><Info className="w-4 h-4 text-primary" /> FAQ Halaman Umrah & Haji (4 Tanya Jawab)</p>
+        <Field label="Judul FAQ" settingKey="umrah-faq-title" placeholder="Pertanyaan Umum" />
+        <Field label="Subjudul FAQ" settingKey="umrah-faq-subtitle" placeholder="Temukan jawaban untuk pertanyaan yang sering diajukan" rows={2} />
+        
+        <div className="border-t pt-4 space-y-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="p-3 bg-white/50 rounded-lg border space-y-2">
+              <p className="font-semibold text-xs text-primary">FAQ {n}</p>
+              <Field label="Pertanyaan" settingKey={`umrah-faq-${n}-q`} placeholder={[
+                "Apa saja persyaratan pendaftaran Umrah?",
+                "Apakah harga paket sudah termasuk visa dan tiket pesawat?",
+                "Bagaimana jika saya ingin sekamar berdua atau bertiga saja?",
+                "Bagaimana sistem pembatalan dan pengembalian dana?"
+              ][n - 1]} />
+              <Field label="Jawaban" settingKey={`umrah-faq-${n}-a`} rows={3} placeholder={[
+                "Persyaratan utama meliputi paspor asli dengan masa berlaku minimal 6 bulan, foto kopi KTP & KK...",
+                "Ya, semua paket Umrah dan Haji kami bersifat all-inclusive (all-in). Sudah termasuk tiket pesawat PP...",
+                "Sangat bisa. Default harga paket biasanya didasarkan pada kamar Quad (sekamar berempat)...",
+                "Pembatalan setelah booking seat dikenakan biaya administrasi. Pembatalan 30 hari sebelum keberangkatan..."
+              ][n - 1]} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── main component ──────────────────────────────────────────────────────────
 
 const TABS = [
   { id: "general",   label: "Umum & Warna" },
   { id: "hero",      label: "Hero" },
   { id: "about",     label: "About" },
-  { id: "why",       label: "Keunggulan" },
-  { id: "stats",     label: "Statistik" },
   { id: "contact",   label: "Kontak & Lokasi" },
+  { id: "wedding",   label: "Halaman Wedding" },
+  { id: "printing",  label: "Halaman Percetakan" },
+  { id: "umrah",     label: "Halaman Umrah & Haji" },
 ];
 
 export default function AppearanceSettings() {
@@ -422,9 +712,10 @@ export default function AppearanceSettings() {
         {activeTab === "general" && <PanelGeneral />}
         {activeTab === "hero"    && <PanelHero />}
         {activeTab === "about"   && <PanelAbout />}
-        {activeTab === "why"     && <PanelWhyChooseUs />}
-        {activeTab === "stats"   && <PanelStatistics />}
         {activeTab === "contact" && <PanelContact />}
+        {activeTab === "wedding" && <PanelWedding />}
+        {activeTab === "printing" && <PanelPrinting />}
+        {activeTab === "umrah"   && <PanelUmrah />}
       </div>
     </div>
   );

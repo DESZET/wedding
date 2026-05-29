@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+import { useSettings } from '../hooks/useSettings.tsx';
 
 export default function FloatingWhatsApp() {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const { settings } = useSettings();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,8 +18,8 @@ export default function FloatingWhatsApp() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const whatsappNumber = '6285329077987';
-  const defaultMessage = 'Halo! Saya tertarik dengan layanan wedding organizer Galeria Wedding. Bisakah kita diskusi lebih lanjut?';
+  const whatsappNumber = settings["whatsapp"] ? settings["whatsapp"].replace(/\D/g, "") : '6285329077987';
+  const defaultMessage = settings["whatsapp-message"] || 'Halo! Saya tertarik dengan layanan wedding organizer Galeria Wedding. Bisakah kita diskusi lebih lanjut?';
 
   return (
     <AnimatePresence>

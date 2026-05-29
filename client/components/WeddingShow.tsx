@@ -6,7 +6,6 @@ import { VenueItem, WeddingShowVideoItem } from "../../shared/api";
 
 export default function WeddingShow() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [isVideoVisible, setIsVideoVisible] = useState(true);
   const [isVenuesVisible, setIsVenuesVisible] = useState(true);
   const [isInfoVisible, setIsInfoVisible] = useState(true);
@@ -15,7 +14,6 @@ export default function WeddingShow() {
   const [isLoading, setIsLoading] = useState(true);
   
   const sectionRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLDivElement>(null);
   const venuesRef = useRef<HTMLDivElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
@@ -65,31 +63,16 @@ export default function WeddingShow() {
 
   // Intersection Observers untuk setiap bagian dengan ROOT MARGIN
   useEffect(() => {
-    let headerObserver: IntersectionObserver;
     let videoObserver: IntersectionObserver;
     let venuesObserver: IntersectionObserver;
     let infoObserver: IntersectionObserver;
 
     // Inisialisasi observers dengan delay
     const initObservers = () => {
-      // Header - muncul segera
-      headerObserver = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setIsHeaderVisible(true);
-          }
-        },
-        { 
-          threshold: 0.1,
-          rootMargin: "0px 0px -100px 0px" // Delay sedikit
-        }
-      );
-
-      // Video - muncul setelah header
+      // Video - muncul setelah delay
       videoObserver = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            // Tunggu header muncul dulu
             setTimeout(() => {
               setIsVideoVisible(true);
             }, 500);
@@ -135,10 +118,6 @@ export default function WeddingShow() {
 
       // Apply observers dengan delay
       setTimeout(() => {
-        if (headerRef.current) headerObserver.observe(headerRef.current);
-      }, 100);
-
-      setTimeout(() => {
         if (videoRef.current) videoObserver.observe(videoRef.current);
       }, 300);
 
@@ -154,7 +133,6 @@ export default function WeddingShow() {
     initObservers();
 
     return () => {
-      headerObserver?.disconnect();
       videoObserver?.disconnect();
       venuesObserver?.disconnect();
       infoObserver?.disconnect();
@@ -221,24 +199,6 @@ export default function WeddingShow() {
       </motion.div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Section Header - Muncul pertama */}
-        <div ref={headerRef}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isHeaderVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-24" // Tambah margin besar
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Wedding Show
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Jelajahi berbagai pilihan venue eksklusif dan terpercaya untuk acara
-              spesial Anda
-            </p>
-          </motion.div>
-        </div>
-
         {/* Video Player Section - Muncul kedua */}
         <div ref={videoRef}>
           <motion.div

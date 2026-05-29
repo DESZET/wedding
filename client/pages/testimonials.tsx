@@ -1,23 +1,18 @@
-import Navbar from "@/components/Navbar";
 import Testimonials from "@/components/Testimonials";
 import VideoShowcase from "@/components/VideoShowcase";
 import Footer from "@/components/Footer";
-import FloatingWhatsApp from "@/components/FloatingWhatsApp";
-import BackToTop from "@/components/BackToTop";
+import SectionWrapper from "@/components/SectionWrapper";
 
 export default function TestimonialsPage() {
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-     <FloatingWhatsApp />
-            <BackToTop />
-      <section id="video-showcase">
+      <SectionWrapper id="video-showcase-section" delay={100} animationType="fade-in-up">
         <VideoShowcase />
-      </section>
+      </SectionWrapper>
 
-      <section id="testimonials">
+      <SectionWrapper id="testimonials-section" delay={300} animationType="fade-in-up">
         <Testimonials />
-      </section>
+      </SectionWrapper>
 
       <Footer />
     </div>

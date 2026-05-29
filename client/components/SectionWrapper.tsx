@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { usePageLoader } from "@/hooks/usePageLoader";
 
 interface SectionWrapperProps {
   children: React.ReactNode;
@@ -20,8 +21,14 @@ export default function SectionWrapper({
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const { isPageLoading } = usePageLoader();
 
   useEffect(() => {
+    if (isPageLoading) {
+      setIsVisible(false);
+      return;
+    }
+
     const currentRef = sectionRef.current;
     
     // Cleanup previous observer
@@ -55,7 +62,7 @@ export default function SectionWrapper({
         observerRef.current.disconnect();
       }
     };
-  }, [delay, threshold, isVisible]);
+  }, [delay, threshold, isVisible, isPageLoading]);
 
   return (
     <section
