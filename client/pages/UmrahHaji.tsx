@@ -86,12 +86,12 @@ interface FAQ {
 interface Testimonial {
   id: number;
   name: string;
-  city: string;
-  package: string;
+  text: string;
   rating: number;
-  comment: string;
   date: string;
-  image: string;
+  city?: string;
+  package?: string;
+  image?: string;
 }
 
 interface GalleryItem {
@@ -194,142 +194,13 @@ export default function ModernUmrahHaji() {
           setGallery([]);
         }
 
-        // Only load sample data if BOTH are truly empty
-        const umrahEmpty = !umrahRes.success || !Array.isArray(umrahRes.data) || umrahRes.data.length === 0;
-        const hajiEmpty = !HajiRes.success || !Array.isArray(HajiRes.data) || HajiRes.data.length === 0;
-
-        if (umrahEmpty && hajiEmpty) {
-          console.log('Loading sample data as fallback - both APIs empty');
-          loadSampleData();
-        }
       } catch (error) {
         console.error('Error loading data:', error);
-        // Load sample data for demonstration
-        loadSampleData();
       }
     };
 
     loadData();
   }, []);
-
-  const loadSampleData = () => {
-    // Sample Umrah Packages
-    const sampleUmrahPackages: UmrahPackage[] = [
-      {
-        id: 1,
-        name: "Umrah Premium Plus",
-        description: "Paket umrah eksklusif dengan hotel bintang 5 dan penerbangan langsung",
-        duration: 12,
-        price: 35000000,
-        discount_price: 32000000,
-        departure_city: "Jakarta",
-        airline: "Garuda Indonesia",
-        airline_logo: "/airline-logo/garuda.png",
-        hotel_mekah: "Makkah Clock Royal Tower",
-        hotel_madinah: "Anwar Madinah Movenpick",
-        hotel_rating: 5,
-        distance_haram: "200m",
-        meals_included: true,
-        tour_guide: true,
-        visa_assistance: true,
-        vaccination_assistance: true,
-        transport_type: "Private Bus",
-        group_size: 30,
-        availability: 15,
-        rating: 4.9,
-        reviews_count: 245,
-        included_features: [
-          "Tiket pesawat kelas ekonomi",
-          "Hotel bintang 5",
-          "Makan 3x sehari",
-          "Ziarah lengkap",
-          "Pembimbing ibadah",
-          "Asuransi perjalanan",
-          "Transportasi AC"
-        ],
-        excluded_features: [
-          "Biaya pribadi",
-          "Vaksin meningitis",
-          "Overseas charge"
-        ],
-        itinerary: [
-          { day: 1, title: "Keberangkatan", description: "Meeting point dan penerbangan ke Jeddah", icon: "plane" },
-          { day: 2, title: "Kedatangan Mekah", description: "Check-in hotel dan persiapan umrah", icon: "hotel" },
-          { day: 3, title: "Umrah", description: "Pelaksanaan umrah dan ziarah", icon: "book" }
-        ],
-        important_notes: ["Wajib vaksin meningitis", "Paspor minimal 6 bulan"],
-        departure_dates: [
-          { date: "2024-03-15", seats: 20, price_variation: 0 },
-          { date: "2024-04-10", seats: 15, price_variation: 500000 }
-        ],
-        images: ["/umrah/1.jpg", "/umrah/2.jpg", "/umrah/3.jpg"],
-        featured: true,
-        best_seller: true,
-        early_bird_discount: true,
-        payment_plans: [
-          { name: "Cash", installments: 1 },
-          { name: "Cicilan 3x", installments: 3 },
-          { name: "Cicilan 6x", installments: 6 }
-        ],
-        tags: ["Premium", "Ramadhan", "Direct Flight"]
-      }
-    ];
-
-    const sampleHajiPackages: HajiPackage[] = [
-      {
-        id: 1,
-        name: "Haji Reguler 1445H",
-        description: "Paket Haji reguler dengan akomodasi terbaik dan bimbingan lengkap",
-        quota_year: "1445H / 2024",
-        price: 45000000,
-        discount_price: 42000000,
-        payment_terms: [
-          "DP 30% saat pendaftaran",
-          "Pelunasan 3 bulan sebelum keberangkatan",
-          "Bisa dicicil 12x"
-        ],
-        included_features: [
-          "Tiket pesawat pp kelas ekonomi",
-          "Akomodasi hotel di Mekah & Madinah",
-          "Konsumsi lengkap",
-          "Bimbingan manasik",
-          "Transportasi di Arab Saudi",
-          "Ziarah wajib dan sunnah"
-        ],
-        excluded_features: [
-          "Biaya pribadi",
-          "Pengeluaran di luar program",
-          "Bagasi lebih"
-        ],
-        requirements: [
-          "Muslim/Muslimah",
-          "Sehat jasmani & rohani",
-          "Paspor minimal 2 tahun",
-          "Surat keterangan sehat"
-        ],
-        timeline: [
-          { month: "Januari", activities: ["Pendaftaran", "Pembayaran DP"] },
-          { month: "Februari", activities: ["Manasik 1", "Pengurusan dokumen"] }
-        ],
-        images: ["/haji/1.jpg", "/haji/2.jpg", "/haji/3.jpg"],
-        featured: true,
-        registration_deadline: "2024-02-28",
-        available_quota: 25,
-        training_sessions: 12,
-        medical_facility: true,
-        rating: 4.8,
-        reviews_count: 189,
-        accommodation_details: {
-          mekah: { hotel: "Swissotel Makkah", nights: 20, distance: "500m" },
-          madinah: { hotel: "Pullman Zamzam Madinah", nights: 10, distance: "300m" },
-          jeddah: { hotel: "Hilton Jeddah", nights: 2 }
-        }
-      }
-    ];
-
-    setUmrahPackages(sampleUmrahPackages);
-    setHajiPackages(sampleHajiPackages);
-  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -1049,7 +920,6 @@ export default function ModernUmrahHaji() {
             </div>
           </div>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto animate-slide-up">
             {[
               { icon: Users, value: settings["umrah-stat-1-val"] || "10,000+", label: settings["umrah-stat-1-lbl"] || "Jamaah Berangkat" },
@@ -1141,10 +1011,25 @@ export default function ModernUmrahHaji() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {activeTab === 'umrah'
-                ? umrahPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderUmrahPackageCard)
-                : hajiPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderHajiPackageCard)
-              }
+              {(() => {
+                const packages = activeTab === 'umrah' ? umrahPackages : hajiPackages;
+                const valid = packages.filter(pkg => pkg && typeof pkg === 'object');
+                if (valid.length === 0) {
+                  return (
+                    <div className="col-span-full text-center py-16 px-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-lg font-medium text-gray-700">
+                        Belum ada paket {activeTab === 'umrah' ? 'Umrah' : 'Haji'} tersedia.
+                      </p>
+                      <p className="text-gray-500 mt-2">
+                        Tambahkan paket melalui panel admin agar ditampilkan di sini.
+                      </p>
+                    </div>
+                  );
+                }
+                return activeTab === 'umrah'
+                  ? valid.map(renderUmrahPackageCard)
+                  : valid.map(renderHajiPackageCard);
+              })()}
             </div>
           </div>
         </div>
@@ -1153,7 +1038,6 @@ export default function ModernUmrahHaji() {
         <UmrahHajiTimeline />
       </SectionWrapper>
 
-      {/* Why Choose Us - Enhanced */}
       <SectionWrapper id="umrah-why" delay={100} animationType="fade-in-up">
         <div className="py-16 bg-gradient-to-r from-blue-50 to-emerald-50">
           <div className="max-w-7xl mx-auto px-4">
@@ -1189,7 +1073,6 @@ export default function ModernUmrahHaji() {
         </div>
       </SectionWrapper>
 
-      {/* Testimonials Carousel */}
       <SectionWrapper id="umrah-testimonials" delay={100} animationType="fade-in-up">
         <div className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
@@ -1202,14 +1085,24 @@ export default function ModernUmrahHaji() {
               {testimonials.slice(0, 3).map((testimonial) => (
                 <div key={testimonial.id} className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-lg border border-gray-100">
                   <div className="flex items-center gap-4 mb-4">
-                    <img 
-                      src={testimonial.image} 
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
+                    {testimonial.image ? (
+                      <img 
+                        src={testimonial.image} 
+                        alt={testimonial.name}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                        {testimonial.name.charAt(0)}
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-bold">{testimonial.name}</h4>
-                      <p className="text-sm text-gray-600">{testimonial.city} • {testimonial.package}</p>
+                      {(testimonial.city || testimonial.package) && (
+                        <p className="text-sm text-gray-600">
+                          {[testimonial.city, testimonial.package].filter(Boolean).join(" • ")}
+                        </p>
+                      )}
                       <div className="flex items-center gap-1 mt-1">
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
@@ -1217,8 +1110,8 @@ export default function ModernUmrahHaji() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-700 italic">"{testimonial.comment}"</p>
-                  <p className="text-sm text-gray-500 mt-4">{testimonial.date}</p>
+                  <p className="text-gray-700 italic">"{testimonial.text}"</p>
+                  {testimonial.date && <p className="text-sm text-gray-500 mt-4">{testimonial.date}</p>}
                 </div>
               ))}
             </div>
@@ -1226,7 +1119,6 @@ export default function ModernUmrahHaji() {
         </div>
       </SectionWrapper>
 
-      {/* FAQ Section */}
       <SectionWrapper id="umrah-faq" delay={100} animationType="fade-in-up">
         <div className="py-16 bg-gray-50">
           <div className="max-w-4xl mx-auto px-4">
