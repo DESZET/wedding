@@ -150,7 +150,7 @@ const Admin = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [packageType, setPackageType] = useState<string>('');
-  
+
   // Data states
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
@@ -159,7 +159,7 @@ const Admin = () => {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [weddingShowVideos, setWeddingShowVideos] = useState<VideoItem[]>([]);
   const [stats, setStats] = useState<StatItem[]>([]);
-  
+
   // New states for Printing
   const [activePrintingSubMenu, setActivePrintingSubMenu] = useState<'all' | 'sablon-kaos' | 'undangan' | 'banner' | 'id-card' | 'kartu-nama' | 'brosur-flyer' | 'stiker-label' | 'kemasan-produk' | 'merchandise'>('all');
   const [printingProducts, setPrintingProducts] = useState<any[]>([]);
@@ -202,7 +202,7 @@ const Admin = () => {
   // New states for Umrah & Haji (unified - all packages from single endpoint)
   const [religiousPackages, setReligiousPackages] = useState<any[]>([]);
   const [religiousBookings, setReligiousBookings] = useState<any[]>([]);
-  
+
   // Add missing state variables for Umrah & Haji
   const [umrahPackages, setUmrahPackages] = useState<any[]>([]);
   const [hajiPackages, setHajiPackages] = useState<any[]>([]);
@@ -210,17 +210,17 @@ const Admin = () => {
   // Form states for existing menus
   const [galleryForm, setGalleryForm] = useState<CreateGalleryItem>({ title: '', category: '', image: '' });
   const [testimonialForm, setTestimonialForm] = useState<CreateTestimonialItem>({ name: '', rating: 5, text: '', date: '' });
-  const [packageForm, setPackageForm] = useState<{ 
-    name: string; 
-    price: string; 
-    description: string; 
+  const [packageForm, setPackageForm] = useState<{
+    name: string;
+    price: string;
+    description: string;
     highlighted: boolean;
     longDescription: string;
     features: string;
-  }>({ 
-    name: '', 
-    price: '', 
-    description: '', 
+  }>({
+    name: '',
+    price: '',
+    description: '',
     highlighted: false,
     longDescription: '',
     features: ''
@@ -406,7 +406,7 @@ const Admin = () => {
       let endpoint = '';
 
       if (actionMode === 'add') {
-        switch(activeMenu) {
+        switch (activeMenu) {
           case 'gallery':
             endpoint = '/gallery';
             response = await apiRequest(endpoint, {
@@ -544,7 +544,7 @@ const Admin = () => {
                   return {};
                 }
               };
-              
+
               // Convert string values to proper types for Umrah package
               const umrahData = {
                 name: umrahPackageForm.name || '',
@@ -606,7 +606,7 @@ const Admin = () => {
                 if (!str) return [];
                 return str.split(/[\n,]/).map((item: string) => item.trim()).filter((item: string) => item);
               };
-              
+
               // Convert string values to proper types for Haji package
               const hajiData = {
                 name: hajiPackageForm.name || '',
@@ -656,7 +656,7 @@ const Admin = () => {
             break;
         }
       } else if (actionMode === 'edit') {
-        switch(activeMenu) {
+        switch (activeMenu) {
           case 'gallery':
             endpoint = `/gallery/${selectedItem.id}`;
             response = await apiRequest(endpoint, {
@@ -880,10 +880,10 @@ const Admin = () => {
   };
 
   const handleEdit = (item: any, type: MenuItem, itemType?: string) => {
-    setSelectedItem({...item, type: itemType});
+    setSelectedItem({ ...item, type: itemType });
     setActionMode('edit');
 
-    switch(type) {
+    switch (type) {
       case 'gallery':
         setGalleryForm(item);
         break;
@@ -900,7 +900,7 @@ const Admin = () => {
         setVideoForm(item);
         break;
       case 'stats':
-        setStatsForm({...item, image: item.image || ''});
+        setStatsForm({ ...item, image: item.image || '' });
         break;
       case 'printing':
         if (itemType === 'product') {
@@ -963,7 +963,7 @@ const Admin = () => {
     setIsLoading(true);
     try {
       let endpoint = '';
-      switch(type) {
+      switch (type) {
         case 'gallery':
           endpoint = `/gallery/${id}`;
           break;
@@ -1002,7 +1002,7 @@ const Admin = () => {
       });
 
       if (response.success) {
-        switch(type) {
+        switch (type) {
           case 'gallery':
             setGalleryItems(prev => prev.filter(item => item.id !== id));
             break;
@@ -1195,7 +1195,6 @@ const Admin = () => {
     { id: 'venues', label: 'Venues', icon: <MapPin size={20} /> },
     { id: 'videos', label: 'Videos', icon: <Video size={20} /> },
     { id: 'wedding-show', label: 'Wedding Show', icon: <Video size={20} /> },
-    { id: 'stats', label: 'Statistics', icon: <Users size={20} /> },
     { id: 'printing', label: 'Percetakan', icon: <Printer size={20} /> },
     { id: 'umrah-haji', label: 'Umrah & Haji', icon: <Globe size={20} /> },
     { id: 'appearance', label: 'Tampilan', icon: <Monitor size={20} /> },
@@ -1207,7 +1206,7 @@ const Admin = () => {
       return renderForm();
     }
 
-    switch(activeMenu) {
+    switch (activeMenu) {
       case 'dashboard':
         return <DashboardContent />;
       case 'gallery':
@@ -1250,12 +1249,6 @@ const Admin = () => {
               item.id === id ? { ...item, ...updates } : item
             ));
           }}
-        />;
-      case 'stats':
-        return <StatsContent
-          items={stats}
-          onEdit={(item) => handleEdit(item, 'stats')}
-          onDelete={(id) => handleDelete(id, 'stats')}
         />;
       case 'printing':
         return <PrintingAdminContent
@@ -1327,21 +1320,21 @@ const Admin = () => {
         </div>
 
         <div className="space-y-4">
-{activeMenu === 'gallery' && (
+          {activeMenu === 'gallery' && (
             <>
               <input
                 type="text"
                 placeholder="Judul Gambar"
                 className="w-full p-3 border rounded-lg"
                 value={galleryForm.title}
-                onChange={(e) => setGalleryForm({...galleryForm, title: e.target.value})}
+                onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })}
               />
               <div>
                 <label className="block text-sm font-medium mb-1">Kategori</label>
                 <select
                   className="w-full p-3 border rounded-lg"
                   value={galleryForm.category}
-                  onChange={(e) => setGalleryForm({...galleryForm, category: e.target.value})}
+                  onChange={(e) => setGalleryForm({ ...galleryForm, category: e.target.value })}
                 >
                   <option value="">Pilih Kategori</option>
                   <option value="Dekorasi">Dekorasi</option>
@@ -1364,7 +1357,7 @@ const Admin = () => {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setGalleryForm({...galleryForm, image: uploadResponse.data.path});
+                          setGalleryForm({ ...galleryForm, image: uploadResponse.data.path });
                         } else {
                           alert('Gagal upload gambar');
                         }
@@ -1391,14 +1384,14 @@ const Admin = () => {
                 placeholder="Nama Klien"
                 className="w-full p-3 border rounded-lg"
                 value={testimonialForm.name}
-                onChange={(e) => setTestimonialForm({...testimonialForm, name: e.target.value})}
+                onChange={(e) => setTestimonialForm({ ...testimonialForm, name: e.target.value })}
               />
               <textarea
                 placeholder="Testimoni"
                 className="w-full p-3 border rounded-lg"
                 rows={4}
                 value={testimonialForm.text}
-                onChange={(e) => setTestimonialForm({...testimonialForm, text: e.target.value})}
+                onChange={(e) => setTestimonialForm({ ...testimonialForm, text: e.target.value })}
               />
               <input
                 type="number"
@@ -1407,13 +1400,13 @@ const Admin = () => {
                 max="5"
                 className="w-full p-3 border rounded-lg"
                 value={testimonialForm.rating}
-                onChange={(e) => setTestimonialForm({...testimonialForm, rating: parseInt(e.target.value) || 5})}
+                onChange={(e) => setTestimonialForm({ ...testimonialForm, rating: parseInt(e.target.value) || 5 })}
               />
               <input
                 type="date"
                 className="w-full p-3 border rounded-lg"
                 value={testimonialForm.date}
-                onChange={(e) => setTestimonialForm({...testimonialForm, date: e.target.value})}
+                onChange={(e) => setTestimonialForm({ ...testimonialForm, date: e.target.value })}
               />
             </>
           )}
@@ -1425,41 +1418,41 @@ const Admin = () => {
                 placeholder="Nama Paket"
                 className="w-full p-3 border rounded-lg"
                 value={packageForm.name}
-                onChange={(e) => setPackageForm({...packageForm, name: e.target.value})}
+                onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })}
               />
               <input
                 type="text"
                 placeholder="Harga"
                 className="w-full p-3 border rounded-lg"
                 value={packageForm.price}
-                onChange={(e) => setPackageForm({...packageForm, price: e.target.value})}
+                onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi Singkat"
                 className="w-full p-3 border rounded-lg"
                 rows={2}
                 value={packageForm.description}
-                onChange={(e) => setPackageForm({...packageForm, description: e.target.value})}
+                onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi Lengkap (akan ditampilkan di halaman paket)"
                 className="w-full p-3 border rounded-lg"
                 rows={4}
                 value={packageForm.longDescription}
-                onChange={(e) => setPackageForm({...packageForm, longDescription: e.target.value})}
+                onChange={(e) => setPackageForm({ ...packageForm, longDescription: e.target.value })}
               />
               <textarea
                 placeholder="Fitur Paket (pisahkan dengan koma, contoh: Dekorasi, Catering, Souvenir, Foto/Video, MC & Entertainment)"
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={packageForm.features}
-                onChange={(e) => setPackageForm({...packageForm, features: e.target.value})}
+                onChange={(e) => setPackageForm({ ...packageForm, features: e.target.value })}
               />
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={packageForm.highlighted}
-                  onChange={(e) => setPackageForm({...packageForm, highlighted: e.target.checked})}
+                  onChange={(e) => setPackageForm({ ...packageForm, highlighted: e.target.checked })}
                 />
                 <span>Ditampilkan sebagai pilihan utama (paket populer)</span>
               </label>
@@ -1473,14 +1466,14 @@ const Admin = () => {
                 placeholder="Judul Video"
                 className="w-full p-3 border rounded-lg"
                 value={videoForm.title}
-                onChange={(e) => setVideoForm({...videoForm, title: e.target.value})}
+                onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi Video"
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={videoForm.description}
-                onChange={(e) => setVideoForm({...videoForm, description: e.target.value})}
+                onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
               />
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Upload Video</label>
@@ -1494,7 +1487,7 @@ const Admin = () => {
                       try {
                         const uploadResponse = await uploadVideoFile(file);
                         if (uploadResponse.success) {
-                          setVideoForm({...videoForm, videoPath: uploadResponse.data.path});
+                          setVideoForm({ ...videoForm, videoPath: uploadResponse.data.path });
                         } else {
                           alert('Gagal upload video');
                         }
@@ -1523,7 +1516,7 @@ const Admin = () => {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setVideoForm({...videoForm, thumbnail: uploadResponse.data.path});
+                          setVideoForm({ ...videoForm, thumbnail: uploadResponse.data.path });
                         } else {
                           alert('Gagal upload thumbnail');
                         }
@@ -1550,35 +1543,35 @@ const Admin = () => {
                 placeholder="Nama Venue"
                 className="w-full p-3 border rounded-lg"
                 value={venueForm.title}
-                onChange={(e) => setVenueForm({...venueForm, title: e.target.value})}
+                onChange={(e) => setVenueForm({ ...venueForm, title: e.target.value })}
               />
               <input
                 type="text"
                 placeholder="Kategori"
                 className="w-full p-3 border rounded-lg"
                 value={venueForm.category}
-                onChange={(e) => setVenueForm({...venueForm, category: e.target.value})}
+                onChange={(e) => setVenueForm({ ...venueForm, category: e.target.value })}
               />
               <input
                 type="text"
                 placeholder="Harga"
                 className="w-full p-3 border rounded-lg"
                 value={venueForm.price}
-                onChange={(e) => setVenueForm({...venueForm, price: e.target.value})}
+                onChange={(e) => setVenueForm({ ...venueForm, price: e.target.value })}
               />
               <input
                 type="number"
                 placeholder="Kapasitas"
                 className="w-full p-3 border rounded-lg"
                 value={venueForm.capacity}
-                onChange={(e) => setVenueForm({...venueForm, capacity: e.target.value})}
+                onChange={(e) => setVenueForm({ ...venueForm, capacity: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi"
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={venueForm.description}
-                onChange={(e) => setVenueForm({...venueForm, description: e.target.value})}
+                onChange={(e) => setVenueForm({ ...venueForm, description: e.target.value })}
               />
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Upload Gambar Venue (opsional)</label>
@@ -1592,7 +1585,7 @@ const Admin = () => {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setVenueForm({...venueForm, image: uploadResponse.data.path});
+                          setVenueForm({ ...venueForm, image: uploadResponse.data.path });
                         } else {
                           alert('Gagal upload gambar');
                         }
@@ -1619,7 +1612,7 @@ const Admin = () => {
                 <select
                   className="w-full p-3 border rounded-lg"
                   value={statsForm.label}
-                  onChange={(e) => setStatsForm({...statsForm, label: e.target.value})}
+                  onChange={(e) => setStatsForm({ ...statsForm, label: e.target.value })}
                 >
                   <option value="">Pilih kategori statistik...</option>
                   <option value="Pernikahan Sukses">Pernikahan Sukses</option>
@@ -1639,7 +1632,7 @@ const Admin = () => {
                 placeholder="Nilai (contoh: 500, 98%, 10+)"
                 className="w-full p-3 border rounded-lg"
                 value={statsForm.value}
-                onChange={(e) => setStatsForm({...statsForm, value: e.target.value})}
+                onChange={(e) => setStatsForm({ ...statsForm, value: e.target.value })}
               />
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Upload Gambar Statistik (opsional)</label>
@@ -1653,7 +1646,7 @@ const Admin = () => {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setStatsForm({...statsForm, image: uploadResponse.data.path});
+                          setStatsForm({ ...statsForm, image: uploadResponse.data.path });
                         } else {
                           alert('Gagal upload gambar');
                         }
@@ -1725,7 +1718,7 @@ const Admin = () => {
                 <select
                   className="w-full p-3 border rounded-lg"
                   value={printingProductForm.category_id || ''}
-                  onChange={(e) => setPrintingProductForm({...printingProductForm, category_id: parseInt(e.target.value) || null})}
+                  onChange={(e) => setPrintingProductForm({ ...printingProductForm, category_id: parseInt(e.target.value) || null })}
                 >
                   <option value="">Pilih Kategori</option>
                   {printingCategories.map((cat: any) => (
@@ -1737,19 +1730,19 @@ const Admin = () => {
                 type="text"
                 placeholder={
                   activePrintingSubMenu === 'sablon-kaos' ? "Nama Produk Kaos (Contoh: Kaos Polos Premium)" :
-                  activePrintingSubMenu === 'undangan' ? "Nama Undangan (Contoh: Undangan Pernikahan Premium)" :
-                  "Nama Banner (Contoh: Banner Acara Custom)"
+                    activePrintingSubMenu === 'undangan' ? "Nama Undangan (Contoh: Undangan Pernikahan Premium)" :
+                      "Nama Banner (Contoh: Banner Acara Custom)"
                 }
                 className="w-full p-3 border rounded-lg"
                 value={printingProductForm.name}
-                onChange={(e) => setPrintingProductForm({...printingProductForm, name: e.target.value})}
+                onChange={(e) => setPrintingProductForm({ ...printingProductForm, name: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi Produk"
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={printingProductForm.description}
-                onChange={(e) => setPrintingProductForm({...printingProductForm, description: e.target.value})}
+                onChange={(e) => setPrintingProductForm({ ...printingProductForm, description: e.target.value })}
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1759,7 +1752,7 @@ const Admin = () => {
                     placeholder="Harga"
                     className="w-full p-3 border rounded-lg"
                     value={printingProductForm.price}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, price: e.target.value})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, price: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1769,7 +1762,7 @@ const Admin = () => {
                     placeholder="Harga Diskon"
                     className="w-full p-3 border rounded-lg"
                     value={printingProductForm.discount_price}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, discount_price: e.target.value})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, discount_price: e.target.value })}
                   />
                 </div>
               </div>
@@ -1785,7 +1778,7 @@ const Admin = () => {
                         value={printingProductForm.size_options ? printingProductForm.size_options.split(', ') : []}
                         onChange={(e) => {
                           const selected = Array.from(e.target.selectedOptions, option => option.value);
-                          setPrintingProductForm({...printingProductForm, size_options: selected.join(', ')});
+                          setPrintingProductForm({ ...printingProductForm, size_options: selected.join(', ') });
                         }}
                       >
                         <option value="S">S</option>
@@ -1805,7 +1798,7 @@ const Admin = () => {
                         value={printingProductForm.material_options ? printingProductForm.material_options.split(', ') : []}
                         onChange={(e) => {
                           const selected = Array.from(e.target.selectedOptions, option => option.value);
-                          setPrintingProductForm({...printingProductForm, material_options: selected.join(', ')});
+                          setPrintingProductForm({ ...printingProductForm, material_options: selected.join(', ') });
                         }}
                       >
                         <option value="Cotton Combed">Cotton Combed</option>
@@ -1821,7 +1814,7 @@ const Admin = () => {
                     <select
                       className="w-full p-3 border rounded-lg"
                       value={printingProductForm.finishing_options}
-                      onChange={(e) => setPrintingProductForm({...printingProductForm, finishing_options: e.target.value})}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, finishing_options: e.target.value })}
                     >
                       <option value="">Pilih Metode</option>
                       <option value="Screen Printing">Screen Printing</option>
@@ -1841,7 +1834,7 @@ const Admin = () => {
                       <select
                         className="w-full p-3 border rounded-lg"
                         value={printingProductForm.size_options}
-                        onChange={(e) => setPrintingProductForm({...printingProductForm, size_options: e.target.value})}
+                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, size_options: e.target.value })}
                       >
                         <option value="">Pilih Ukuran</option>
                         <option value="A5">A5 (14.8 x 21 cm)</option>
@@ -1855,7 +1848,7 @@ const Admin = () => {
                       <select
                         className="w-full p-3 border rounded-lg"
                         value={printingProductForm.material_options}
-                        onChange={(e) => setPrintingProductForm({...printingProductForm, material_options: e.target.value})}
+                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, material_options: e.target.value })}
                       >
                         <option value="">Pilih Kertas</option>
                         <option value="Art Paper 100gsm">Art Paper 100gsm</option>
@@ -1873,7 +1866,7 @@ const Admin = () => {
                       <select
                         className="w-full p-3 border rounded-lg"
                         value={printingProductForm.finishing_options}
-                        onChange={(e) => setPrintingProductForm({...printingProductForm, finishing_options: e.target.value})}
+                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, finishing_options: e.target.value })}
                       >
                         <option value="">Pilih Teknik</option>
                         <option value="Offset">Offset</option>
@@ -1886,7 +1879,7 @@ const Admin = () => {
                       <select
                         className="w-full p-3 border rounded-lg"
                         value={printingProductForm.color_options}
-                        onChange={(e) => setPrintingProductForm({...printingProductForm, color_options: e.target.value})}
+                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, color_options: e.target.value })}
                       >
                         <option value="">Pilih Isi</option>
                         <option value="25 lembar">25 lembar</option>
@@ -1909,7 +1902,7 @@ const Admin = () => {
                         placeholder="200 x 100"
                         className="w-full p-3 border rounded-lg"
                         value={printingProductForm.size_options}
-                        onChange={(e) => setPrintingProductForm({...printingProductForm, size_options: e.target.value})}
+                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, size_options: e.target.value })}
                       />
                       <small className="text-gray-500">Format: lebar x tinggi</small>
                     </div>
@@ -1918,7 +1911,7 @@ const Admin = () => {
                       <select
                         className="w-full p-3 border rounded-lg"
                         value={printingProductForm.material_options}
-                        onChange={(e) => setPrintingProductForm({...printingProductForm, material_options: e.target.value})}
+                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, material_options: e.target.value })}
                       >
                         <option value="">Pilih Bahan</option>
                         <option value="Vinyl">Vinyl</option>
@@ -1937,7 +1930,7 @@ const Admin = () => {
                       value={printingProductForm.finishing_options ? printingProductForm.finishing_options.split(', ') : []}
                       onChange={(e) => {
                         const selected = Array.from(e.target.selectedOptions, option => option.value);
-                        setPrintingProductForm({...printingProductForm, finishing_options: selected.join(', ')});
+                        setPrintingProductForm({ ...printingProductForm, finishing_options: selected.join(', ') });
                       }}
                     >
                       <option value="Eyelet">Eyelet</option>
@@ -1959,7 +1952,7 @@ const Admin = () => {
                     placeholder="Minimal Order"
                     className="w-full p-3 border rounded-lg"
                     value={printingProductForm.min_order}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, min_order: parseInt(e.target.value)})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, min_order: parseInt(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -1969,7 +1962,7 @@ const Admin = () => {
                     placeholder="3-5 hari"
                     className="w-full p-3 border rounded-lg"
                     value={printingProductForm.estimated_time}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, estimated_time: e.target.value})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, estimated_time: e.target.value })}
                   />
                 </div>
               </div>
@@ -1984,7 +1977,7 @@ const Admin = () => {
                     placeholder="4.5"
                     className="w-full p-3 border rounded-lg"
                     value={printingProductForm.rating}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, rating: parseFloat(e.target.value)})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, rating: parseFloat(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -1994,7 +1987,7 @@ const Admin = () => {
                     placeholder="0"
                     className="w-full p-3 border rounded-lg"
                     value={printingProductForm.reviews_count}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, reviews_count: parseInt(e.target.value)})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, reviews_count: parseInt(e.target.value) })}
                   />
                 </div>
               </div>
@@ -2003,7 +1996,7 @@ const Admin = () => {
                 className="w-full p-3 border rounded-lg"
                 rows={2}
                 value={printingProductForm.features}
-                onChange={(e) => setPrintingProductForm({...printingProductForm, features: e.target.value})}
+                onChange={(e) => setPrintingProductForm({ ...printingProductForm, features: e.target.value })}
               />
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Upload Gambar Produk (opsional)</label>
@@ -2017,7 +2010,7 @@ const Admin = () => {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setPrintingProductForm({...printingProductForm, images: uploadResponse.data.path});
+                          setPrintingProductForm({ ...printingProductForm, images: uploadResponse.data.path });
                         } else {
                           alert('Gagal upload gambar');
                         }
@@ -2039,7 +2032,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={printingProductForm.is_featured}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, is_featured: e.target.checked})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_featured: e.target.checked })}
                   />
                   <span>Produk Unggulan</span>
                 </label>
@@ -2047,7 +2040,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={printingProductForm.is_new}
-                    onChange={(e) => setPrintingProductForm({...printingProductForm, is_new: e.target.checked})}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_new: e.target.checked })}
                   />
                   <span>Produk Baru</span>
                 </label>
@@ -2062,16 +2055,16 @@ const Admin = () => {
                 placeholder="Nama Paket Umrah"
                 className="w-full p-3 border rounded-lg"
                 value={umrahPackageForm.name}
-                onChange={(e) => setUmrahPackageForm({...umrahPackageForm, name: e.target.value})}
+                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, name: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi Paket"
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={umrahPackageForm.description}
-                onChange={(e) => setUmrahPackageForm({...umrahPackageForm, description: e.target.value})}
+                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, description: e.target.value })}
               />
-              
+
               {/* Image Upload Section */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Upload Gambar Paket</label>
@@ -2089,7 +2082,7 @@ const Admin = () => {
                             const newPath = uploadResponse.data.path;
                             const existing = umrahPackageForm.images ? umrahPackageForm.images.trim() : '';
                             const updated = existing ? `${existing}, ${newPath}` : newPath;
-                            setUmrahPackageForm({...umrahPackageForm, images: updated});
+                            setUmrahPackageForm({ ...umrahPackageForm, images: updated });
                           } else {
                             alert('Gagal upload gambar: ' + (uploadResponse.error || 'Unknown error'));
                           }
@@ -2106,7 +2099,7 @@ const Admin = () => {
                   placeholder="Atau masukkan URL gambar (pisahkan dengan koma)"
                   className="w-full p-3 border rounded-lg text-sm"
                   value={umrahPackageForm.images}
-                  onChange={(e) => setUmrahPackageForm({...umrahPackageForm, images: e.target.value})}
+                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, images: e.target.value })}
                 />
                 {umrahPackageForm.images && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -2117,7 +2110,7 @@ const Admin = () => {
                           type="button"
                           onClick={() => {
                             const imgs = umrahPackageForm.images.split(',').map(s => s.trim()).filter((_, i) => i !== idx);
-                            setUmrahPackageForm({...umrahPackageForm, images: imgs.join(', ')});
+                            setUmrahPackageForm({ ...umrahPackageForm, images: imgs.join(', ') });
                           }}
                           className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                         >×</button>
@@ -2134,7 +2127,7 @@ const Admin = () => {
                     type="number"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.duration}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, duration: parseInt(e.target.value)})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, duration: parseInt(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -2143,7 +2136,7 @@ const Admin = () => {
                     type="number"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.price}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, price: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, price: e.target.value })}
                   />
                 </div>
               </div>
@@ -2153,7 +2146,7 @@ const Admin = () => {
                   <select
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.departure_city}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, departure_city: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, departure_city: e.target.value })}
                   >
                     <option value="Jakarta">Jakarta</option>
                     <option value="Surabaya">Surabaya</option>
@@ -2169,7 +2162,7 @@ const Admin = () => {
                     placeholder="Garuda Indonesia"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.airline}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, airline: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, airline: e.target.value })}
                   />
                 </div>
               </div>
@@ -2181,7 +2174,7 @@ const Admin = () => {
                     placeholder="Nama Hotel Mekah"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.hotel_mekah}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, hotel_mekah: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_mekah: e.target.value })}
                   />
                 </div>
                 <div>
@@ -2191,7 +2184,7 @@ const Admin = () => {
                     placeholder="Nama Hotel Madinah"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.hotel_madinah}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, hotel_madinah: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_madinah: e.target.value })}
                   />
                 </div>
               </div>
@@ -2201,7 +2194,7 @@ const Admin = () => {
                   <select
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.hotel_rating}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, hotel_rating: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_rating: e.target.value })}
                   >
                     <option value="3 Star">3 Star</option>
                     <option value="4 Star">4 Star</option>
@@ -2215,7 +2208,7 @@ const Admin = () => {
                     placeholder="500m"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.distance_haram}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, distance_haram: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, distance_haram: e.target.value })}
                   />
                 </div>
               </div>
@@ -2229,7 +2222,7 @@ const Admin = () => {
                     placeholder="Private Bus"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.transport_type}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, transport_type: e.target.value})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, transport_type: e.target.value })}
                   />
                 </div>
                 <div>
@@ -2239,7 +2232,7 @@ const Admin = () => {
                     placeholder="30"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.group_size}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, group_size: parseInt(e.target.value) || 30})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, group_size: parseInt(e.target.value) || 30 })}
                   />
                 </div>
               </div>
@@ -2251,7 +2244,7 @@ const Admin = () => {
                     placeholder="15"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.availability}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, availability: parseInt(e.target.value) || 15})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, availability: parseInt(e.target.value) || 15 })}
                   />
                 </div>
                 <div>
@@ -2264,7 +2257,7 @@ const Admin = () => {
                     placeholder="4.5"
                     className="w-full p-3 border rounded-lg"
                     value={umrahPackageForm.rating}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, rating: parseFloat(e.target.value) || 4.5})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, rating: parseFloat(e.target.value) || 4.5 })}
                   />
                 </div>
               </div>
@@ -2275,31 +2268,31 @@ const Admin = () => {
                   className="p-3 border rounded-lg"
                   rows={4}
                   value={umrahPackageForm.included_features}
-                  onChange={(e) => setUmrahPackageForm({...umrahPackageForm, included_features: e.target.value})}
+                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, included_features: e.target.value })}
                 />
                 <textarea
                   placeholder="Fasilitas Tidak Termasuk (satu per baris)"
                   className="p-3 border rounded-lg"
                   rows={4}
                   value={umrahPackageForm.excluded_features}
-                  onChange={(e) => setUmrahPackageForm({...umrahPackageForm, excluded_features: e.target.value})}
+                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, excluded_features: e.target.value })}
                 />
               </div>
-              
+
               <textarea
                 placeholder="Rencana Pembayaran (satu per baris, contoh: Cash, Cicilan 3x, Cicilan 6x)"
                 className="w-full p-3 border rounded-lg"
                 rows={2}
                 value={umrahPackageForm.payment_plans}
-                onChange={(e) => setUmrahPackageForm({...umrahPackageForm, payment_plans: e.target.value})}
+                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, payment_plans: e.target.value })}
               />
-              
+
               <input
                 type="text"
                 placeholder="Tags (pisahkan dengan koma, contoh: Premium, Direct Flight, Ramadhan)"
                 className="w-full p-3 border rounded-lg"
                 value={umrahPackageForm.tags}
-                onChange={(e) => setUmrahPackageForm({...umrahPackageForm, tags: e.target.value})}
+                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, tags: e.target.value })}
               />
 
               <div className="flex flex-wrap gap-4">
@@ -2307,7 +2300,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.meals_included}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, meals_included: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, meals_included: e.target.checked })}
                   />
                   <span>Makanan Termasuk</span>
                 </label>
@@ -2315,7 +2308,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.tour_guide}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, tour_guide: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, tour_guide: e.target.checked })}
                   />
                   <span>Tour Guide</span>
                 </label>
@@ -2323,7 +2316,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.visa_assistance}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, visa_assistance: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, visa_assistance: e.target.checked })}
                   />
                   <span>Visa Assistance</span>
                 </label>
@@ -2331,7 +2324,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.vaccination_assistance}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, vaccination_assistance: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, vaccination_assistance: e.target.checked })}
                   />
                   <span>Vaccination Assistance</span>
                 </label>
@@ -2341,14 +2334,14 @@ const Admin = () => {
                 placeholder="Tanggal Keberangkatan (pisahkan koma)"
                 className="w-full p-3 border rounded-lg"
                 value={umrahPackageForm.departure_dates}
-                onChange={(e) => setUmrahPackageForm({...umrahPackageForm, departure_dates: e.target.value})}
+                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, departure_dates: e.target.value })}
               />
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.featured}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, featured: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, featured: e.target.checked })}
                   />
                   <span>Paket Unggulan</span>
                 </label>
@@ -2356,7 +2349,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.best_seller}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, best_seller: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, best_seller: e.target.checked })}
                   />
                   <span>Best Seller</span>
                 </label>
@@ -2364,7 +2357,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.early_bird_discount}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, early_bird_discount: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, early_bird_discount: e.target.checked })}
                   />
                   <span>Early Bird Discount</span>
                 </label>
@@ -2372,9 +2365,9 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={umrahPackageForm.is_active}
-                    onChange={(e) => setUmrahPackageForm({...umrahPackageForm, is_active: e.target.checked})}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, is_active: e.target.checked })}
                   />
-<span>Aktif</span>
+                  <span>Aktif</span>
                 </label>
               </div>
             </>
@@ -2387,14 +2380,14 @@ const Admin = () => {
                 placeholder="Nama Paket Haji"
                 className="w-full p-3 border rounded-lg"
                 value={hajiPackageForm.name}
-                onChange={(e) => setHajiPackageForm({...hajiPackageForm, name: e.target.value})}
+                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, name: e.target.value })}
               />
               <textarea
                 placeholder="Deskripsi Paket"
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={hajiPackageForm.description}
-                onChange={(e) => setHajiPackageForm({...hajiPackageForm, description: e.target.value})}
+                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, description: e.target.value })}
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -2404,7 +2397,7 @@ const Admin = () => {
                     placeholder="1445H/2024"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.quota_year}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, quota_year: e.target.value})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, quota_year: e.target.value })}
                   />
                 </div>
                 <div>
@@ -2413,7 +2406,7 @@ const Admin = () => {
                     type="number"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.price}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, price: e.target.value})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, price: e.target.value })}
                   />
                 </div>
               </div>
@@ -2422,7 +2415,7 @@ const Admin = () => {
                 className="w-full p-3 border rounded-lg"
                 rows={3}
                 value={hajiPackageForm.payment_terms}
-                onChange={(e) => setHajiPackageForm({...hajiPackageForm, payment_terms: e.target.value})}
+                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, payment_terms: e.target.value })}
               />
               <div className="grid grid-cols-2 gap-4">
                 <textarea
@@ -2430,14 +2423,14 @@ const Admin = () => {
                   className="p-3 border rounded-lg"
                   rows={4}
                   value={hajiPackageForm.included_features}
-                  onChange={(e) => setHajiPackageForm({...hajiPackageForm, included_features: e.target.value})}
+                  onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, included_features: e.target.value })}
                 />
                 <textarea
                   placeholder="Fasilitas Tidak Termasuk (satu per baris)"
                   className="p-3 border rounded-lg"
                   rows={4}
                   value={hajiPackageForm.excluded_features}
-                  onChange={(e) => setHajiPackageForm({...hajiPackageForm, excluded_features: e.target.value})}
+                  onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, excluded_features: e.target.value })}
                 />
               </div>
               <textarea
@@ -2445,9 +2438,9 @@ const Admin = () => {
                 className="w-full p-3 border rounded-lg"
                 rows={4}
                 value={hajiPackageForm.requirements}
-                onChange={(e) => setHajiPackageForm({...hajiPackageForm, requirements: e.target.value})}
+                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, requirements: e.target.value })}
               />
-              
+
               {/* Image Upload Section */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium">Upload Gambar Paket</label>
@@ -2465,7 +2458,7 @@ const Admin = () => {
                             const newPath = uploadResponse.data.path;
                             const existing = hajiPackageForm.images ? hajiPackageForm.images.trim() : '';
                             const updated = existing ? `${existing}, ${newPath}` : newPath;
-                            setHajiPackageForm({...hajiPackageForm, images: updated});
+                            setHajiPackageForm({ ...hajiPackageForm, images: updated });
                           } else {
                             alert('Gagal upload gambar: ' + (uploadResponse.error || 'Unknown error'));
                           }
@@ -2482,7 +2475,7 @@ const Admin = () => {
                   placeholder="Atau masukkan URL gambar (pisahkan dengan koma)"
                   className="w-full p-3 border rounded-lg text-sm"
                   value={hajiPackageForm.images}
-                  onChange={(e) => setHajiPackageForm({...hajiPackageForm, images: e.target.value})}
+                  onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, images: e.target.value })}
                 />
                 {hajiPackageForm.images && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -2493,7 +2486,7 @@ const Admin = () => {
                           type="button"
                           onClick={() => {
                             const imgs = hajiPackageForm.images.split(',').map(s => s.trim()).filter((_, i) => i !== idx);
-                            setHajiPackageForm({...hajiPackageForm, images: imgs.join(', ')});
+                            setHajiPackageForm({ ...hajiPackageForm, images: imgs.join(', ') });
                           }}
                           className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                         >×</button>
@@ -2515,7 +2508,7 @@ const Admin = () => {
                     placeholder="4.5"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.rating}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, rating: parseFloat(e.target.value) || 4.5})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, rating: parseFloat(e.target.value) || 4.5 })}
                   />
                 </div>
                 <div>
@@ -2525,7 +2518,7 @@ const Admin = () => {
                     placeholder="0"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.reviews_count}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, reviews_count: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, reviews_count: parseInt(e.target.value) || 0 })}
                   />
                 </div>
               </div>
@@ -2538,7 +2531,7 @@ const Admin = () => {
                     type="date"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.registration_deadline}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, registration_deadline: e.target.value})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, registration_deadline: e.target.value })}
                   />
                 </div>
                 <div>
@@ -2548,7 +2541,7 @@ const Admin = () => {
                     placeholder="25"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.available_quota}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, available_quota: parseInt(e.target.value) || 25})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, available_quota: parseInt(e.target.value) || 25 })}
                   />
                 </div>
               </div>
@@ -2562,7 +2555,7 @@ const Admin = () => {
                     placeholder="12"
                     className="w-full p-3 border rounded-lg"
                     value={hajiPackageForm.training_sessions}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, training_sessions: parseInt(e.target.value) || 12})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, training_sessions: parseInt(e.target.value) || 12 })}
                   />
                 </div>
                 <div className="flex items-center pt-6">
@@ -2570,7 +2563,7 @@ const Admin = () => {
                     <input
                       type="checkbox"
                       checked={hajiPackageForm.medical_facility}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, medical_facility: e.target.checked})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, medical_facility: e.target.checked })}
                     />
                     <span>Fasilitas Medis</span>
                   </label>
@@ -2588,7 +2581,7 @@ const Admin = () => {
                       placeholder="Nama Hotel Mekah"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_mekah_hotel}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_mekah_hotel: e.target.value})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_hotel: e.target.value })}
                     />
                   </div>
                   <div>
@@ -2598,7 +2591,7 @@ const Admin = () => {
                       placeholder="20"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_mekah_nights}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_mekah_nights: parseInt(e.target.value) || 20})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_nights: parseInt(e.target.value) || 20 })}
                     />
                   </div>
                   <div>
@@ -2608,7 +2601,7 @@ const Admin = () => {
                       placeholder="500m"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_mekah_distance}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_mekah_distance: e.target.value})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_distance: e.target.value })}
                     />
                   </div>
                 </div>
@@ -2620,7 +2613,7 @@ const Admin = () => {
                       placeholder="Nama Hotel Madinah"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_madinah_hotel}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_madinah_hotel: e.target.value})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_hotel: e.target.value })}
                     />
                   </div>
                   <div>
@@ -2630,7 +2623,7 @@ const Admin = () => {
                       placeholder="10"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_madinah_nights}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_madinah_nights: parseInt(e.target.value) || 10})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_nights: parseInt(e.target.value) || 10 })}
                     />
                   </div>
                   <div>
@@ -2640,7 +2633,7 @@ const Admin = () => {
                       placeholder="300m"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_madinah_distance}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_madinah_distance: e.target.value})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_distance: e.target.value })}
                     />
                   </div>
                 </div>
@@ -2652,7 +2645,7 @@ const Admin = () => {
                       placeholder="Nama Hotel Jeddah"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_jeddah_hotel}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_jeddah_hotel: e.target.value})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_jeddah_hotel: e.target.value })}
                     />
                   </div>
                   <div>
@@ -2662,7 +2655,7 @@ const Admin = () => {
                       placeholder="2"
                       className="w-full p-3 border rounded-lg"
                       value={hajiPackageForm.accommodation_jeddah_nights}
-                      onChange={(e) => setHajiPackageForm({...hajiPackageForm, accommodation_jeddah_nights: parseInt(e.target.value) || 2})}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_jeddah_nights: parseInt(e.target.value) || 2 })}
                     />
                   </div>
                 </div>
@@ -2673,7 +2666,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={hajiPackageForm.featured}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, featured: e.target.checked})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, featured: e.target.checked })}
                   />
                   <span>Paket Unggulan</span>
                 </label>
@@ -2681,7 +2674,7 @@ const Admin = () => {
                   <input
                     type="checkbox"
                     checked={hajiPackageForm.is_active}
-                    onChange={(e) => setHajiPackageForm({...hajiPackageForm, is_active: e.target.checked})}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, is_active: e.target.checked })}
                   />
                   <span>Aktif</span>
                 </label>
@@ -2821,7 +2814,7 @@ const Admin = () => {
 
                         setSelectedItem({ type: 'product' });
                         setActionMode('add');
-                        
+
                         // Set default form values based on active sub-menu
                         const getDefaultFormValues = () => {
                           switch (activePrintingSubMenu) {
@@ -3027,22 +3020,22 @@ const Admin = () => {
                               };
                           }
                         };
-                        
+
                         setPrintingProductForm(getDefaultFormValues());
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
                     >
                       <Plus size={20} />
-                      Tambah {activePrintingSubMenu === 'all' ? 'Produk' : 
+                      Tambah {activePrintingSubMenu === 'all' ? 'Produk' :
                         activePrintingSubMenu === 'undangan' ? 'Undangan' :
-                        activePrintingSubMenu === 'sablon-kaos' ? 'Sablon' :
-                        activePrintingSubMenu === 'banner' ? 'Banner' :
-                        activePrintingSubMenu === 'id-card' ? 'ID Card' :
-                        activePrintingSubMenu === 'kartu-nama' ? 'Kartu Nama' :
-                        activePrintingSubMenu === 'brosur-flyer' ? 'Brosur' :
-                        activePrintingSubMenu === 'stiker-label' ? 'Stiker' :
-                        activePrintingSubMenu === 'kemasan-produk' ? 'Kemasan' :
-                        activePrintingSubMenu === 'merchandise' ? 'Merchandise' : 'Produk'}
+                          activePrintingSubMenu === 'sablon-kaos' ? 'Sablon' :
+                            activePrintingSubMenu === 'banner' ? 'Banner' :
+                              activePrintingSubMenu === 'id-card' ? 'ID Card' :
+                                activePrintingSubMenu === 'kartu-nama' ? 'Kartu Nama' :
+                                  activePrintingSubMenu === 'brosur-flyer' ? 'Brosur' :
+                                    activePrintingSubMenu === 'stiker-label' ? 'Stiker' :
+                                      activePrintingSubMenu === 'kemasan-produk' ? 'Kemasan' :
+                                        activePrintingSubMenu === 'merchandise' ? 'Merchandise' : 'Produk'}
                     </button>
                   )}
                   {activeMenu === 'umrah-haji' && (
@@ -3372,7 +3365,7 @@ const StatsContent = ({ items, onEdit, onDelete }: any) => (
 );
 
 const WeddingShowContent = ({ items, onEdit, onDelete, onUpdate }: any) => {
-  const [uploadingStates, setUploadingStates] = useState<{[key: number]: boolean}>({});
+  const [uploadingStates, setUploadingStates] = useState<{ [key: number]: boolean }>({});
 
   const handleUploadThumbnail = async (itemId: number, file: File) => {
     setUploadingStates(prev => ({ ...prev, [itemId]: true }));
@@ -3435,11 +3428,10 @@ const WeddingShowContent = ({ items, onEdit, onDelete, onUpdate }: any) => {
                   <Trash2 size={16} className="inline mr-1" />
                   Hapus
                 </button>
-                <label className={`flex-1 py-2 rounded hover:bg-green-200 cursor-pointer text-center ${
-                  uploadingStates[item.id]
+                <label className={`flex-1 py-2 rounded hover:bg-green-200 cursor-pointer text-center ${uploadingStates[item.id]
                     ? 'bg-gray-100 text-gray-500'
                     : 'bg-green-100 text-green-700'
-                }`}>
+                  }`}>
                   <Upload size={16} className="inline mr-1" />
                   {uploadingStates[item.id] ? 'Uploading...' : 'Upload Thumbnail'}
                   <input
@@ -3515,11 +3507,10 @@ const UmrahHajiAdminContent = ({
           <button
             key={tab.id}
             onClick={() => setActiveSubMenu(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeSubMenu === tab.id
+            className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 transition-colors ${activeSubMenu === tab.id
                 ? 'text-primary border-primary'
                 : 'text-gray-600 border-transparent hover:text-primary'
-            }`}
+              }`}
           >
             {tab.icon}
             <span>{tab.label}</span>
@@ -3681,12 +3672,11 @@ const UmrahHajiAdminContent = ({
                       <select
                         value={booking.status}
                         onChange={(e) => onUpdateBookingStatus(booking.id, e.target.value)}
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                          }`}
                       >
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
@@ -3798,11 +3788,10 @@ const PrintingAdminContent = ({
           <button
             key={tab.id}
             onClick={() => onSubMenuChange(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 transition-colors ${
-              activeSubMenu === tab.id
+            className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 transition-colors ${activeSubMenu === tab.id
                 ? 'text-primary border-primary'
                 : 'text-gray-600 border-transparent hover:text-primary'
-            }`}
+              }`}
           >
             {tab.icon}
             <span>{tab.label}</span>
@@ -3889,11 +3878,10 @@ const PrintingAdminContent = ({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-col gap-1">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      product.is_active
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${product.is_active
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
-                    }`}>
+                      }`}>
                       {product.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
                     {product.is_featured && (
@@ -3981,7 +3969,7 @@ const HeroImagesSettings = () => {
     try {
       const file = files[0];
       const uploadResponse = await uploadFile(file);
-      
+
       if (uploadResponse.success) {
         const newImages = [...heroImages, uploadResponse.data.path];
         await updateSettings({ 'hero-images': JSON.stringify(newImages) });
@@ -3999,7 +3987,7 @@ const HeroImagesSettings = () => {
 
   const handleRemoveImage = async (index: number) => {
     if (!confirm('Hapus gambar ini?')) return;
-    
+
     const newImages = heroImages.filter((_: any, i: number) => i !== index);
     await updateSettings({ 'hero-images': JSON.stringify(newImages) });
     alert('Gambar berhasil dihapus!');

@@ -1,77 +1,98 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@libsql/client';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_PATH = path.resolve(__dirname, '../../wedding.db');
 
 let db: any | null = null;
-let BetterSqlite3: any | null = null;
-let betterSqlite3LoadError: unknown = null;
+let useTurso = false;
 
-async function getBetterSqlite3(): Promise<any> {
-  if (BetterSqlite3) return BetterSqlite3;
-  if (betterSqlite3LoadError) throw betterSqlite3LoadError;
-
-  // Lazy-load native bindings to avoid crashing during dev/server config evaluation.
-  try {
-    BetterSqlite3 = (await import('better-sqlite3')).default;
-    return BetterSqlite3;
-  } catch (err) {
-    betterSqlite3LoadError = err;
-    throw err;
-  }
+if (process.env.DATABASE_URL) {
+  useTurso = true;
 }
 
 export async function ensureDb(): Promise<any> {
   if (db) return db;
-  const Database = await getBetterSqlite3();
-  db = new Database(DB_PATH);
+
+  if (useTurso) {
+    console.log('Connecting to Turso Database at', process.env.DATABASE_URL);
+    db = createClient({
+      url: process.env.DATABASE_URL!,
+      authToken: process.env.DATABASE_AUTH_TOKEN
+    });
+  } else {
+    // Lazy-load native bindings to avoid crashing during dev/server config evaluation.
+    try {
+      const BetterSqlite3 = (await import('better-sqlite3')).default;
+      db = new BetterSqlite3(DB_PATH);
+    } catch (err) {
+      console.error('Failed to load better-sqlite3. Make sure it is installed for local development.', err);
+      throw err;
+    }
+  }
   return db;
 }
 
-function getDbSync(): any {
+export function getDb(): any {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
   return db;
 }
 
-export function getDb(): any {
-  return getDbSync();
+export async function dbRun(sql: string, params: any[] = []): Promise<any> {
+  const database = db ?? await ensureDb();
+  if (useTurso) {
+    const res = await database.execute({ sql, args: params });
+    return {
+      changes: res.rowsAffected,
+      lastInsertRowid: res.lastInsertRowid,
+      lastID: res.lastInsertRowid !== undefined ? Number(res.lastInsertRowid) : undefined
+    };
+  } else {
+    const result = database.prepare(sql).run(params);
+    return {
+      changes: result.changes,
+      lastInsertRowid: result.lastInsertRowid,
+      lastID: Number(result.lastInsertRowid)
+    };
+  }
 }
 
-
-
-export function dbRun(sql: string, params: any[] = []): any {
-  const database = db ?? (() => { throw new Error('Database not initialized'); })();
-  return database.prepare(sql).run(params);
+export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
+  const database = db ?? await ensureDb();
+  if (useTurso) {
+    const res = await database.execute({ sql, args: params });
+    return res.rows[0] as unknown as T;
+  } else {
+    return database.prepare(sql).get(params) as T;
+  }
 }
 
-export function dbGet<T = any>(sql: string, params: any[] = []): T {
-  const database = db ?? (() => { throw new Error('Database not initialized'); })();
-  return database.prepare(sql).get(params) as T;
-}
-
-export function dbAll<T = any>(sql: string, params: any[] = []): T[] {
-  const database = db ?? (() => { throw new Error('Database not initialized'); })();
-  return database.prepare(sql).all(params) as T[];
+export async function dbAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  const database = db ?? await ensureDb();
+  if (useTurso) {
+    const res = await database.execute({ sql, args: params });
+    return res.rows as unknown as T[];
+  } else {
+    return database.prepare(sql).all(params) as T[];
+  }
 }
 
 export async function initDatabase(): Promise<void> {
-  // Initialize the DB connection before running any queries.
-  // If better-sqlite3 native bindings are missing, this will throw and be caught by server/index.ts.
   try {
-    // Ensure database is initialized before running queries
     if (!db) {
       await ensureDb();
     }
   } catch (e) {
+    console.error('Error ensuring database connection:', e);
     throw e;
   }
 
   try {
-    dbRun(`CREATE TABLE IF NOT EXISTS gallery (
+    await dbRun(`CREATE TABLE IF NOT EXISTS gallery (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       category TEXT NOT NULL,
@@ -80,7 +101,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS testimonials (
+    await dbRun(`CREATE TABLE IF NOT EXISTS testimonials (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       text TEXT NOT NULL,
@@ -90,7 +111,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS printing_categories (
+    await dbRun(`CREATE TABLE IF NOT EXISTS printing_categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
@@ -101,7 +122,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS printing_products (
+    await dbRun(`CREATE TABLE IF NOT EXISTS printing_products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       category_id INTEGER NOT NULL,
       name TEXT NOT NULL,
@@ -122,7 +143,7 @@ export async function initDatabase(): Promise<void> {
       FOREIGN KEY (category_id) REFERENCES printing_categories (id)
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS printing_packages (
+    await dbRun(`CREATE TABLE IF NOT EXISTS printing_packages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
@@ -138,7 +159,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS packages (
+    await dbRun(`CREATE TABLE IF NOT EXISTS packages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       price REAL NOT NULL,
@@ -150,7 +171,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS umrah_packages (
+    await dbRun(`CREATE TABLE IF NOT EXISTS umrah_packages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
@@ -189,9 +210,9 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    migrateUmrahPackagesTable();
+    await migrateUmrahPackagesTable();
 
-    dbRun(`CREATE TABLE IF NOT EXISTS haji_packages (
+    await dbRun(`CREATE TABLE IF NOT EXISTS haji_packages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
@@ -216,7 +237,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS service_faqs (
+    await dbRun(`CREATE TABLE IF NOT EXISTS service_faqs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       question TEXT NOT NULL,
       answer TEXT NOT NULL,
@@ -226,7 +247,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS venues (
+    await dbRun(`CREATE TABLE IF NOT EXISTS venues (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       category TEXT NOT NULL,
@@ -238,7 +259,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS stats (
+    await dbRun(`CREATE TABLE IF NOT EXISTS stats (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       label TEXT NOT NULL,
       value INTEGER NOT NULL,
@@ -247,7 +268,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS section_images (
+    await dbRun(`CREATE TABLE IF NOT EXISTS section_images (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       section TEXT NOT NULL,
       image_url TEXT NOT NULL,
@@ -258,7 +279,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS videos (
+    await dbRun(`CREATE TABLE IF NOT EXISTS videos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
@@ -268,7 +289,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS wedding_show_videos (
+    await dbRun(`CREATE TABLE IF NOT EXISTS wedding_show_videos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       videoPath TEXT NOT NULL,
       thumbnail TEXT,
@@ -276,7 +297,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS settings (
+    await dbRun(`CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT UNIQUE NOT NULL,
       value TEXT NOT NULL,
@@ -284,7 +305,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS admin_credentials (
+    await dbRun(`CREATE TABLE IF NOT EXISTS admin_credentials (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
@@ -292,7 +313,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS customers (
+    await dbRun(`CREATE TABLE IF NOT EXISTS customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       phone TEXT,
@@ -304,7 +325,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS customer_debts (
+    await dbRun(`CREATE TABLE IF NOT EXISTS customer_debts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_id INTEGER NOT NULL,
       amount REAL NOT NULL,
@@ -316,7 +337,7 @@ export async function initDatabase(): Promise<void> {
       FOREIGN KEY (customer_id) REFERENCES customers (id)
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS printing_orders (
+    await dbRun(`CREATE TABLE IF NOT EXISTS printing_orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_name TEXT NOT NULL,
       customer_email TEXT,
@@ -330,7 +351,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    dbRun(`CREATE TABLE IF NOT EXISTS religious_bookings (
+    await dbRun(`CREATE TABLE IF NOT EXISTS religious_bookings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_name TEXT NOT NULL,
       customer_email TEXT,
@@ -347,7 +368,7 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    seedPrintingData();
+    await seedPrintingData();
 
     console.log('Database initialized successfully');
   } catch (error) {
@@ -356,9 +377,9 @@ export async function initDatabase(): Promise<void> {
   }
 }
 
-function migrateUmrahPackagesTable(): void {
+async function migrateUmrahPackagesTable(): Promise<void> {
   try {
-    const columns = dbAll<{ name: string }>("PRAGMA table_info(umrah_packages)");
+    const columns = await dbAll<{ name: string }>("PRAGMA table_info(umrah_packages)");
     const columnNames = columns.map(col => col.name);
 
     const requiredColumns = [
@@ -377,7 +398,7 @@ function migrateUmrahPackagesTable(): void {
     for (const col of requiredColumns) {
       if (!columnNames.includes(col.name)) {
         console.log(`Adding missing column: ${col.name}`);
-        dbRun(`ALTER TABLE umrah_packages ADD COLUMN ${col.name} ${col.type}`);
+        await dbRun(`ALTER TABLE umrah_packages ADD COLUMN ${col.name} ${col.type}`);
       }
     }
 
@@ -387,9 +408,9 @@ function migrateUmrahPackagesTable(): void {
   }
 }
 
-function seedPrintingData(): void {
+async function seedPrintingData(): Promise<void> {
   try {
-    const existingProducts = dbAll("SELECT id FROM printing_products");
+    const existingProducts = await dbAll("SELECT id FROM printing_products");
     if (existingProducts.length > 0) {
       console.log('Printing products already exist, skipping seeding');
       return;
@@ -407,11 +428,11 @@ function seedPrintingData(): void {
       { name: 'Merchandise Lainnya', description: 'Produk merchandise lainnya sesuai kebutuhan', icon: 'ShoppingBag', order_index: 9, is_active: 1 },
     ];
 
-    const insertCategory = getDb().prepare(
-      `INSERT INTO printing_categories (name, description, icon, order_index, is_active) VALUES (?, ?, ?, ?, ?)`
-    );
     for (const c of printingCategories) {
-      insertCategory.run(c.name, c.description, c.icon, c.order_index, c.is_active);
+      await dbRun(
+        `INSERT INTO printing_categories (name, description, icon, order_index, is_active) VALUES (?, ?, ?, ?, ?)`,
+        [c.name, c.description, c.icon, c.order_index, c.is_active]
+      );
     }
 
     const printingProducts = [
@@ -427,12 +448,12 @@ function seedPrintingData(): void {
       { category_id: 9, name: 'Merchandise Custom', description: 'Produk merchandise dengan desain custom', price: 25000, discount_price: 20000, size_options: 'Custom', material_options: 'Berbagai bahan sesuai produk', color_options: 'Full Color', design_template_url: null, images: '/printing/merchandise.jpg', is_custom_design: 0, estimated_time: '7-14 hari', min_order: 25, is_active: 1 },
     ];
 
-    const insertProduct = getDb().prepare(
-      `INSERT INTO printing_products (category_id, name, description, price, discount_price, size_options, material_options, color_options, design_template_url, images, is_custom_design, estimated_time, min_order, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
     for (const p of printingProducts) {
-      insertProduct.run(p.category_id, p.name, p.description, p.price, p.discount_price, p.size_options, p.material_options, p.color_options, p.design_template_url, p.images, p.is_custom_design, p.estimated_time, p.min_order, p.is_active);
+      await dbRun(
+        `INSERT INTO printing_products (category_id, name, description, price, discount_price, size_options, material_options, color_options, design_template_url, images, is_custom_design, estimated_time, min_order, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [p.category_id, p.name, p.description, p.price, p.discount_price, p.size_options, p.material_options, p.color_options, p.design_template_url, p.images, p.is_custom_design, p.estimated_time, p.min_order, p.is_active]
+      );
     }
 
     console.log('Printing categories and products seeded successfully');
@@ -444,7 +465,9 @@ function seedPrintingData(): void {
 export async function restartDatabase(): Promise<void> {
   try {
     if (db) {
-      db.close();
+      if (!useTurso) {
+        db.close();
+      }
       db = null;
     }
     await initDatabase();
