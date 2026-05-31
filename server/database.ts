@@ -111,7 +111,7 @@ export function getDb(): any {
 
 export async function dbRun(sql: string, params: any[] = []): Promise<any> {
   const database = db ?? await ensureDb();
-  if (useTurso()) {
+  if (useTurso) {
     const res = await tursoExecute(database, sql, params);
     return {
       changes: res.rowsAffected,
@@ -130,7 +130,7 @@ export async function dbRun(sql: string, params: any[] = []): Promise<any> {
 
 export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
   const database = db ?? await ensureDb();
-  if (useTurso()) {
+  if (useTurso) {
     const res = await tursoExecute(database, sql, params);
     return rowToObject(res.rows[0]) as T;
   } else {
@@ -140,7 +140,7 @@ export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T
 
 export async function dbAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   const database = db ?? await ensureDb();
-  if (useTurso()) {
+  if (useTurso) {
     const res = await tursoExecute(database, sql, params);
     return res.rows.map((row) => rowToObject(row)) as T[];
   } else {
@@ -159,7 +159,7 @@ export async function initDatabase(): Promise<void> {
   }
 
   // Turso: never run hundreds of DDL/seed round-trips on serverless cold start.
-  if (useTurso()) {
+  if (useTurso) {
     console.log('Turso: skipping schema migration and seeding (use migrate-to-turso locally)');
     return;
   }
@@ -538,7 +538,7 @@ async function seedPrintingData(): Promise<void> {
 export async function restartDatabase(): Promise<void> {
   try {
     if (db) {
-      if (!useTurso()) {
+      if (!useTurso) {
         db.close();
       }
       db = null;
