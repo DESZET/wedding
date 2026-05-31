@@ -80,7 +80,10 @@ export async function createServer() {
   };
 
   app.use(async (req, res, next) => {
-    if (req.path === "/api/ping") return next();
+    const pathOnly = (req.path || req.url || "").split("?")[0];
+    if (pathOnly === "/api/ping" || pathOnly === "/ping" || pathOnly.endsWith("/ping")) {
+      return next();
+    }
     try {
       await prepareDatabase();
       next();

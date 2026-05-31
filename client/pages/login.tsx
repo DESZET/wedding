@@ -29,7 +29,9 @@ export default function LoginPage() {
         setError(
           response.status === 504
             ? 'Server timeout — coba lagi dalam 1 menit atau redeploy Vercel'
-            : 'Terjadi kesalahan saat login',
+            : response.status === 503
+              ? 'Database tidak merespons — cek Turso & env Vercel, lalu redeploy'
+              : 'Terjadi kesalahan saat login',
         );
         return;
       }
@@ -103,7 +105,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-    
+        <p className="text-center text-xs text-gray-500">
+          Akun default: <span className="font-mono">admin</span> / <span className="font-mono">admin123</span>
+          (jika belum pernah diubah di Turso)
+        </p>
       </div>
     </div>
   );

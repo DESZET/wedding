@@ -50,7 +50,12 @@ export const adminLogin: RequestHandler = async (req, res) => {
     }
 
     const storedHash = String(admin.password);
-    const isValidPassword = await bcrypt.compare(password, storedHash);
+    const isValidPassword = await Promise.race([
+      bcrypt.compare(password, storedHash),
+      new Promise<boolean>((_, reject) =>
+        setTimeout(() => reject(new Error("Password check timed out")), process.env.VERCEL ? 8000 : 30000),
+      ),
+    ]);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
@@ -67,6 +72,13 @@ export const adminLogin: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
+    const msg = error instanceof Error ? error.message : "Login failed";
+    if (msg.includes("timed out") || msg.includes("Turso")) {
+      return res.status(503).json({
+        success: false,
+        error: "Database timeout — cek DATABASE_URL di Vercel atau coba lagi.",
+      });
+    }
     res.status(500).json({ success: false, error: "Login failed" });
   }
 };
