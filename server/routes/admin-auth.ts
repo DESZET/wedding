@@ -2,17 +2,27 @@ import { RequestHandler } from "express";
 import { dbRun, dbGet, dbAll, restartDatabase } from "../database";
 import bcrypt from "bcryptjs";
 
+/** Pre-hashed admin123 (bcrypt 4 rounds) — avoids 60s CPU timeout on Vercel cold start */
+const DEFAULT_ADMIN_HASH =
+  "$2b$04$SV1HeWWs5R7oXC3pym8YzO8rLOyaEBEDmxo.xBmFWK23Wxix3hgq6";
+
+function bcryptRounds(): number {
+  return process.env.VERCEL ? 4 : 10;
+}
+
 // Initialize default admin credentials if not exists
 export const initAdminCredentials = async () => {
   try {
-    const existingAdmin = await dbGet("SELECT * FROM admin_credentials WHERE username = ?", ["admin"]);
+    const existingAdmin = await dbGet<{ username?: string }>(
+      "SELECT username FROM admin_credentials WHERE username = ?",
+      ["admin"],
+    );
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
       await dbRun(
         "INSERT INTO admin_credentials (username, password, createdAt) VALUES (?, ?, CURRENT_TIMESTAMP)",
-        ["admin", hashedPassword]
+        ["admin", DEFAULT_ADMIN_HASH],
       );
-      console.log("Default admin credentials initialized");
+      console.log("Default admin credentials initialized (admin / admin123)");
     }
   } catch (error) {
     console.error("Error initializing admin credentials:", error);
@@ -30,13 +40,16 @@ export const adminLogin: RequestHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: "Username and password are required" });
     }
 
-    const admin = await dbGet("SELECT * FROM admin_credentials WHERE username = ?", [username]);
+    const admin = await dbGet<{ username?: string; password?: string }>(
+      "SELECT username, password FROM admin_credentials WHERE username = ?",
+      [username],
+    );
 
-    if (!admin) {
+    if (!admin?.password) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const storedHash = String((admin as { password?: unknown }).password ?? '');
+    const storedHash = String(admin.password);
     const isValidPassword = await bcrypt.compare(password, storedHash);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
@@ -86,7 +99,7 @@ export const updateAdminCredentials: RequestHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: "Username and password are required" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, bcryptRounds());
 
     // Check if admin credentials exist
     const existingAdmin = await dbGet("SELECT * FROM admin_credentials LIMIT 1");

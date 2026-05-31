@@ -18,11 +18,21 @@ const TURSO_QUERY_MS = 12_000;
 
 function rowToObject(row: unknown): Record<string, unknown> {
   if (!row || typeof row !== 'object') return {};
-  const r = row as Record<string, unknown>;
   if (typeof (row as { toJSON?: () => unknown }).toJSON === 'function') {
-    return (row as { toJSON: () => Record<string, unknown> }).toJSON();
+    const json = (row as { toJSON: () => unknown }).toJSON();
+    if (json && typeof json === 'object' && !Array.isArray(json)) {
+      return json as Record<string, unknown>;
+    }
   }
-  return r;
+  const r = row as { columnNames?: string[]; values?: unknown[] };
+  if (r.columnNames?.length && r.values) {
+    const out: Record<string, unknown> = {};
+    r.columnNames.forEach((name, i) => {
+      out[name] = r.values![i];
+    });
+    return out;
+  }
+  return row as Record<string, unknown>;
 }
 
 async function tursoExecute(
