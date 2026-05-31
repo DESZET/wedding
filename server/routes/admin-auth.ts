@@ -10,14 +10,12 @@ function bcryptRounds(): number {
   return process.env.VERCEL ? 4 : 10;
 }
 
-// Initialize default admin credentials if not exists
+// Initialize default admin credentials only when the table is empty
 export const initAdminCredentials = async () => {
   try {
-    const existingAdmin = await dbGet<{ username?: string }>(
-      "SELECT username FROM admin_credentials WHERE username = ?",
-      ["admin"],
-    );
-    if (!existingAdmin) {
+    const row = await dbGet<{ n: number }>("SELECT COUNT(*) as n FROM admin_credentials");
+    const count = Number(row?.n ?? 0);
+    if (count === 0) {
       await dbRun(
         "INSERT INTO admin_credentials (username, password, createdAt) VALUES (?, ?, CURRENT_TIMESTAMP)",
         ["admin", DEFAULT_ADMIN_HASH],
@@ -81,10 +79,12 @@ export const adminLogin: RequestHandler = async (req, res) => {
   }
 };
 
-// Get current admin credentials (for settings page)
+// Get current admin credentials (for settings page) — most recently updated row
 export const getAdminCredentials: RequestHandler = async (req, res) => {
   try {
-    const admin = await dbGet("SELECT username, createdAt, updatedAt FROM admin_credentials LIMIT 1");
+    const admin = await dbGet(
+      "SELECT username, createdAt, updatedAt FROM admin_credentials ORDER BY COALESCE(updatedAt, createdAt) DESC LIMIT 1",
+    );
 
     if (!admin) {
       return res.status(404).json({ success: false, error: "Admin credentials not found" });
@@ -111,22 +111,12 @@ export const updateAdminCredentials: RequestHandler = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, bcryptRounds());
 
-    // Check if admin credentials exist
-    const existingAdmin = await dbGet("SELECT * FROM admin_credentials LIMIT 1");
-
-    if (!existingAdmin) {
-      // Create new credentials
-      await dbRun(
-        "INSERT INTO admin_credentials (username, password, createdAt) VALUES (?, ?, CURRENT_TIMESTAMP)",
-        [username, hashedPassword]
-      );
-    } else {
-      // Update existing credentials
-      await dbRun(
-        "UPDATE admin_credentials SET username = ?, password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
-        [username, hashedPassword, existingAdmin.id]
-      );
-    }
+    // Single active admin: replace all rows so old usernames (e.g. admin, desta) cannot still log in
+    await dbRun("DELETE FROM admin_credentials");
+    await dbRun(
+      "INSERT INTO admin_credentials (username, password, createdAt, updatedAt) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+      [username, hashedPassword],
+    );
 
     res.json({
       success: true,
