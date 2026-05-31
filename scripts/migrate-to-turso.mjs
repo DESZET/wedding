@@ -39,18 +39,33 @@ async function run(sql, args = []) {
   return turso.execute({ sql, args });
 }
 
+function createTableIfNotExists(sql) {
+  if (/CREATE TABLE IF NOT EXISTS/i.test(sql)) return sql;
+  return sql.replace(/CREATE TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ");
+}
+
 async function ensureSchema() {
   const ddls = sqlite
     .prepare(
-      `SELECT sql FROM sqlite_master
+      `SELECT name, sql FROM sqlite_master
        WHERE type='table' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%'
        ORDER BY name`,
     )
     .all();
 
-  console.log(`Creating ${ddls.length} tables on Turso (if missing)...`);
-  for (const { sql } of ddls) {
-    await run(sql);
+  console.log(`Ensuring ${ddls.length} tables on Turso...`);
+  for (const { name, sql } of ddls) {
+    try {
+      await run(createTableIfNotExists(sql));
+      console.log(`  ✓ ${name}`);
+    } catch (err) {
+      const msg = String(err?.message ?? err);
+      if (msg.includes("already exists")) {
+        console.log(`  · ${name} (already exists)`);
+        continue;
+      }
+      throw err;
+    }
   }
 }
 

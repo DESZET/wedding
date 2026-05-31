@@ -7,10 +7,38 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = path.resolve(__dirname, '../../wedding.db');
 
 let db: any | null = null;
+let connecting: Promise<any> | null = null;
 let useTurso = false;
 
 if (process.env.DATABASE_URL) {
   useTurso = true;
+}
+
+const TURSO_QUERY_MS = 12_000;
+
+function rowToObject(row: unknown): Record<string, unknown> {
+  if (!row || typeof row !== 'object') return {};
+  const r = row as Record<string, unknown>;
+  if (typeof (row as { toJSON?: () => unknown }).toJSON === 'function') {
+    return (row as { toJSON: () => Record<string, unknown> }).toJSON();
+  }
+  return r;
+}
+
+async function tursoExecute(
+  client: ReturnType<typeof createClient>,
+  sql: string,
+  args: unknown[] = [],
+): Promise<Awaited<ReturnType<ReturnType<typeof createClient>['execute']>>> {
+  return Promise.race([
+    client.execute({ sql, args }),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Turso query timed out after ${TURSO_QUERY_MS / 1000}s`)),
+        TURSO_QUERY_MS,
+      ),
+    ),
+  ]);
 }
 
 function tursoUrl(): string {
@@ -22,6 +50,22 @@ function tursoUrl(): string {
   return raw;
 }
 
+async function connectTurso(): Promise<any> {
+  if (!process.env.DATABASE_AUTH_TOKEN?.trim()) {
+    throw new Error('DATABASE_AUTH_TOKEN is missing. Add it in Vercel Environment Variables.');
+  }
+
+  const url = tursoUrl();
+  console.log('Connecting to Turso at', url);
+  const client = createClient({
+    url,
+    authToken: process.env.DATABASE_AUTH_TOKEN,
+  });
+  await tursoExecute(client, 'SELECT 1');
+  console.log('Turso connected');
+  return client;
+}
+
 export async function ensureDb(): Promise<any> {
   if (db) return db;
 
@@ -29,31 +73,24 @@ export async function ensureDb(): Promise<any> {
     throw new Error('DATABASE_URL and DATABASE_AUTH_TOKEN must be set on Vercel.');
   }
 
-  if (useTurso) {
-    const url = tursoUrl();
-    console.log('Connecting to Turso at', url);
-    const client = createClient({
-      url,
-      authToken: process.env.DATABASE_AUTH_TOKEN,
-    });
-    await Promise.race([
-      client.execute('SELECT 1'),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Turso connection timed out after 10s')), 10_000),
-      ),
-    ]);
-    db = client;
-  } else {
-    // Lazy-load native bindings to avoid crashing during dev/server config evaluation.
-    try {
-      const BetterSqlite3 = (await import('better-sqlite3')).default;
-      db = new BetterSqlite3(DB_PATH);
-    } catch (err) {
-      console.error('Failed to load better-sqlite3. Make sure it is installed for local development.', err);
-      throw err;
-    }
+  if (!connecting) {
+    connecting = (async () => {
+      try {
+        if (useTurso) {
+          db = await connectTurso();
+        } else {
+          const BetterSqlite3 = (await import('better-sqlite3')).default;
+          db = new BetterSqlite3(DB_PATH);
+        }
+        return db;
+      } catch (err) {
+        connecting = null;
+        throw err;
+      }
+    })();
   }
-  return db;
+
+  return connecting;
 }
 
 export function getDb(): any {
@@ -66,7 +103,7 @@ export function getDb(): any {
 export async function dbRun(sql: string, params: any[] = []): Promise<any> {
   const database = db ?? await ensureDb();
   if (useTurso) {
-    const res = await database.execute({ sql, args: params });
+    const res = await tursoExecute(database, sql, params);
     return {
       changes: res.rowsAffected,
       lastInsertRowid: res.lastInsertRowid,
@@ -85,8 +122,8 @@ export async function dbRun(sql: string, params: any[] = []): Promise<any> {
 export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
   const database = db ?? await ensureDb();
   if (useTurso) {
-    const res = await database.execute({ sql, args: params });
-    return res.rows[0] as unknown as T;
+    const res = await tursoExecute(database, sql, params);
+    return rowToObject(res.rows[0]) as T;
   } else {
     return database.prepare(sql).get(params) as T;
   }
@@ -95,8 +132,8 @@ export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T
 export async function dbAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   const database = db ?? await ensureDb();
   if (useTurso) {
-    const res = await database.execute({ sql, args: params });
-    return res.rows as unknown as T[];
+    const res = await tursoExecute(database, sql, params);
+    return res.rows.map((row) => rowToObject(row)) as T[];
   } else {
     return database.prepare(sql).all(params) as T[];
   }

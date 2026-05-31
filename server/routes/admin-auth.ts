@@ -22,6 +22,8 @@ export const initAdminCredentials = async () => {
 // Login endpoint
 export const adminLogin: RequestHandler = async (req, res) => {
   try {
+    await initAdminCredentials();
+
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -34,7 +36,8 @@ export const adminLogin: RequestHandler = async (req, res) => {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const isValidPassword = await bcrypt.compare(password, admin.password);
+    const storedHash = String((admin as { password?: unknown }).password ?? '');
+    const isValidPassword = await bcrypt.compare(password, storedHash);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }

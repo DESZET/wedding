@@ -70,7 +70,6 @@ export async function createServer() {
       dbReady = (async () => {
         if (isServerless && process.env.DATABASE_URL) {
           await ensureDb();
-          await initAdminCredentials();
           return;
         }
         await initDatabase();
