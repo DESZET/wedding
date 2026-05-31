@@ -25,7 +25,7 @@ import customerDebtsRouter from "./routes/customer-debts";
 import { getReligiousBookings, getReligiousBooking, createReligiousBooking, updateReligiousBooking, deleteReligiousBooking } from "./routes/religious-bookings";
 import { getPrintingOrders, getPrintingOrder, createPrintingOrder, updatePrintingOrder, deletePrintingOrder } from "./routes/printing-orders";
 import { migrateImport, migrateReset } from "./routes/migrate-import";
-import { initDatabase } from "./database";
+import { ensureDb, initDatabase } from "./database";
 
 const isServerless = Boolean(process.env.VERCEL);
 
@@ -55,31 +55,43 @@ export async function createServer() {
   // Serve static files from public directory
   app.use('/uploads', express.static('public/uploads'));
 
-  // Initialize database and admin credentials.
-  // Important: During Vite config evaluation, sqlite3 native bindings may not be available.
-  // Guard DB init so the SPA dev server can still start.
-  try {
-    await initDatabase();
-    await initAdminCredentials();
-  } catch (err) {
-    console.error("[server] Database init failed:", err);
-    if (isServerless && !process.env.DATABASE_URL) {
-      throw new Error(
-        "DATABASE_URL and DATABASE_AUTH_TOKEN must be set on Vercel (Turso). See VERCEL_DEPLOYMENT.md",
-      );
-    }
-    if (!isServerless) {
-      console.warn("[server] Continuing without DB (local dev only).");
-    } else {
-      throw err;
-    }
-  }
-
-
-  // Example API routes
+  // Fast health check — must not wait for DB (avoids 60s Vercel timeout on cold start).
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
-    res.json({ message: ping });
+    res.json({
+      message: ping,
+      turso: Boolean(process.env.DATABASE_URL),
+    });
+  });
+
+  let dbReady: Promise<void> | undefined;
+  const prepareDatabase = () => {
+    if (!dbReady) {
+      dbReady = (async () => {
+        if (isServerless && process.env.DATABASE_URL) {
+          await ensureDb();
+          await initAdminCredentials();
+          return;
+        }
+        await initDatabase();
+        await initAdminCredentials();
+      })();
+    }
+    return dbReady;
+  };
+
+  app.use(async (req, res, next) => {
+    if (req.path === "/api/ping") return next();
+    try {
+      await prepareDatabase();
+      next();
+    } catch (err) {
+      console.error("[server] Database not ready:", err);
+      res.status(503).json({
+        success: false,
+        error: "Database unavailable. Check DATABASE_URL on Vercel.",
+      });
+    }
   });
 
   app.get("/api/demo", handleDemo);

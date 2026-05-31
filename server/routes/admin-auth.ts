@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { dbRun, dbGet, dbAll, restartDatabase } from "../database";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // Initialize default admin credentials if not exists
 export const initAdminCredentials = async () => {

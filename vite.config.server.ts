@@ -18,7 +18,7 @@ const nodeExternals = [
   "express",
   "cors",
   "multer",
-  "bcrypt",
+  "bcryptjs",
   "@libsql/client",
   "better-sqlite3",
   "dotenv",

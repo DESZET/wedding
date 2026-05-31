@@ -13,12 +13,16 @@ if (!process.env.DATABASE_URL || !process.env.DATABASE_AUTH_TOKEN) {
   dotenv.config({ path: path.resolve(__dirname, "../.env") });
 }
 
-const url = process.env.DATABASE_URL;
+let url = process.env.DATABASE_URL?.trim();
 const authToken = process.env.DATABASE_AUTH_TOKEN;
 
 if (!url || !authToken) {
   console.error("Missing DATABASE_URL or DATABASE_AUTH_TOKEN in environment.");
   process.exit(1);
+}
+
+if (url.startsWith("libsql://")) {
+  url = url.replace("libsql://", "https://");
 }
 
 const sqlite = new Database(DB_PATH, { readonly: true });
@@ -35,7 +39,23 @@ async function run(sql, args = []) {
   return turso.execute({ sql, args });
 }
 
+async function ensureSchema() {
+  const ddls = sqlite
+    .prepare(
+      `SELECT sql FROM sqlite_master
+       WHERE type='table' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%'
+       ORDER BY name`,
+    )
+    .all();
+
+  console.log(`Creating ${ddls.length} tables on Turso (if missing)...`);
+  for (const { sql } of ddls) {
+    await run(sql);
+  }
+}
+
 async function migrate() {
+  await ensureSchema();
   await run("PRAGMA foreign_keys = OFF");
 
   for (const table of tables) {

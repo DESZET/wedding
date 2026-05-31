@@ -13,15 +13,36 @@ if (process.env.DATABASE_URL) {
   useTurso = true;
 }
 
+function tursoUrl(): string {
+  const raw = process.env.DATABASE_URL!.trim();
+  // Remote Turso over HTTP is more reliable on serverless than libsql:// wire protocol.
+  if (raw.startsWith('libsql://')) {
+    return raw.replace('libsql://', 'https://');
+  }
+  return raw;
+}
+
 export async function ensureDb(): Promise<any> {
   if (db) return db;
 
+  if (process.env.VERCEL && !process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL and DATABASE_AUTH_TOKEN must be set on Vercel.');
+  }
+
   if (useTurso) {
-    console.log('Connecting to Turso Database at', process.env.DATABASE_URL);
-    db = createClient({
-      url: process.env.DATABASE_URL!,
-      authToken: process.env.DATABASE_AUTH_TOKEN
+    const url = tursoUrl();
+    console.log('Connecting to Turso at', url);
+    const client = createClient({
+      url,
+      authToken: process.env.DATABASE_AUTH_TOKEN,
     });
+    await Promise.race([
+      client.execute('SELECT 1'),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Turso connection timed out after 10s')), 10_000),
+      ),
+    ]);
+    db = client;
   } else {
     // Lazy-load native bindings to avoid crashing during dev/server config evaluation.
     try {
@@ -91,9 +112,9 @@ export async function initDatabase(): Promise<void> {
     throw e;
   }
 
-  // Turso on Vercel is already migrated — skip heavy schema/seed work on cold start.
-  if (process.env.VERCEL && process.env.DATABASE_URL) {
-    console.log('Production Turso: skipping schema migration and seeding');
+  // Turso: never run hundreds of DDL/seed round-trips on serverless cold start.
+  if (useTurso) {
+    console.log('Turso: skipping schema migration and seeding (use migrate-to-turso locally)');
     return;
   }
 
