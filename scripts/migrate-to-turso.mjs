@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.resolve(__dirname, "../wedding.db");
 
 if (!process.env.DATABASE_URL || !process.env.DATABASE_AUTH_TOKEN) {
+  dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
   dotenv.config({ path: path.resolve(__dirname, "../.env.migration") });
   dotenv.config({ path: path.resolve(__dirname, "../.env") });
 }
