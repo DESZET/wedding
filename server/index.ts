@@ -24,20 +24,25 @@ import customersRouter from "./routes/customers";
 import customerDebtsRouter from "./routes/customer-debts";
 import { getReligiousBookings, getReligiousBooking, createReligiousBooking, updateReligiousBooking, deleteReligiousBooking } from "./routes/religious-bookings";
 import { getPrintingOrders, getPrintingOrder, createPrintingOrder, updatePrintingOrder, deletePrintingOrder } from "./routes/printing-orders";
+import { migrateImport, migrateReset } from "./routes/migrate-import";
 import { initDatabase } from "./database";
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+const isServerless = Boolean(process.env.VERCEL);
 
-const upload = multer({ storage: storage });
+// Configure multer for file uploads
+const storage = isServerless
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        cb(null, "public/uploads/");
+      },
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+      },
+    });
+
+const upload = multer({ storage });
 
 export async function createServer() {
   const app = express();
@@ -57,7 +62,17 @@ export async function createServer() {
     await initDatabase();
     await initAdminCredentials();
   } catch (err) {
-    console.error('[server] DB init skipped (sqlite3 bindings missing or failed to load):', err);
+    console.error("[server] Database init failed:", err);
+    if (isServerless && !process.env.DATABASE_URL) {
+      throw new Error(
+        "DATABASE_URL and DATABASE_AUTH_TOKEN must be set on Vercel (Turso). See VERCEL_DEPLOYMENT.md",
+      );
+    }
+    if (!isServerless) {
+      console.warn("[server] Continuing without DB (local dev only).");
+    } else {
+      throw err;
+    }
   }
 
 
@@ -69,6 +84,9 @@ export async function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  app.post("/api/migrate-reset", migrateReset);
+  app.post("/api/migrate-import", migrateImport);
+
   // Gallery routes
   app.get("/api/gallery", getGallery);
   app.get("/api/gallery/:id", getGalleryItem);
@@ -77,30 +95,42 @@ export async function createServer() {
   app.delete("/api/gallery/:id", deleteGalleryItem);
 
   // File upload route for gallery
-  app.post("/api/upload", upload.single('image'), (req, res) => {
+  app.post("/api/upload", upload.single("image"), (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No file uploaded' });
+      return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+    if (isServerless) {
+      return res.status(503).json({
+        success: false,
+        error: "Upload baru belum tersedia di production. Gunakan gambar yang sudah ada atau hubungi admin.",
+      });
     }
     res.json({
       success: true,
       data: {
         filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`
-      }
+        path: `/uploads/${req.file.filename}`,
+      },
     });
   });
 
   // File upload route for videos
-  app.post("/api/upload-video", upload.single('video'), (req, res) => {
+  app.post("/api/upload-video", upload.single("video"), (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No video file uploaded' });
+      return res.status(400).json({ success: false, error: "No video file uploaded" });
+    }
+    if (isServerless) {
+      return res.status(503).json({
+        success: false,
+        error: "Upload video belum tersedia di production. Hubungi admin.",
+      });
     }
     res.json({
       success: true,
       data: {
         filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`
-      }
+        path: `/uploads/${req.file.filename}`,
+      },
     });
   });
 

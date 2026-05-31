@@ -5,9 +5,10 @@
     "NODE_ENV": "production"
   },
   "functions": {
-    "api/**/*.ts": {
+    "api/index.mjs": {
       "memory": 1024,
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "dist/api/**"
     }
   },
   "rewrites": [
