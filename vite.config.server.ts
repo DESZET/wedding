@@ -1,44 +1,46 @@
 import { defineConfig } from "vite";
 import path from "path";
 
-// Server build configuration
+const nodeExternals = [
+  "fs",
+  "path",
+  "url",
+  "http",
+  "https",
+  "os",
+  "crypto",
+  "stream",
+  "util",
+  "events",
+  "buffer",
+  "querystring",
+  "child_process",
+  "express",
+  "cors",
+  "multer",
+  "bcrypt",
+  "@libsql/client",
+  "better-sqlite3",
+  "dotenv",
+  "zod",
+];
+
 export default defineConfig({
   build: {
-    lib: {
-      entry: path.resolve(__dirname, "server/node-build.ts"),
-      name: "server",
-      fileName: "production",
-      formats: ["es"],
-    },
     outDir: "dist/server",
+    emptyOutDir: true,
     target: "node22",
     ssr: true,
     rollupOptions: {
-      external: [
-        // Node.js built-ins
-        "fs",
-        "path",
-        "url",
-        "http",
-        "https",
-        "os",
-        "crypto",
-        "stream",
-        "util",
-        "events",
-        "buffer",
-        "querystring",
-        "child_process",
-        // External dependencies that should not be bundled
-        "express",
-        "cors",
-      ],
+      input: path.resolve(__dirname, "server/node-build.ts"),
+      external: nodeExternals,
       output: {
         format: "es",
-        entryFileNames: "[name].mjs",
+        entryFileNames: "node-build.mjs",
+        inlineDynamicImports: true,
       },
     },
-    minify: false, // Keep readable for debugging
+    minify: false,
     sourcemap: true,
   },
   resolve: {

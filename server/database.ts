@@ -91,6 +91,12 @@ export async function initDatabase(): Promise<void> {
     throw e;
   }
 
+  // Turso on Vercel is already migrated — skip heavy schema/seed work on cold start.
+  if (process.env.VERCEL && process.env.DATABASE_URL) {
+    console.log('Production Turso: skipping schema migration and seeding');
+    return;
+  }
+
   try {
     await dbRun(`CREATE TABLE IF NOT EXISTS gallery (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
