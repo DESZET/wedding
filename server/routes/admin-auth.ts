@@ -13,6 +13,12 @@ function bcryptRounds(): number {
 // Initialize default admin credentials only when the table is empty
 export const initAdminCredentials = async () => {
   try {
+    // Kalau pakai Turso, skip sama sekali — data sudah ada di cloud
+    if (process.env.DATABASE_URL?.trim()) {
+      console.log('Turso: skipping default admin init');
+      return;
+    }
+    
     const row = await dbGet<{ n: number }>("SELECT COUNT(*) as n FROM admin_credentials");
     const count = Number(row?.n ?? 0);
     if (count === 0) {
