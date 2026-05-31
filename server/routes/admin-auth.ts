@@ -32,8 +32,6 @@ export const initAdminCredentials = async () => {
 // Login endpoint
 export const adminLogin: RequestHandler = async (req, res) => {
   try {
-    await initAdminCredentials();
-
     const { username, password } = req.body;
 
     if (!username || !password) {
