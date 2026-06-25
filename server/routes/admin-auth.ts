@@ -2,10 +2,10 @@ import { RequestHandler } from "express";
 import { dbRun, dbGet, dbAll, restartDatabase } from "../database";
 import bcrypt from "bcrypt";
 
-// Initialize default admin credentials if not exists
+// Initialize default admin credentials only if the table is completely empty
 export const initAdminCredentials = async () => {
   try {
-    const existingAdmin = await dbGet("SELECT * FROM admin_credentials WHERE username = ?", ["admin"]);
+    const existingAdmin = await dbGet("SELECT * FROM admin_credentials LIMIT 1");
     if (!existingAdmin) {
       const hashedPassword = await bcrypt.hash("admin123", 10);
       await dbRun(
