@@ -1,15 +1,15 @@
-import { createServer } from '../server/index';
+import { createServer } from '../dist/api-bundle/index.mjs';
 
-let server: any;
+let app: any;
 
-async function getServer() {
-  if (!server) {
-    server = await createServer();
+async function getApp() {
+  if (!app) {
+    app = await createServer();
   }
-  return server;
+  return app;
 }
 
 export default async (req: any, res: any) => {
-  const app = await getServer();
-  return app(req, res);
+  const server = await getApp();
+  return server(req, res);
 };
