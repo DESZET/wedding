@@ -72,26 +72,31 @@ export const createReview: RequestHandler = async (req, res) => {
     );
 
     // Update avg rating di tabel produk/paket (jika ada kolom rating & reviews_count)
-    const stats = await dbGet(
-      `SELECT AVG(rating) as avg_rating, COUNT(*) as total FROM ${TABLE[type]} WHERE ${col} = ?`,
-      [item_id]
-    );
-    const avgRating = Math.round((Number(stats?.avg_rating) || 0) * 10) / 10;
-    const total = Number(stats?.total) || 0;
+    try {
+      const allReviews = await dbAll(
+        `SELECT rating FROM ${TABLE[type]} WHERE ${col} = ?`,
+        [item_id]
+      );
+      const total = allReviews.length;
+      const avgRating = total > 0
+        ? Math.round((allReviews.reduce((s: number, rv: any) => s + Number(rv.rating), 0) / total) * 10) / 10
+        : 0;
 
-    // Update rating & reviews_count — kolom ini ada di printing_products dan umrah_packages
-    if (type === "printing") {
-      await dbRun(
-        "UPDATE printing_products SET rating = ?, reviews_count = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
-        [avgRating, total, item_id]
-      );
-    } else if (type === "umrah") {
-      await dbRun(
-        "UPDATE umrah_packages SET rating = ?, reviews_count = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
-        [avgRating, total, item_id]
-      );
+      if (type === "printing" && Number(item_id) !== 0) {
+        await dbRun(
+          "UPDATE printing_products SET rating = ?, reviews_count = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+          [avgRating, total, item_id]
+        );
+      } else if (type === "umrah" && Number(item_id) !== 0) {
+        await dbRun(
+          "UPDATE umrah_packages SET rating = ?, reviews_count = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+          [avgRating, total, item_id]
+        );
+      }
+    } catch (statsErr) {
+      // Non-fatal — jangan gagalkan insert hanya karena update stats error
+      console.error("Error updating stats:", statsErr);
     }
-    // wedding packages tabel tidak punya kolom rating — skip update
 
     res.status(201).json({ success: true, message: "Review berhasil ditambahkan", stats: { avg: avgRating, total } });
   } catch (error) {
