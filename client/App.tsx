@@ -6,7 +6,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import WeddingShowPage from "./pages/WeddingShowPage";
@@ -25,7 +24,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { SettingsProvider } from "./hooks/useSettings.tsx";
 
 const queryClient = new QueryClient();
-const GOOGLE_CLIENT_ID = "1049475351807-tk9oisnnh5lii0cloh04gdut5p48di0p.apps.googleusercontent.com";
 
 // Widgets hidden on admin/login
 function GlobalWidgets() {
@@ -41,42 +39,39 @@ function GlobalWidgets() {
 }
 
 const App = () => (
-  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-    <QueryClientProvider client={queryClient}>
-      <SettingsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-
-          <BrowserRouter>
-            <GlobalWidgets />
-            <Routes>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/wedding-show" element={<WeddingShowPage />} />
-                <Route path="/gallery" element={<GalleryPage />} />
-                <Route path="/packages" element={<PackagesPage />} />
-                <Route path="/umrah-haji" element={<UmrahHaji />} />
-                <Route path="/printing" element={<Printing />} />
-                <Route path="/testimonials" element={<TestimonialsPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-              </Route>
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <Admin />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </SettingsProvider>
-    </QueryClientProvider>
-  </GoogleOAuthProvider>
+  <QueryClientProvider client={queryClient}>
+    <SettingsProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <GlobalWidgets />
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/wedding-show" element={<WeddingShowPage />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/packages" element={<PackagesPage />} />
+              <Route path="/umrah-haji" element={<UmrahHaji />} />
+              <Route path="/printing" element={<Printing />} />
+              <Route path="/testimonials" element={<TestimonialsPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+            </Route>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </SettingsProvider>
+  </QueryClientProvider>
 );
 
 createRoot(document.getElementById("root")!).render(<App />);

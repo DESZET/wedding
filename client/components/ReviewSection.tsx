@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { Star, MessageSquare, Send, ChevronDown, ChevronUp, LogIn, LogOut } from "lucide-react";
+import { Star, MessageSquare, Send, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGoogleLogin } from "@react-oauth/google";
+
+const GOOGLE_CLIENT_ID = "1049475351807-tk9oisnnh5lii0cloh04gdut5p48di0p.apps.googleusercontent.com";
 
 interface Review {
   id: number;
@@ -29,12 +30,14 @@ interface ReviewSectionProps {
 }
 
 const ACCENT = {
-  blue:    { badge: "bg-blue-100 text-blue-700",    btn: "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white",       ring: "focus:ring-blue-400",    bar: "bg-blue-500",    text: "text-blue-600"  },
-  emerald: { badge: "bg-emerald-100 text-emerald-700", btn: "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white",  ring: "focus:ring-emerald-400", bar: "bg-emerald-500", text: "text-emerald-600"},
-  primary: { badge: "bg-primary/10 text-primary",   btn: "bg-primary hover:bg-primary/90 text-white",                                                              ring: "focus:ring-primary/50",  bar: "bg-primary",     text: "text-primary"   },
+  blue:    { badge: "bg-blue-100 text-blue-700",       btn: "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white",      ring: "focus:ring-blue-400",    bar: "bg-blue-500",    text: "text-blue-600"   },
+  emerald: { badge: "bg-emerald-100 text-emerald-700", btn: "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white",     ring: "focus:ring-emerald-400", bar: "bg-emerald-500", text: "text-emerald-600" },
+  primary: { badge: "bg-primary/10 text-primary",      btn: "bg-primary hover:bg-primary/90 text-white",                                                              ring: "focus:ring-primary/50",  bar: "bg-primary",     text: "text-primary"    },
 };
 
-function StarRating({ value, onChange, size = "w-7 h-7", readonly = false }: { value: number; onChange?: (v: number) => void; size?: string; readonly?: boolean }) {
+function StarRating({ value, onChange, size = "w-7 h-7", readonly = false }: {
+  value: number; onChange?: (v: number) => void; size?: string; readonly?: boolean;
+}) {
   const [hovered, setHovered] = useState(0);
   return (
     <div className="flex gap-1">
@@ -52,7 +55,9 @@ function StarRating({ value, onChange, size = "w-7 h-7", readonly = false }: { v
   );
 }
 
-function RatingBar({ label, count, total, accent }: { label: string; count: number; total: number; accent: keyof typeof ACCENT }) {
+function RatingBar({ label, count, total, accent }: {
+  label: string; count: number; total: number; accent: keyof typeof ACCENT;
+}) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div className="flex items-center gap-3 text-sm">
@@ -65,52 +70,78 @@ function RatingBar({ label, count, total, accent }: { label: string; count: numb
   );
 }
 
+// Load Google Identity Services script once
+function loadGoogleScript(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).google?.accounts) { resolve(); return; }
+    if (document.getElementById("google-gis-script")) {
+      const interval = setInterval(() => {
+        if ((window as any).google?.accounts) { clearInterval(interval); resolve(); }
+      }, 100);
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "google-gis-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+
 export default function ReviewSection({ type, itemId, itemName, accent = "blue" }: ReviewSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState<ReviewStats>({ avg: 0, total: 0 });
-  const [distribution, setDistribution] = useState<Record<number, number>>({ 1:0, 2:0, 3:0, 4:0, 5:0 });
+  const [distribution, setDistribution] = useState<Record<number, number>>({ 1:0,2:0,3:0,4:0,5:0 });
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  // Google user state
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-
   const [form, setForm] = useState({ rating: 0, comment: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const a = ACCENT[accent];
 
-  // Load cached Google user from localStorage
+  // Restore cached user
   useEffect(() => {
-    const cached = localStorage.getItem("galeria_google_user");
-    if (cached) {
-      try { setGoogleUser(JSON.parse(cached)); } catch {}
-    }
+    try {
+      const cached = localStorage.getItem("galeria_google_user");
+      if (cached) setGoogleUser(JSON.parse(cached));
+    } catch {}
   }, []);
 
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      try {
-        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        const user: GoogleUser = await res.json();
-        setGoogleUser(user);
-        localStorage.setItem("galeria_google_user", JSON.stringify(user));
-        setShowForm(true);
-      } catch {
-        console.error("Failed to get Google user info");
-      } finally {
-        setGoogleLoading(false);
-      }
-    },
-    onError: () => setGoogleLoading(false),
-  });
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await loadGoogleScript();
+      const google = (window as any).google;
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: "openid profile email",
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse.error) { setGoogleLoading(false); return; }
+          try {
+            const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+            });
+            const user: GoogleUser = await res.json();
+            setGoogleUser(user);
+            localStorage.setItem("galeria_google_user", JSON.stringify(user));
+            setShowForm(true);
+          } catch (e) { console.error(e); }
+          finally { setGoogleLoading(false); }
+        },
+      });
+      client.requestAccessToken();
+    } catch (e) {
+      console.error(e);
+      setGoogleLoading(false);
+    }
+  };
 
   const logout = () => {
     setGoogleUser(null);
@@ -126,7 +157,7 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
       if (data.success) {
         setReviews(data.data);
         setStats(data.stats);
-        const dist: Record<number, number> = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+        const dist: Record<number, number> = { 1:0,2:0,3:0,4:0,5:0 };
         data.data.forEach((r: Review) => { dist[r.rating] = (dist[r.rating] || 0) + 1; });
         setDistribution(dist);
       }
@@ -189,30 +220,26 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
           <p className="text-gray-500">{itemName}</p>
         </div>
 
-        {/* Login state or write review button */}
         {googleUser ? (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-2 shadow-sm">
-              <img src={googleUser.picture} alt={googleUser.name} className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+              <img src={googleUser.picture} alt={googleUser.name} referrerPolicy="no-referrer"
+                className="w-8 h-8 rounded-full object-cover" />
               <span className="text-sm font-medium text-gray-700">{googleUser.name}</span>
             </div>
-            <button
-              onClick={() => setShowForm(v => !v)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md transition-all hover:-translate-y-0.5 ${a.btn}`}
-            >
+            <button onClick={() => setShowForm(v => !v)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md transition-all hover:-translate-y-0.5 ${a.btn}`}>
               <MessageSquare className="w-4 h-4" />
               {showForm ? "Tutup" : "Tulis Ulasan"}
             </button>
-            <button onClick={logout} className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors" title="Logout">
+            <button onClick={logout} title="Logout"
+              className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => loginWithGoogle()}
-            disabled={googleLoading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60"
-          >
+          <button onClick={handleGoogleLogin} disabled={googleLoading}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60">
             {googleLoading ? (
               <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
             ) : (
@@ -228,7 +255,7 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
         )}
       </div>
 
-      {/* Stats + Distribution */}
+      {/* Stats */}
       {stats.total > 0 && (
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-8 items-center">
@@ -246,19 +273,15 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
         </div>
       )}
 
-      {/* Form — only visible when logged in */}
+      {/* Form */}
       <AnimatePresence>
         {showForm && googleUser && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden mb-8"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden mb-8">
             <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 space-y-5">
               <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-                <img src={googleUser.picture} alt={googleUser.name} className="w-11 h-11 rounded-full object-cover ring-2 ring-primary/20" referrerPolicy="no-referrer" />
+                <img src={googleUser.picture} alt={googleUser.name} referrerPolicy="no-referrer"
+                  className="w-11 h-11 rounded-full object-cover ring-2 ring-primary/20" />
                 <div>
                   <p className="font-semibold text-gray-900">{googleUser.name}</p>
                   <p className="text-xs text-gray-400">{googleUser.email}</p>
@@ -273,21 +296,14 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Komentar *</label>
-                <textarea
-                  rows={4}
-                  placeholder="Ceritakan pengalaman Anda..."
-                  value={form.comment}
-                  onChange={e => setForm({ ...form, comment: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl border bg-gray-50 text-sm focus:outline-none focus:ring-2 ${a.ring} resize-none ${errors.comment ? "border-red-400" : "border-gray-200"}`}
-                />
+                <textarea rows={4} placeholder="Ceritakan pengalaman Anda..."
+                  value={form.comment} onChange={e => setForm({ ...form, comment: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-xl border bg-gray-50 text-sm focus:outline-none focus:ring-2 ${a.ring} resize-none ${errors.comment ? "border-red-400" : "border-gray-200"}`} />
                 {errors.comment && <p className="text-red-500 text-xs mt-1">{errors.comment}</p>}
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 ${a.btn}`}
-              >
+              <button type="submit" disabled={submitting}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 ${a.btn}`}>
                 <Send className="w-4 h-4" />
                 {submitting ? "Mengirim..." : "Kirim Ulasan"}
               </button>
@@ -296,12 +312,11 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
         )}
       </AnimatePresence>
 
-      {/* Success toast */}
+      {/* Success */}
       <AnimatePresence>
         {submitted && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-5 py-3 rounded-xl mb-6 text-sm font-medium shadow"
-          >
+            className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-5 py-3 rounded-xl mb-6 text-sm font-medium shadow">
             <Star className="w-4 h-4 fill-green-500 text-green-500" />
             Terima kasih {googleUser?.name}! Ulasan Anda telah dikirim.
           </motion.div>
@@ -324,17 +339,14 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <AnimatePresence>
               {visibleReviews.map((review, idx) => (
-                <motion.div
-                  key={review.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <motion.div key={review.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-                >
+                  className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       {review.avatar_url ? (
-                        <img src={review.avatar_url} alt={review.name} className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100" referrerPolicy="no-referrer" />
+                        <img src={review.avatar_url} alt={review.name} referrerPolicy="no-referrer"
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100" />
                       ) : (
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${a.badge}`}>
                           {review.name.charAt(0).toUpperCase()}
@@ -357,11 +369,11 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
 
           {reviews.length > 3 && (
             <div className="flex justify-center mt-6">
-              <button
-                onClick={() => setShowAll(v => !v)}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 shadow-sm transition-all"
-              >
-                {showAll ? <><ChevronUp className="w-4 h-4" /> Tampilkan lebih sedikit</> : <><ChevronDown className="w-4 h-4" /> Lihat {reviews.length - 3} ulasan lainnya</>}
+              <button onClick={() => setShowAll(v => !v)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 shadow-sm transition-all">
+                {showAll
+                  ? <><ChevronUp className="w-4 h-4" /> Tampilkan lebih sedikit</>
+                  : <><ChevronDown className="w-4 h-4" /> Lihat {reviews.length - 3} ulasan lainnya</>}
               </button>
             </div>
           )}
