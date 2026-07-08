@@ -25,6 +25,7 @@ import customerDebtsRouter from "./routes/customer-debts";
 import { getReligiousBookings, getReligiousBooking, createReligiousBooking, updateReligiousBooking, deleteReligiousBooking } from "./routes/religious-bookings";
 import { getPrintingOrders, getPrintingOrder, createPrintingOrder, updatePrintingOrder, deletePrintingOrder } from "./routes/printing-orders";
 import { getReviews, createReview, deleteReview } from "./routes/reviews";
+import { handleChat } from "./routes/chat";
 import { migrateImport, migrateReset } from "./routes/migrate-import";
 import { ensureDb, initDatabase } from "./database";
 
@@ -276,6 +277,9 @@ export async function createServer() {
   app.get("/api/reviews/:type/:itemId", getReviews);
   app.post("/api/reviews/:type", createReview);
   app.delete("/api/reviews/:type/:id", deleteReview);
+
+  // Chatbot
+  app.post("/api/chat", handleChat);
 
   return app;
 }

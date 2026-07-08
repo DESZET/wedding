@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import WeddingShowPage from "./pages/WeddingShowPage";
@@ -18,6 +18,7 @@ import Printing from "./pages/Printing";
 import MainLayout from "./layouts/MainLayout";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BackToTop from "@/components/BackToTop";
+import ChatBot from "@/components/ChatBot";
 import Admin from "./pages/admin";
 import LoginPage from "./pages/login";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -25,16 +26,29 @@ import { SettingsProvider } from "./hooks/useSettings.tsx";
 
 const queryClient = new QueryClient();
 
+// Wrapper to hide widgets on admin/login pages
+function GlobalWidgets() {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin') || location.pathname.startsWith('/login');
+  if (isAdminPage) return null;
+  return (
+    <>
+      <FloatingWhatsApp />
+      <BackToTop />
+      <ChatBot />
+    </>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SettingsProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <FloatingWhatsApp />
-        <BackToTop />
 
         <BrowserRouter>
+          <GlobalWidgets />
           <Routes>
             <Route element={<MainLayout />}>
               <Route path="/" element={<Index />} />
