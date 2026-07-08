@@ -50,7 +50,7 @@ export const createReview: RequestHandler = async (req, res) => {
 
     const { item_id, name, rating, comment, avatar_url, google_id } = req.body;
 
-    if (!item_id || !name?.trim() || !rating) {
+    if (item_id === undefined || item_id === null || !name?.trim() || !rating) {
       return res.status(400).json({ success: false, error: "item_id, name, dan rating wajib diisi" });
     }
     const r = Number(rating);
