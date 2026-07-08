@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { label: "Home", type: "scroll", target: "home" },
   { label: "About", type: "scroll", target: "about" },
   { label: "Wedding", type: "link", target: "/packages" },
-  { label: "Umrah & Hajj", type: "link", target: "/umrah-haji" },
+  { label: "Umrah & Haji", type: "link", target: "/umrah-haji" },
   { label: "Printing", type: "link", target: "/printing" },
   { label: "Gallery", type: "link", target: "/gallery" },
   { label: "Wedding Show", type: "link", target: "/wedding-show" },

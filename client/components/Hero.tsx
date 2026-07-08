@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { ChevronDown, Sparkles, Heart, Star } from "lucide-react";
 import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings.tsx";
 import GlowBackground from "./GlowBackground";
 
@@ -21,6 +22,7 @@ const FLOATING_ELEMENTS = [
 
 export default function Hero() {
   const { settings } = useSettings();
+  const navigate = useNavigate();
   
   const heroImages = (() => {
     const savedImages = settings['hero-images'];
@@ -197,11 +199,7 @@ export default function Hero() {
             variants={itemVariants}
           >
             <motion.button
-              onClick={() =>
-                document
-                  .getElementById("booking")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
+              onClick={() => navigate('/packages')}
               className="group relative px-8 py-3.5 bg-primary text-white rounded-xl font-semibold text-sm overflow-hidden shadow-2xl shadow-primary/30"
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.97 }}
@@ -215,11 +213,7 @@ export default function Hero() {
             </motion.button>
 
             <motion.button
-              onClick={() =>
-                document
-                  .getElementById("gallery")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
+              onClick={() => navigate('/gallery')}
               className="px-8 py-3.5 rounded-xl font-semibold text-sm text-white border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors"
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.97 }}
