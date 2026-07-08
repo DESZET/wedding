@@ -72,13 +72,15 @@ export const createReview: RequestHandler = async (req, res) => {
     );
 
     // Update avg rating di tabel produk/paket (jika ada kolom rating & reviews_count)
+    let avgRating = 0;
+    let total = 0;
     try {
       const allReviews = await dbAll(
         `SELECT rating FROM ${TABLE[type]} WHERE ${col} = ?`,
         [item_id]
       );
-      const total = allReviews.length;
-      const avgRating = total > 0
+      total = allReviews.length;
+      avgRating = total > 0
         ? Math.round((allReviews.reduce((s: number, rv: any) => s + Number(rv.rating), 0) / total) * 10) / 10
         : 0;
 
