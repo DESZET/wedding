@@ -26,17 +26,18 @@ const nodeExternals = [
 ];
 
 export default defineConfig({
+  publicDir: false,
   build: {
-    outDir: "dist/server",
+    outDir: "dist/api",
     emptyOutDir: true,
     target: "node22",
     ssr: true,
     rollupOptions: {
-      input: path.resolve(__dirname, "server/node-build.ts"),
+      input: path.resolve(__dirname, "server/vercel-entry.ts"),
       external: nodeExternals,
       output: {
         format: "es",
-        entryFileNames: "node-build.mjs",
+        entryFileNames: "handler.mjs",
         inlineDynamicImports: true,
       },
     },

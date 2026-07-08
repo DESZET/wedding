@@ -7,32 +7,99 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = path.resolve(__dirname, '../../wedding.db');
 
 let db: any | null = null;
-let useTurso = false;
+let connecting: Promise<any> | null = null;
 
-if (process.env.DATABASE_URL) {
-  useTurso = true;
+function useTurso(): boolean {
+  return Boolean(process.env.DATABASE_URL?.trim());
+}
+
+const TURSO_QUERY_MS = 12_000;
+
+function rowToObject(row: unknown): Record<string, unknown> {
+  if (!row || typeof row !== 'object') return {};
+  if (typeof (row as { toJSON?: () => unknown }).toJSON === 'function') {
+    const json = (row as { toJSON: () => unknown }).toJSON();
+    if (json && typeof json === 'object' && !Array.isArray(json)) {
+      return json as Record<string, unknown>;
+    }
+  }
+  const r = row as { columnNames?: string[]; values?: unknown[] };
+  if (r.columnNames?.length && r.values) {
+    const out: Record<string, unknown> = {};
+    r.columnNames.forEach((name, i) => {
+      out[name] = r.values![i];
+    });
+    return out;
+  }
+  return row as Record<string, unknown>;
+}
+
+async function tursoExecute(
+  client: ReturnType<typeof createClient>,
+  sql: string,
+  args: any[] = [],
+): Promise<Awaited<ReturnType<ReturnType<typeof createClient>['execute']>>> {
+  return Promise.race([
+    client.execute({ sql, args }),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Turso query timed out after ${TURSO_QUERY_MS / 1000}s`)),
+        TURSO_QUERY_MS,
+      ),
+    ),
+  ]);
+}
+
+function tursoUrl(): string {
+  const raw = process.env.DATABASE_URL!.trim();
+  // Remote Turso over HTTP is more reliable on serverless than libsql:// wire protocol.
+  if (raw.startsWith('libsql://')) {
+    return raw.replace('libsql://', 'https://');
+  }
+  return raw;
+}
+
+async function connectTurso(): Promise<any> {
+  if (!process.env.DATABASE_AUTH_TOKEN?.trim()) {
+    throw new Error('DATABASE_AUTH_TOKEN is missing. Add it in Vercel Environment Variables.');
+  }
+
+  const url = tursoUrl();
+  console.log('Connecting to Turso at', url);
+  const client = createClient({
+    url,
+    authToken: process.env.DATABASE_AUTH_TOKEN,
+  });
+  await tursoExecute(client, 'SELECT 1');
+  console.log('Turso connected');
+  return client;
 }
 
 export async function ensureDb(): Promise<any> {
   if (db) return db;
 
-  if (useTurso) {
-    console.log('Connecting to Turso Database at', process.env.DATABASE_URL);
-    db = createClient({
-      url: process.env.DATABASE_URL!,
-      authToken: process.env.DATABASE_AUTH_TOKEN
-    });
-  } else {
-    // Lazy-load native bindings to avoid crashing during dev/server config evaluation.
-    try {
-      const BetterSqlite3 = (await import('better-sqlite3')).default;
-      db = new BetterSqlite3(DB_PATH);
-    } catch (err) {
-      console.error('Failed to load better-sqlite3. Make sure it is installed for local development.', err);
-      throw err;
-    }
+  if (process.env.VERCEL && !process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL and DATABASE_AUTH_TOKEN must be set on Vercel.');
   }
-  return db;
+
+  if (!connecting) {
+    connecting = (async () => {
+      try {
+        if (useTurso()) {
+          db = await connectTurso();
+        } else {
+          const BetterSqlite3 = (await import('better-sqlite3')).default;
+          db = new BetterSqlite3(DB_PATH);
+        }
+        return db;
+      } catch (err) {
+        connecting = null;
+        throw err;
+      }
+    })();
+  }
+
+  return connecting;
 }
 
 export function getDb(): any {
@@ -45,7 +112,7 @@ export function getDb(): any {
 export async function dbRun(sql: string, params: any[] = []): Promise<any> {
   const database = db ?? await ensureDb();
   if (useTurso) {
-    const res = await database.execute({ sql, args: params });
+    const res = await tursoExecute(database, sql, params);
     return {
       changes: res.rowsAffected,
       lastInsertRowid: res.lastInsertRowid,
@@ -64,8 +131,8 @@ export async function dbRun(sql: string, params: any[] = []): Promise<any> {
 export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
   const database = db ?? await ensureDb();
   if (useTurso) {
-    const res = await database.execute({ sql, args: params });
-    return res.rows[0] as unknown as T;
+    const res = await tursoExecute(database, sql, params);
+    return rowToObject(res.rows[0]) as T;
   } else {
     return database.prepare(sql).get(params) as T;
   }
@@ -74,8 +141,8 @@ export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T
 export async function dbAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   const database = db ?? await ensureDb();
   if (useTurso) {
-    const res = await database.execute({ sql, args: params });
-    return res.rows as unknown as T[];
+    const res = await tursoExecute(database, sql, params);
+    return res.rows.map((row) => rowToObject(row)) as T[];
   } else {
     return database.prepare(sql).all(params) as T[];
   }
@@ -89,6 +156,12 @@ export async function initDatabase(): Promise<void> {
   } catch (e) {
     console.error('Error ensuring database connection:', e);
     throw e;
+  }
+
+  // Turso: never run hundreds of DDL/seed round-trips on serverless cold start.
+  if (useTurso) {
+    console.log('Turso: skipping schema migration and seeding (use migrate-to-turso locally)');
+    return;
   }
 
   try {

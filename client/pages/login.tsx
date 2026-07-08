@@ -22,17 +22,29 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      let data: { success?: boolean; error?: string; data?: { token: string } };
+      try {
+        data = await response.json();
+      } catch {
+        setError(
+          response.status === 504
+            ? 'Server timeout — coba lagi dalam 1 menit atau redeploy Vercel'
+            : response.status === 503
+              ? 'Database tidak merespons — cek Turso & env Vercel, lalu redeploy'
+              : 'Terjadi kesalahan saat login',
+        );
+        return;
+      }
 
-      if (data.success) {
+      if (response.ok && data.success && data.data?.token) {
         localStorage.setItem('admin_token', data.data.token);
         navigate('/admin');
       } else {
-        setError('Username atau password salah');
+        setError(data.error || 'Username atau password salah');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Terjadi kesalahan saat login');
+      setError('Tidak bisa menghubungi server. Cek koneksi atau redeploy Vercel.');
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +105,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-    
+        <p className="text-center text-xs text-gray-500">
+          Akun default: <span className="font-mono">admin</span> / <span className="font-mono">admin123</span>
+          (jika belum pernah diubah di Turso)
+        </p>
       </div>
     </div>
   );

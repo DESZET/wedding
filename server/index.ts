@@ -25,20 +25,25 @@ import customerDebtsRouter from "./routes/customer-debts";
 import { getReligiousBookings, getReligiousBooking, createReligiousBooking, updateReligiousBooking, deleteReligiousBooking } from "./routes/religious-bookings";
 import { getPrintingOrders, getPrintingOrder, createPrintingOrder, updatePrintingOrder, deletePrintingOrder } from "./routes/printing-orders";
 import { getReviews, createReview, deleteReview } from "./routes/reviews";
-import { initDatabase } from "./database";
+import { migrateImport, migrateReset } from "./routes/migrate-import";
+import { ensureDb, initDatabase } from "./database";
+
+const isServerless = Boolean(process.env.VERCEL);
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+const storage = isServerless
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        cb(null, "public/uploads/");
+      },
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+      },
+    });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 export async function createServer() {
   const app = express();
@@ -51,24 +56,51 @@ export async function createServer() {
   // Serve static files from public directory
   app.use('/uploads', express.static('public/uploads'));
 
-  // Initialize database and admin credentials.
-  // Important: During Vite config evaluation, sqlite3 native bindings may not be available.
-  // Guard DB init so the SPA dev server can still start.
-  try {
-    await initDatabase();
-    await initAdminCredentials();
-  } catch (err) {
-    console.error('[server] DB init skipped (sqlite3 bindings missing or failed to load):', err);
-  }
-
-
-  // Example API routes
+  // Fast health check — must not wait for DB (avoids 60s Vercel timeout on cold start).
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
-    res.json({ message: ping });
+    res.json({
+      message: ping,
+      turso: Boolean(process.env.DATABASE_URL),
+    });
+  });
+
+  let dbReady: Promise<void> | undefined;
+  const prepareDatabase = () => {
+    if (!dbReady) {
+      dbReady = (async () => {
+        if (isServerless && process.env.DATABASE_URL) {
+          await ensureDb();
+          return;
+        }
+        await initDatabase();
+        await initAdminCredentials();
+      })();
+    }
+    return dbReady;
+  };
+
+  app.use(async (req, res, next) => {
+    const pathOnly = (req.path || req.url || "").split("?")[0];
+    if (pathOnly === "/api/ping" || pathOnly === "/ping" || pathOnly.endsWith("/ping")) {
+      return next();
+    }
+    try {
+      await prepareDatabase();
+      next();
+    } catch (err) {
+      console.error("[server] Database not ready:", err);
+      res.status(503).json({
+        success: false,
+        error: "Database unavailable. Check DATABASE_URL on Vercel.",
+      });
+    }
   });
 
   app.get("/api/demo", handleDemo);
+
+  app.post("/api/migrate-reset", migrateReset);
+  app.post("/api/migrate-import", migrateImport);
 
   // Gallery routes
   app.get("/api/gallery", getGallery);
@@ -78,30 +110,42 @@ export async function createServer() {
   app.delete("/api/gallery/:id", deleteGalleryItem);
 
   // File upload route for gallery
-  app.post("/api/upload", upload.single('image'), (req, res) => {
+  app.post("/api/upload", upload.single("image"), (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No file uploaded' });
+      return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+    if (isServerless) {
+      return res.status(503).json({
+        success: false,
+        error: "Upload baru belum tersedia di production. Gunakan gambar yang sudah ada atau hubungi admin.",
+      });
     }
     res.json({
       success: true,
       data: {
         filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`
-      }
+        path: `/uploads/${req.file.filename}`,
+      },
     });
   });
 
   // File upload route for videos
-  app.post("/api/upload-video", upload.single('video'), (req, res) => {
+  app.post("/api/upload-video", upload.single("video"), (req, res) => {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No video file uploaded' });
+      return res.status(400).json({ success: false, error: "No video file uploaded" });
+    }
+    if (isServerless) {
+      return res.status(503).json({
+        success: false,
+        error: "Upload video belum tersedia di production. Hubungi admin.",
+      });
     }
     res.json({
       success: true,
       data: {
         filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`
-      }
+        path: `/uploads/${req.file.filename}`,
+      },
     });
   });
 

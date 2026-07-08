@@ -1,18 +1,32 @@
 import { RequestHandler } from "express";
 import { dbRun, dbGet, dbAll, restartDatabase } from "../database";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
-// Initialize default admin credentials only if the table is completely empty
+/** Pre-hashed admin123 (bcrypt 4 rounds) — avoids 60s CPU timeout on Vercel cold start */
+const DEFAULT_ADMIN_HASH =
+  "$2b$04$SV1HeWWs5R7oXC3pym8YzO8rLOyaEBEDmxo.xBmFWK23Wxix3hgq6";
+
+function bcryptRounds(): number {
+  return process.env.VERCEL ? 4 : 10;
+}
+
+// Initialize default admin credentials only when the table is empty
 export const initAdminCredentials = async () => {
   try {
-    const existingAdmin = await dbGet("SELECT * FROM admin_credentials LIMIT 1");
-    if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
+    // Kalau pakai Turso, skip sama sekali — data sudah ada di cloud
+    if (process.env.DATABASE_URL?.trim()) {
+      console.log('Turso: skipping default admin init');
+      return;
+    }
+    
+    const row = await dbGet<{ n: number }>("SELECT COUNT(*) as n FROM admin_credentials");
+    const count = Number(row?.n ?? 0);
+    if (count === 0) {
       await dbRun(
         "INSERT INTO admin_credentials (username, password, createdAt) VALUES (?, ?, CURRENT_TIMESTAMP)",
-        ["admin", hashedPassword]
+        ["admin", DEFAULT_ADMIN_HASH],
       );
-      console.log("Default admin credentials initialized");
+      console.log("Default admin credentials initialized (admin / admin123)");
     }
   } catch (error) {
     console.error("Error initializing admin credentials:", error);
@@ -28,13 +42,22 @@ export const adminLogin: RequestHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: "Username and password are required" });
     }
 
-    const admin = await dbGet("SELECT * FROM admin_credentials WHERE username = ?", [username]);
+    const admin = await dbGet<{ username?: string; password?: string }>(
+      "SELECT username, password FROM admin_credentials WHERE username = ?",
+      [username],
+    );
 
-    if (!admin) {
+    if (!admin?.password) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const isValidPassword = await bcrypt.compare(password, admin.password);
+    const storedHash = String(admin.password);
+    const isValidPassword = await Promise.race([
+      bcrypt.compare(password, storedHash),
+      new Promise<boolean>((_, reject) =>
+        setTimeout(() => reject(new Error("Password check timed out")), process.env.VERCEL ? 8000 : 30000),
+      ),
+    ]);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
@@ -51,14 +74,23 @@ export const adminLogin: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
+    const msg = error instanceof Error ? error.message : "Login failed";
+    if (msg.includes("timed out") || msg.includes("Turso")) {
+      return res.status(503).json({
+        success: false,
+        error: "Database timeout — cek DATABASE_URL di Vercel atau coba lagi.",
+      });
+    }
     res.status(500).json({ success: false, error: "Login failed" });
   }
 };
 
-// Get current admin credentials (for settings page)
+// Get current admin credentials (for settings page) — most recently updated row
 export const getAdminCredentials: RequestHandler = async (req, res) => {
   try {
-    const admin = await dbGet("SELECT username, createdAt, updatedAt FROM admin_credentials LIMIT 1");
+    const admin = await dbGet(
+      "SELECT username, createdAt, updatedAt FROM admin_credentials ORDER BY COALESCE(updatedAt, createdAt) DESC LIMIT 1",
+    );
 
     if (!admin) {
       return res.status(404).json({ success: false, error: "Admin credentials not found" });
@@ -83,24 +115,14 @@ export const updateAdminCredentials: RequestHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: "Username and password are required" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, bcryptRounds());
 
-    // Check if admin credentials exist
-    const existingAdmin = await dbGet("SELECT * FROM admin_credentials LIMIT 1");
-
-    if (!existingAdmin) {
-      // Create new credentials
-      await dbRun(
-        "INSERT INTO admin_credentials (username, password, createdAt) VALUES (?, ?, CURRENT_TIMESTAMP)",
-        [username, hashedPassword]
-      );
-    } else {
-      // Update existing credentials
-      await dbRun(
-        "UPDATE admin_credentials SET username = ?, password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
-        [username, hashedPassword, existingAdmin.id]
-      );
-    }
+    // Single active admin: replace all rows so old usernames (e.g. admin, desta) cannot still log in
+    await dbRun("DELETE FROM admin_credentials");
+    await dbRun(
+      "INSERT INTO admin_credentials (username, password, createdAt, updatedAt) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+      [username, hashedPassword],
+    );
 
     res.json({
       success: true,
