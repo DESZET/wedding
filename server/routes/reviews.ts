@@ -101,7 +101,8 @@ export const createReview: RequestHandler = async (req, res) => {
     res.status(201).json({ success: true, message: "Review berhasil ditambahkan", stats: { avg: avgRating, total } });
   } catch (error) {
     console.error("Error creating review:", error);
-    res.status(500).json({ success: false, error: "Gagal menambahkan review" });
+    const msg = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, error: "Gagal menambahkan review", detail: msg });
   }
 };
 
