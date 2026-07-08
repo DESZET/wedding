@@ -410,9 +410,10 @@ async function migrateUmrahPackagesTable(): Promise<void> {
 
 async function seedPrintingData(): Promise<void> {
   try {
-    const existingProducts = await dbAll("SELECT id FROM printing_products");
-    if (existingProducts.length > 0) {
-      console.log('Printing products already exist, skipping seeding');
+    // Cek categories, bukan products — supaya tidak re-seed saat products kosong
+    const existingCats = await dbAll("SELECT id FROM printing_categories LIMIT 1");
+    if (existingCats.length > 0) {
+      console.log('Printing categories already exist, skipping seeding');
       return;
     }
 
