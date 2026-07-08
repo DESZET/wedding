@@ -16,9 +16,8 @@ import ContactPage from "./pages/contact";
 import UmrahHaji from "./pages/UmrahHaji";
 import Printing from "./pages/Printing";
 import MainLayout from "./layouts/MainLayout";
-import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import BackToTop from "@/components/BackToTop";
-import ChatBot from "@/components/ChatBot";
+import ChatBot from "./components/ChatBot";
 import Admin from "./pages/admin";
 import LoginPage from "./pages/login";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -26,14 +25,13 @@ import { SettingsProvider } from "./hooks/useSettings.tsx";
 
 const queryClient = new QueryClient();
 
-// Wrapper to hide widgets on admin/login pages
+// Widgets hidden on admin/login
 function GlobalWidgets() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin') || location.pathname.startsWith('/login');
   if (isAdminPage) return null;
   return (
     <>
-      <FloatingWhatsApp />
       <BackToTop />
       <ChatBot />
     </>
