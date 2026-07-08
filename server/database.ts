@@ -171,6 +171,8 @@ export async function initDatabase(): Promise<void> {
       name TEXT NOT NULL,
       rating INTEGER NOT NULL,
       comment TEXT,
+      avatar_url TEXT,
+      google_id TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (product_id) REFERENCES printing_products (id)
     )`);
@@ -181,6 +183,8 @@ export async function initDatabase(): Promise<void> {
       name TEXT NOT NULL,
       rating INTEGER NOT NULL,
       comment TEXT,
+      avatar_url TEXT,
+      google_id TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (package_id) REFERENCES umrah_packages (id)
     )`);
@@ -191,6 +195,8 @@ export async function initDatabase(): Promise<void> {
       name TEXT NOT NULL,
       rating INTEGER NOT NULL,
       comment TEXT,
+      avatar_url TEXT,
+      google_id TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (package_id) REFERENCES packages (id)
     )`);

@@ -48,7 +48,7 @@ export const createReview: RequestHandler = async (req, res) => {
     const type = req.params.type as ReviewType;
     if (!TABLE[type]) return res.status(400).json({ success: false, error: "Invalid review type" });
 
-    const { item_id, name, rating, comment } = req.body;
+    const { item_id, name, rating, comment, avatar_url, google_id } = req.body;
 
     if (!item_id || !name?.trim() || !rating) {
       return res.status(400).json({ success: false, error: "item_id, name, dan rating wajib diisi" });
@@ -67,8 +67,8 @@ export const createReview: RequestHandler = async (req, res) => {
     const col = type === "printing" ? "product_id" : "package_id";
 
     await dbRun(
-      `INSERT INTO ${TABLE[type]} (${col}, name, rating, comment) VALUES (?, ?, ?, ?)`,
-      [item_id, name.trim(), r, comment?.trim() || ""]
+      `INSERT INTO ${TABLE[type]} (${col}, name, rating, comment, avatar_url, google_id) VALUES (?, ?, ?, ?, ?, ?)`,
+      [item_id, name.trim(), r, comment?.trim() || "", avatar_url || null, google_id || null]
     );
 
     // Update avg rating di tabel produk/paket (jika ada kolom rating & reviews_count)
