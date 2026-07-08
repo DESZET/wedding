@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, Star, ChevronDown } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../hooks/useSettings";
@@ -20,6 +20,19 @@ export default function Navbar() {
   const { settings } = useSettings();
   const { user: googleUser, loading: googleLoading, login: googleLogin, logout: googleLogout } = useGoogleUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [scrolled, setScrolled] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const location = useLocation();
@@ -180,16 +193,70 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-3">
             {/* Google Login */}
             {googleUser ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-white/80 border border-gray-200 rounded-full px-3 py-1.5 shadow-sm">
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(v => !v)}
+                  className="flex items-center gap-2 bg-white/80 border border-gray-200 rounded-full px-3 py-1.5 shadow-sm hover:shadow-md transition-all"
+                >
                   <img src={googleUser.picture} alt={googleUser.name} referrerPolicy="no-referrer"
                     className="w-6 h-6 rounded-full object-cover" />
                   <span className="text-sm font-medium text-foreground max-w-[100px] truncate">{googleUser.name.split(' ')[0]}</span>
-                </div>
-                <button onClick={googleLogout} title="Logout Google"
-                  className="p-1.5 rounded-full text-foreground/40 hover:text-red-500 hover:bg-red-50 transition-colors">
-                  <LogOut className="w-4 h-4" />
+                  <ChevronDown className={`w-3.5 h-3.5 text-foreground/50 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
+
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50"
+                    >
+                      {/* User info header */}
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <img src={googleUser.picture} alt={googleUser.name} referrerPolicy="no-referrer"
+                            className="w-9 h-9 rounded-full object-cover ring-2 ring-primary/20" />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-gray-900 truncate">{googleUser.name}</p>
+                            <p className="text-xs text-gray-500 truncate">{googleUser.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu items */}
+                      <div className="py-1.5">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            // Scroll ke section review terdekat di halaman ini
+                            const reviewSection = document.querySelector('[id$="-reviews"]') || document.getElementById('packages');
+                            if (reviewSection) {
+                              reviewSection.scrollIntoView({ behavior: 'smooth' });
+                            } else {
+                              navigate('/packages#wedding-reviews');
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Star className="w-4 h-4 text-yellow-500" />
+                          <span>Tulis Ulasan</span>
+                        </button>
+
+                        <div className="h-px bg-gray-100 my-1" />
+
+                        <button
+                          onClick={() => { googleLogout(); setShowUserMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Keluar</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               <button onClick={googleLogin} disabled={googleLoading}
