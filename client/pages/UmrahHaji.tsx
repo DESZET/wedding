@@ -155,7 +155,7 @@ export default function ModernUmrahHaji() {
       try {
         const [umrahRes, HajiRes, faqRes, testimonialRes, galleryRes] = await Promise.all([
           fetch('/api/umrah-packages').then(res => res.json()).catch(err => ({ success: false, data: [] })),
-          fetch('/api/haji-packages').then(res => res.json()).catch(err => ({ success: false, data: [] })),
+          fetch('/api/umrah-packages').then(res => res.json()).catch(err => ({ success: false, data: [] })),
           fetch('/api/service-faqs?type=umrah-haji').then(res => res.json()).catch(err => ({ success: false, data: [] })),
           fetch('/api/testimonials?type=umrah-haji').then(res => res.json()).catch(err => ({ success: false, data: [] })),
           fetch('/api/gallery?category=umrah-haji').then(res => res.json()).catch(err => ({ success: false, data: [] }))
@@ -163,14 +163,16 @@ export default function ModernUmrahHaji() {
 
         // Safely set data with validation
         if (umrahRes.success && Array.isArray(umrahRes.data)) {
-          setUmrahPackages(umrahRes.data);
+          // Filter only umrah packages
+          setUmrahPackages(umrahRes.data.filter((p: any) => !p.package_type || p.package_type === 'umrah'));
         } else {
           console.warn('Invalid umrah packages data:', umrahRes);
           setUmrahPackages([]);
         }
 
         if (HajiRes.success && Array.isArray(HajiRes.data)) {
-          setHajiPackages(HajiRes.data);
+          // Filter only haji packages from the same table
+          setHajiPackages(HajiRes.data.filter((p: any) => p.package_type === 'haji') as any[]);
         } else {
           console.warn('Invalid Haji packages data:', HajiRes);
           setHajiPackages([]);

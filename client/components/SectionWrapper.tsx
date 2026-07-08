@@ -49,7 +49,7 @@ export default function SectionWrapper({
       },
       { 
         threshold,
-        rootMargin: "-50px 0px -100px 0px"
+        rootMargin: "0px 0px -50px 0px"
       }
     );
 
