@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import Footer from "@/components/Footer";
+import ReviewSection from "@/components/ReviewSection";
 
 interface PrintingProduct {
   id: number;
@@ -1183,6 +1184,20 @@ export default function Printing() {
       </SectionWrapper>
 
      
+      {/* Reviews Section */}
+      <SectionWrapper id="printing-reviews" animationType="fade-in-up" delay={100}>
+        <div className="py-4 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <ReviewSection
+              type="printing"
+              itemId={0}
+              itemName="Layanan Percetakan"
+              accent="blue"
+            />
+          </div>
+        </div>
+      </SectionWrapper>
+
        <Footer />
     </div>
   );

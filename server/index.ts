@@ -24,6 +24,7 @@ import customersRouter from "./routes/customers";
 import customerDebtsRouter from "./routes/customer-debts";
 import { getReligiousBookings, getReligiousBooking, createReligiousBooking, updateReligiousBooking, deleteReligiousBooking } from "./routes/religious-bookings";
 import { getPrintingOrders, getPrintingOrder, createPrintingOrder, updatePrintingOrder, deletePrintingOrder } from "./routes/printing-orders";
+import { getReviews, createReview, deleteReview } from "./routes/reviews";
 import { initDatabase } from "./database";
 
 // Configure multer for file uploads
@@ -226,6 +227,11 @@ export async function createServer() {
   app.post("/api/printing/orders", createPrintingOrder);
   app.put("/api/printing/orders/:id", updatePrintingOrder);
   app.delete("/api/printing/orders/:id", deletePrintingOrder);
+
+  // Reviews routes (printing, umrah, wedding)
+  app.get("/api/reviews/:type/:itemId", getReviews);
+  app.post("/api/reviews/:type", createReview);
+  app.delete("/api/reviews/:type/:id", deleteReview);
 
   return app;
 }

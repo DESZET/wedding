@@ -8,6 +8,7 @@ import Packages from "@/components/Packages";
 import Timeline from "@/components/Timeline";
 import Footer from "@/components/Footer";
 import SectionWrapper from "@/components/SectionWrapper";
+import ReviewSection from "@/components/ReviewSection";
 import { useSettings } from "@/hooks/useSettings";
 
 export default function PackagesPage() {
@@ -301,7 +302,21 @@ export default function PackagesPage() {
         </div>
       </section>
 
-      {/* 7. Elegant Call-To-Action Banner */}
+      {/* 7. Reviews Section */}
+      <section className="py-16 bg-gradient-to-br from-slate-50 to-amber-50/30">
+        <div className="max-w-7xl mx-auto px-4">
+          <SectionWrapper id="wedding-reviews" delay={100} animationType="fade-in-up">
+            <ReviewSection
+              type="wedding"
+              itemId={0}
+              itemName="Layanan Wedding Organizer"
+              accent="primary"
+            />
+          </SectionWrapper>
+        </div>
+      </section>
+
+      {/* 8. Elegant Call-To-Action Banner */}
       <section className="py-20 bg-secondary text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-15">
           <img 

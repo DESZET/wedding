@@ -11,6 +11,7 @@ import {
 import Footer from "@/components/Footer";
 import UmrahHajiTimeline from "@/components/UmrahHajiTimeline";
 import SectionWrapper from "@/components/SectionWrapper";
+import ReviewSection from "@/components/ReviewSection";
 
 
 interface UmrahPackage {
@@ -1117,6 +1118,19 @@ export default function ModernUmrahHaji() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </SectionWrapper>
+
+      <SectionWrapper id="umrah-reviews" delay={100} animationType="fade-in-up">
+        <div className="py-4 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <ReviewSection
+              type="umrah"
+              itemId={0}
+              itemName="Layanan Umrah & Haji"
+              accent="emerald"
+            />
           </div>
         </div>
       </SectionWrapper>
