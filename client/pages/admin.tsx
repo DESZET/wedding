@@ -1271,8 +1271,8 @@ const Admin = () => {
         />;
       case 'umrah-haji':
         return <UmrahHajiAdminContent
-          umrahPackages={umrahPackages}
-          hajiPackages={hajiPackages}
+          umrahPackages={umrahPackages.filter((p: any) => !p.package_type || p.package_type === 'umrah')}
+          hajiPackages={[...hajiPackages, ...umrahPackages.filter((p: any) => p.package_type === 'haji')]}
           bookings={religiousBookings}
           filter={bookingFilter}
           onFilterChange={setBookingFilter}
