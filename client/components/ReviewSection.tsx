@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Star, MessageSquare, Send, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-const GOOGLE_CLIENT_ID = "1049475351807-tk9oisnnh5lii0cloh04gdut5p48di0p.apps.googleusercontent.com";
+import { useGoogleUser } from "../hooks/useGoogleUser";
 
 interface Review {
   id: number;
@@ -99,55 +98,11 @@ export default function ReviewSection({ type, itemId, itemName, accent = "blue" 
   const [showAll, setShowAll] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const { user: googleUser, loading: googleLoading, login: handleGoogleLogin, logout } = useGoogleUser();
   const [form, setForm] = useState({ rating: 0, comment: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const a = ACCENT[accent];
-
-  // Restore cached user
-  useEffect(() => {
-    try {
-      const cached = localStorage.getItem("galeria_google_user");
-      if (cached) setGoogleUser(JSON.parse(cached));
-    } catch {}
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    try {
-      await loadGoogleScript();
-      const google = (window as any).google;
-      const client = google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: "openid profile email",
-        callback: async (tokenResponse: any) => {
-          if (tokenResponse.error) { setGoogleLoading(false); return; }
-          try {
-            const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-            });
-            const user: GoogleUser = await res.json();
-            setGoogleUser(user);
-            localStorage.setItem("galeria_google_user", JSON.stringify(user));
-            setShowForm(true);
-          } catch (e) { console.error(e); }
-          finally { setGoogleLoading(false); }
-        },
-      });
-      client.requestAccessToken();
-    } catch (e) {
-      console.error(e);
-      setGoogleLoading(false);
-    }
-  };
-
-  const logout = () => {
-    setGoogleUser(null);
-    localStorage.removeItem("galeria_google_user");
-    setShowForm(false);
-  };
 
   const loadReviews = useCallback(async () => {
     try {
