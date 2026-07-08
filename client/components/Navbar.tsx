@@ -214,15 +214,6 @@ export default function Navbar() {
             >
               Admin
             </Link>
-            <motion.button
-              onClick={() => scrollToSection("booking")}
-              className="px-5 py-2 bg-primary text-white text-sm font-semibold rounded-xl shadow-lg shadow-primary/25 btn-magnetic"
-              whileHover={{ scale: 1.04, y: -1 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              Book Now
-            </motion.button>
           </div>
 
           {/* MOBILE TOGGLE */}
@@ -341,15 +332,6 @@ export default function Navbar() {
                   </button>
                 )}
 
-                <button
-                  onClick={() => {
-                    scrollToSection("booking");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="px-8 py-3 bg-primary text-white rounded-xl font-semibold text-lg shadow-lg shadow-primary/25"
-                >
-                  Book Now
-                </button>
                 <Link
                   to="/login"
                   onClick={() => setIsMobileMenuOpen(false)}
