@@ -1243,7 +1243,7 @@ export default function ModernUmrahHaji() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-700 italic">"{testimonial.text || ''}"</p>
+                  <p className="text-gray-700 italic">"{(testimonial as any).text || (testimonial as any).comment || ''}"</p>
                   {testimonial.date && <p className="text-sm text-gray-500 mt-4">{testimonial.date}</p>}
                 </div>
               ))}
