@@ -1075,53 +1075,7 @@ export default function ModernUmrahHaji() {
           </div>
         </div>
       </SectionWrapper>
-
-      <SectionWrapper id="umrah-testimonials" delay={100} animationType="fade-in-up">
-        <div className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Kata Jamaah Kami</h2>
-              <p className="text-gray-600">Pengalaman langsung dari Jamaah yang telah berangkat</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {testimonials.slice(0, 3).map((testimonial) => (
-                <div key={testimonial.id} className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                  <div className="flex items-center gap-4 mb-4">
-                    {testimonial.image ? (
-                      <img 
-                        src={testimonial.image} 
-                        alt={testimonial.name}
-                        className="w-16 h-16 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
-                        {testimonial.name.charAt(0)}
-                      </div>
-                    )}
-                    <div>
-                      <h4 className="font-bold">{testimonial.name}</h4>
-                      {(testimonial.city || testimonial.package) && (
-                        <p className="text-sm text-gray-600">
-                          {[testimonial.city, testimonial.package].filter(Boolean).join(" • ")}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-1 mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 italic">"{testimonial.text}"</p>
-                  {testimonial.date && <p className="text-sm text-gray-500 mt-4">{testimonial.date}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </SectionWrapper>
-
+      
       <SectionWrapper id="umrah-reviews" delay={100} animationType="fade-in-up">
         <div className="py-4 bg-white">
           <div className="max-w-7xl mx-auto px-4">
