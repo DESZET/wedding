@@ -111,7 +111,7 @@ export function getDb(): any {
 
 export async function dbRun(sql: string, params: any[] = []): Promise<any> {
   const database = db ?? await ensureDb();
-  if (useTurso) {
+  if (useTurso()) {
     const res = await tursoExecute(database, sql, params);
     return {
       changes: res.rowsAffected,
@@ -130,7 +130,7 @@ export async function dbRun(sql: string, params: any[] = []): Promise<any> {
 
 export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
   const database = db ?? await ensureDb();
-  if (useTurso) {
+  if (useTurso()) {
     const res = await tursoExecute(database, sql, params);
     return rowToObject(res.rows[0]) as T;
   } else {
@@ -140,7 +140,7 @@ export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T
 
 export async function dbAll<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   const database = db ?? await ensureDb();
-  if (useTurso) {
+  if (useTurso()) {
     const res = await tursoExecute(database, sql, params);
     return res.rows.map((row) => rowToObject(row)) as T[];
   } else {
@@ -159,7 +159,7 @@ export async function initDatabase(): Promise<void> {
   }
 
   // Turso: never run hundreds of DDL/seed round-trips on serverless cold start.
-  if (useTurso) {
+  if (useTurso()) {
     console.log('Turso: skipping schema migration and seeding (use migrate-to-turso locally)');
     return;
   }
@@ -477,6 +477,8 @@ export async function initDatabase(): Promise<void> {
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    await seedWeddingPackages();
+    await seedUmrahHajiData();
     await seedPrintingData();
 
     console.log('Database initialized successfully');
@@ -493,6 +495,8 @@ async function migrateUmrahPackagesTable(): Promise<void> {
 
     const requiredColumns = [
       { name: 'package_type', type: 'TEXT DEFAULT "umrah"' },
+      { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
+      { name: 'discount_price', type: 'REAL' },
       { name: 'quota_year', type: 'TEXT' },
       { name: 'payment_terms', type: 'TEXT' },
       { name: 'requirements', type: 'TEXT' },
@@ -506,20 +510,325 @@ async function migrateUmrahPackagesTable(): Promise<void> {
 
     for (const col of requiredColumns) {
       if (!columnNames.includes(col.name)) {
-        console.log(`Adding missing column: ${col.name}`);
+        console.log(`Adding missing column to umrah_packages: ${col.name}`);
         await dbRun(`ALTER TABLE umrah_packages ADD COLUMN ${col.name} ${col.type}`);
       }
     }
 
-    console.log('Umrah packages table migration completed');
+    // Also migrate haji_packages
+    const hajiColumns = await dbAll<{ name: string }>("PRAGMA table_info(haji_packages)");
+    const hajiColumnNames = hajiColumns.map(col => col.name);
+    const requiredHajiColumns = [
+      { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
+      { name: 'discount_price', type: 'REAL' }
+    ];
+
+    for (const col of requiredHajiColumns) {
+      if (!hajiColumnNames.includes(col.name)) {
+        console.log(`Adding missing column to haji_packages: ${col.name}`);
+        await dbRun(`ALTER TABLE haji_packages ADD COLUMN ${col.name} ${col.type}`);
+      }
+    }
+
+    // Also migrate packages (wedding packages)
+    const pkgColumns = await dbAll<{ name: string }>("PRAGMA table_info(packages)");
+    const pkgColumnNames = pkgColumns.map(col => col.name);
+    const requiredPkgColumns = [
+      { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
+      { name: 'discount_price', type: 'REAL' },
+      { name: 'images', type: 'TEXT' }
+    ];
+
+    for (const col of requiredPkgColumns) {
+      if (!pkgColumnNames.includes(col.name)) {
+        console.log(`Adding missing column to packages: ${col.name}`);
+        await dbRun(`ALTER TABLE packages ADD COLUMN ${col.name} ${col.type}`);
+      }
+    }
+
+    console.log('Umrah, Haji & Wedding packages table migration completed');
   } catch (error) {
-    console.error('Error migrating umrah_packages table:', error);
+    console.error('Error migrating tables:', error);
+  }
+}
+
+async function seedWeddingPackages(): Promise<void> {
+  try {
+    const existing = await dbAll("SELECT id FROM packages LIMIT 1");
+    if (existing.length > 0) return;
+
+    const weddingPackages = [
+      {
+        name: "Paket Silver Modern Minimalist",
+        price: 35000000,
+        description: "Pilihan tepat untuk resepsi intim dan sakral dengan dekorasi modern aesthetic, tata rias pengantin premium, dan katering lezat untuk 300 tamu.",
+        highlighted: 0,
+        features: JSON.stringify([
+          "Dekorasi Pelaminan Modern Floral 6-8 Meter",
+          "Rias & Gaun Pengantin Akad + Resepsi (MUA Eksklusif)",
+          "Katering 300 Porsi Menu Utama + 2 Gubukan",
+          "Dokumentasi Foto Full Day + Video Teaser",
+          "Tim WO Lapangan 4 Kru + MC Profesional"
+        ]),
+        longDescription: "Paket Silver dirancang untuk pasangan yang menginginkan pernikahan elegan, minimalis, dan berkesan tanpa repot mengurus vendor secara terpisah."
+      },
+      {
+        name: "Paket Gold Royal Ballroom",
+        price: 65000000,
+        description: "Paket terpopuler untuk pernikahan gedung atau ballroom megah dengan fasilitas vendor lengkap all-in dan layanan wedding organizer prima 500-600 tamu.",
+        highlighted: 1,
+        features: JSON.stringify([
+          "Dekorasi Pelaminan Mewah 10-12 Meter + Fresh Flowers",
+          "Rias & Busana Pengantin, 2 Pasang Orang Tua & 4 Pagar Ayu",
+          "Katering 500 Porsi + 4 Gubukan Favorit (Zuppa, Sate, Siomay)",
+          "Dokumentasi 2 Foto + 2 Video Cinematic Film + Album Kulit",
+          "Tim WO Lapangan 6 Kru + Sound System Konser + Akustik Band"
+        ]),
+        longDescription: "Paket Gold menghadirkan kemewahan ballroom seutuhnya dengan koordinasi seluruh vendor dari prosesi akad nikah hingga pesta resepsi berakhir."
+      },
+      {
+        name: "Paket Platinum Exclusive Grand Hall",
+        price: 95000000,
+        description: "Kemewahan paripurna dengan konsep dekorasi 3D megah, katering melimpah untuk 800-1000 tamu, serta hiburan live music band profesional.",
+        highlighted: 0,
+        features: JSON.stringify([
+          "Dekorasi Pelaminan Grand Hall 14-18 Meter Custom Concept",
+          "Busana Pengantin Desainer + MUA Top Tier + Touch Up Standby",
+          "Katering 800 Porsi + 6 Food Stall Gubukan Premium",
+          "Dokumentasi Multi-Camera Cinematic + Teaser Reels Drone",
+          "Full Team WO 8 Kru + Wedding Planner Dedicated H-60"
+        ]),
+        longDescription: "Paket Platinum ditujukan untuk resepsi berskala besar yang membutuhkan penataan estetika tingkat tinggi dan manajemen acara presisi."
+      },
+      {
+        name: "Paket Diamond Presidential Luxury",
+        price: 150000000,
+        description: "Standar tertinggi royal wedding dengan tata panggung spektakuler, orchestra / full band entertainment, dan hidangan bintang lima untuk 1200+ tamu.",
+        highlighted: 0,
+        features: JSON.stringify([
+          "Dekorasi Presidential Hall 20+ Meter + Full Fresh Import Flowers",
+          "High-End Haute Couture Wedding Gown + Signature MUA",
+          "Katering 1200 Porsi + 8 Gubukan Mewah + Dessert Station",
+          "Liputan Full Cinematic Film + Drone 4K + Album Handcrafted",
+          "Full Crew WO 12 Kru + VIP Protocol Service"
+        ]),
+        longDescription: "Paket Diamond adalah perayaan cinta megah bak kerajaan dengan segala kemudahan dan fasilitas terbaik tanpa kompromi."
+      }
+    ];
+
+    for (const pkg of weddingPackages) {
+      await dbRun(
+        `INSERT INTO packages (name, price, description, highlighted, features, longDescription) VALUES (?, ?, ?, ?, ?, ?)`,
+        [pkg.name, pkg.price, pkg.description, pkg.highlighted, pkg.features, pkg.longDescription]
+      );
+    }
+    console.log('Wedding packages seeded successfully');
+  } catch (error) {
+    console.error('Error seeding wedding packages:', error);
+  }
+}
+
+async function seedUmrahHajiData(): Promise<void> {
+  try {
+    const existingUmrah = await dbAll("SELECT id FROM umrah_packages LIMIT 1");
+    if (existingUmrah.length === 0) {
+      const umrahList = [
+        {
+          name: "Paket Umrah Reguler 9 Hari Barokah",
+          description: "Program ibadah umrah ekonomis berkualitas dengan penerbangan langsung Saudi Airlines dan hotel bintang 4 dekat pelataran masjid.",
+          package_type: "umrah",
+          duration: 9,
+          price: 28500000,
+          discount_price: 26900000,
+          departure_city: "Jakarta",
+          airline: "Saudi Airlines",
+          hotel_mekah: "Le Meridien Towers / Setaraf Bintang 4",
+          hotel_madinah: "Concorde Al Khair / Setaraf Bintang 4",
+          hotel_rating: 4,
+          distance_haram: "±300m ke Pelataran",
+          meals_included: 1,
+          tour_guide: 1,
+          visa_assistance: 1,
+          vaccination_assistance: 1,
+          transport_type: "Bus Eksekutif AC",
+          group_size: 45,
+          availability: 18,
+          rating: 4.9,
+          reviews_count: 320,
+          featured: 0,
+          best_seller: 1,
+          images: "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=1200&q=80, https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80",
+          included_features: JSON.stringify([
+            "Tiket Pesawat PP Direct Flight",
+            "Hotel Bintang 4 Makkah & Madinah",
+            "Makan 3x Fullboard Buffet Menu Indonesia",
+            "Visa Umrah Resmi + Asuransi Perjalanan",
+            "Mutawwif Berpengalaman Lulusan Madinah",
+            "Free Air Zamzam 5 Liter & Perlengkapan Lengkap"
+          ])
+        },
+        {
+          name: "Paket Umrah VIP Clock Tower 12 Hari",
+          description: "Kenyamanan ibadah bintang 5 menginap langsung di Tower Zamzam Clock Makkah dengan pemandangan langsung ke arah Ka'bah dan Kereta Cepat.",
+          package_type: "umrah",
+          duration: 12,
+          price: 38900000,
+          discount_price: 36500000,
+          departure_city: "Jakarta",
+          airline: "Garuda Indonesia",
+          hotel_mekah: "Makkah Clock Royal Tower (Fairmont) Bintang 5",
+          hotel_madinah: "Anwar Al Madinah Movenpick Bintang 5",
+          hotel_rating: 5,
+          distance_haram: "±50m (Pelataran Depan)",
+          meals_included: 1,
+          tour_guide: 1,
+          visa_assistance: 1,
+          vaccination_assistance: 1,
+          transport_type: "Kereta Cepat Haramain + Bus VIP",
+          group_size: 35,
+          availability: 12,
+          rating: 5.0,
+          reviews_count: 210,
+          featured: 1,
+          best_seller: 0,
+          images: "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80, https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80",
+          included_features: JSON.stringify([
+            "Tiket Pesawat Garuda Indonesia PP Direct",
+            "Hotel Bintang 5 Depan Masjidil Haram (Clock Tower)",
+            "Kereta Cepat Haramain Speed Train (Madinah-Makkah)",
+            "Makan Buffet Hotel Bintang 5 Lengkap",
+            "City Tour Thaif & Wisata Sejarah Lengkap",
+            "Koper Fiber Eksklusif + Handcarry + Batik"
+          ])
+        },
+        {
+          name: "Paket Umrah Plus Turki Cappadocia 12 Hari",
+          description: "Kombinasi ibadah umrah khusyuk di Tanah Suci dan napak tilas sejarah Islam di Istanbul serta keindahan lanskap balon udara Cappadocia.",
+          package_type: "umrah",
+          duration: 12,
+          price: 44500000,
+          discount_price: 41900000,
+          departure_city: "Jakarta",
+          airline: "Turkish Airlines",
+          hotel_mekah: "Pullman Zamzam Makkah Bintang 5",
+          hotel_madinah: "Dar Al Taqwa Madinah Bintang 5",
+          hotel_rating: 5,
+          distance_haram: "±100m ke Masjidil Haram",
+          meals_included: 1,
+          tour_guide: 1,
+          visa_assistance: 1,
+          vaccination_assistance: 1,
+          transport_type: "Bus Wisata Deluxe Turki & Saudi",
+          group_size: 30,
+          availability: 10,
+          rating: 5.0,
+          reviews_count: 145,
+          featured: 0,
+          best_seller: 0,
+          images: "https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=1200&q=80, https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80",
+          included_features: JSON.stringify([
+            "Penerbangan Turkish Airlines Full Service",
+            "Wisata Sejarah Blue Mosque, Hagia Sophia & Bosphorus Cruise",
+            "Kunjungan Cappadocia Cave Suite Hotel",
+            "Umrah Lengkap di Makkah & Madinah Bintang 5",
+            "Free Visa Turki & Visa Umrah",
+            "Perlengkapan Ibadah & Travelling Lengkap"
+          ])
+        }
+      ];
+
+      for (const u of umrahList) {
+        await dbRun(
+          `INSERT INTO umrah_packages (
+            name, description, package_type, duration, price, discount_price, departure_city,
+            airline, hotel_mekah, hotel_madinah, hotel_rating, distance_haram, meals_included,
+            tour_guide, visa_assistance, vaccination_assistance, transport_type, group_size,
+            availability, rating, reviews_count, featured, best_seller, images, included_features
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            u.name, u.description, u.package_type, u.duration, u.price, u.discount_price, u.departure_city,
+            u.airline, u.hotel_mekah, u.hotel_madinah, u.hotel_rating, u.distance_haram, u.meals_included,
+            u.tour_guide, u.visa_assistance, u.vaccination_assistance, u.transport_type, u.group_size,
+            u.availability, u.rating, u.reviews_count, u.featured, u.best_seller, u.images, u.included_features
+          ]
+        );
+      }
+      console.log('Umrah packages seeded successfully');
+    }
+
+    const existingHaji = await dbAll("SELECT id FROM haji_packages LIMIT 1");
+    if (existingHaji.length === 0) {
+      const hajiList = [
+        {
+          name: "Paket Haji Furoda Mujamalah (Langsung Berangkat)",
+          description: "Haji resmi dengan visa Mujamalah dari Kerajaan Arab Saudi tanpa antre tahunan, fasilitas maktab VIP Arafah-Mina ber-AC dan hotel bintang 5.",
+          quota_year: "1446H / 2025M",
+          price: 295000000,
+          discount_price: 285000000,
+          payment_terms: "DP $5.000 USD saat pendaftaran, pelunasan setelah visa Furoda terbit resmi.",
+          included_features: JSON.stringify([
+            "Visa Haji Furoda Resmi Kerajaan Saudi",
+            "Tenda Maktab VIP Arafah & Mina Full AC",
+            "Hotel Bintang 5 Makkah & Madinah Depan Masjid",
+            "Penerbangan Direct Saudia Airlines",
+            "Bimbingan Manasik Intensif bersama Ulama Nasional",
+            "Full Layanan Medis 24 Jam & Dokter Pribadi Rombongan"
+          ]),
+          images: "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80",
+          featured: 1,
+          available_quota: 15,
+          training_sessions: 8,
+          medical_facility: 1,
+          rating: 5.0,
+          reviews_count: 85
+        },
+        {
+          name: "Paket Haji Plus Khusus Kemenag RI",
+          description: "Program Haji Khusus dengan kuota resmi Kementerian Agama RI dengan masa tunggu relatif singkat (5-7 tahun) dan kenyamanan hotel bintang 5.",
+          quota_year: "1446H / 2025M",
+          price: 185000000,
+          discount_price: 175000000,
+          payment_terms: "Setoran awal $4.500 USD untuk nomor porsi Kemenag RI.",
+          included_features: JSON.stringify([
+            "Nomor Porsi Resmi Haji Khusus Kemenag",
+            "Hotel Bintang 5 di Makkah & Madinah",
+            "Tenda Maktab Khusus AC di Arafah & Mina",
+            "Penerbangan Internasional Garuda / Saudia",
+            "Manasik Terstruktur & Pendampingan Ibadah Penuh"
+          ]),
+          images: "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=1200&q=80",
+          featured: 0,
+          available_quota: 25,
+          training_sessions: 6,
+          medical_facility: 1,
+          rating: 4.9,
+          reviews_count: 120
+        }
+      ];
+
+      for (const h of hajiList) {
+        await dbRun(
+          `INSERT INTO haji_packages (
+            name, description, quota_year, price, discount_price, payment_terms,
+            included_features, images, featured, available_quota, training_sessions,
+            medical_facility, rating, reviews_count
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            h.name, h.description, h.quota_year, h.price, h.discount_price, h.payment_terms,
+            h.included_features, h.images, h.featured, h.available_quota, h.training_sessions,
+            h.medical_facility, h.rating, h.reviews_count
+          ]
+        );
+      }
+      console.log('Haji packages seeded successfully');
+    }
+  } catch (error) {
+    console.error('Error seeding umrah/haji data:', error);
   }
 }
 
 async function seedPrintingData(): Promise<void> {
   try {
-    // Cek categories, bukan products — supaya tidak re-seed saat products kosong
     const existingCats = await dbAll("SELECT id FROM printing_categories LIMIT 1");
     if (existingCats.length > 0) {
       console.log('Printing categories already exist, skipping seeding');
@@ -527,15 +836,12 @@ async function seedPrintingData(): Promise<void> {
     }
 
     const printingCategories = [
-      { name: 'Undangan Pernikahan', description: 'Undangan pernikahan dengan berbagai desain dan bahan', icon: 'FileImage', order_index: 1, is_active: 1 },
-      { name: 'Sablon Kaos', description: 'Sablon kaos custom untuk event, promosi, dan merchandise', icon: 'Scissors', order_index: 2, is_active: 1 },
-      { name: 'Banner & Spanduk', description: 'Banner dan spanduk untuk promosi dan dekorasi', icon: 'Layout', order_index: 3, is_active: 1 },
-      { name: 'ID Card', description: 'Kartu identitas untuk karyawan, member, dan event', icon: 'CreditCard', order_index: 4, is_active: 1 },
-      { name: 'Kartu Nama', description: 'Kartu nama profesional untuk bisnis', icon: 'FileText', order_index: 5, is_active: 1 },
-      { name: 'Brosur & Flyer', description: 'Brosur dan flyer untuk promosi bisnis', icon: 'FileText', order_index: 6, is_active: 1 },
-      { name: 'Stiker & Label', description: 'Stiker dan label untuk branding produk', icon: 'Tag', order_index: 7, is_active: 1 },
-      { name: 'Kemasan Produk', description: 'Kemasan dan packaging untuk produk', icon: 'Package', order_index: 8, is_active: 1 },
-      { name: 'Merchandise Lainnya', description: 'Produk merchandise lainnya sesuai kebutuhan', icon: 'ShoppingBag', order_index: 9, is_active: 1 },
+      { name: 'Undangan Pernikahan', description: 'Undangan pernikahan hardcover, akrilik, dan softcover mewah', icon: 'FileImage', order_index: 1, is_active: 1 },
+      { name: 'Souvenir & Goodie Bag', description: 'Pouch, tumbler, tote bag, dan cinderamata pernikahan', icon: 'ShoppingBag', order_index: 2, is_active: 1 },
+      { name: 'Photobook & Album', description: 'Cetak album magazine kenangan pernikahan dan prewedding', icon: 'BookOpen', order_index: 3, is_active: 1 },
+      { name: 'Banner & Spanduk', description: 'Banner, backdrop photobooth, dan roll up banner wedding', icon: 'Layout', order_index: 4, is_active: 1 },
+      { name: 'Kartu Nama & ID Card', description: 'Kartu nama exclusive dan kartu identitas panitia', icon: 'CreditCard', order_index: 5, is_active: 1 },
+      { name: 'Stiker & Label Souvenir', description: 'Stiker label ucapan terima kasih dan seal undangan', icon: 'Tag', order_index: 6, is_active: 1 }
     ];
 
     for (const c of printingCategories) {
@@ -546,23 +852,83 @@ async function seedPrintingData(): Promise<void> {
     }
 
     const printingProducts = [
-      { category_id: 1, name: 'Undangan Premium Gold', description: 'Undangan pernikahan dengan finishing gold foil dan bahan premium', price: 15000, discount_price: 12000, size_options: 'A5,A6,Custom', material_options: 'Art Paper 260gsm,Art Paper 310gsm,Art Carton', color_options: 'Full Color', design_template_url: '/templates/undangan-premium.html', images: '/printing/undangan-premium.jpg', is_custom_design: 0, estimated_time: '5-7 hari', min_order: 50, is_active: 1 },
-      { category_id: 1, name: 'Undangan Simple Elegan', description: 'Undangan pernikahan dengan desain simple namun elegan', price: 8000, discount_price: 6500, size_options: 'A5,A6', material_options: 'Art Paper 210gsm,Art Paper 260gsm', color_options: 'Full Color', design_template_url: null, images: '/printing/undangan-simple.jpg', is_custom_design: 0, estimated_time: '3-5 hari', min_order: 25, is_active: 1 },
-      { category_id: 2, name: 'Kaos Polos Custom', description: 'Kaos polos dengan sablon custom untuk event atau promosi', price: 45000, discount_price: 38000, size_options: 'S,M,L,XL,XXL', material_options: 'Cotton Combed 24s,Cotton Combed 30s', color_options: 'Full Color', design_template_url: null, images: '/printing/kaos-custom.jpg', is_custom_design: 0, estimated_time: '7-10 hari', min_order: 10, is_active: 1 },
-      { category_id: 3, name: 'Banner Vinyl Outdoor', description: 'Banner vinyl untuk outdoor dengan ketahanan cuaca', price: 75000, discount_price: 65000, size_options: '1x2m,1.5x2m,2x3m,Custom', material_options: 'Vinyl Outdoor 280gsm,Vinyl Outdoor 440gsm', color_options: 'Full Color', design_template_url: null, images: '/printing/banner-vinyl.jpg', is_custom_design: 0, estimated_time: '2-3 hari', min_order: 1, is_active: 1 },
-      { category_id: 4, name: 'ID Card Premium', description: 'Kartu identitas dengan finishing premium untuk karyawan', price: 25000, discount_price: 20000, size_options: '8.5x5.4cm,9x5.5cm', material_options: 'PVC Card 0.76mm,PVC Card 1mm', color_options: 'Full Color', design_template_url: null, images: '/printing/id-card.jpg', is_custom_design: 0, estimated_time: '3-5 hari', min_order: 50, is_active: 1 },
-      { category_id: 5, name: 'Kartu Nama Premium', description: 'Kartu nama dengan finishing premium untuk bisnis', price: 25000, discount_price: 20000, size_options: '8.5x5.4cm,9x5.5cm', material_options: 'Art Paper 260gsm,Art Paper 310gsm,Art Carton', color_options: 'Full Color', design_template_url: null, images: '/printing/kartu-nama.jpg', is_custom_design: 0, estimated_time: '3-5 hari', min_order: 100, is_active: 1 },
-      { category_id: 6, name: 'Brosur A4 Full Color', description: 'Brosur promosi dengan kualitas cetak tinggi', price: 15000, discount_price: 12000, size_options: 'A4,A5', material_options: 'Art Paper 150gsm,Art Paper 210gsm', color_options: 'Full Color', design_template_url: null, images: '/printing/brosur.jpg', is_custom_design: 0, estimated_time: '3-5 hari', min_order: 100, is_active: 1 },
-      { category_id: 7, name: 'Stiker Vinyl', description: 'Stiker vinyl untuk branding produk dan promosi', price: 5000, discount_price: 4000, size_options: 'A4,A3,Custom', material_options: 'Vinyl Sticker 100gsm,Vinyl Sticker 150gsm', color_options: 'Full Color', design_template_url: null, images: '/printing/stiker.jpg', is_custom_design: 0, estimated_time: '2-3 hari', min_order: 10, is_active: 1 },
-      { category_id: 8, name: 'Kemasan Produk Custom', description: 'Kemasan produk dengan desain custom', price: 30000, discount_price: 25000, size_options: 'Custom', material_options: 'Art Card 250gsm,Art Card 310gsm', color_options: 'Full Color', design_template_url: null, images: '/printing/kemasan.jpg', is_custom_design: 0, estimated_time: '5-7 hari', min_order: 50, is_active: 1 },
-      { category_id: 9, name: 'Merchandise Custom', description: 'Produk merchandise dengan desain custom', price: 25000, discount_price: 20000, size_options: 'Custom', material_options: 'Berbagai bahan sesuai produk', color_options: 'Full Color', design_template_url: null, images: '/printing/merchandise.jpg', is_custom_design: 0, estimated_time: '7-14 hari', min_order: 25, is_active: 1 },
+      {
+        category_id: 1,
+        name: 'Undangan Hardcover Floral Gold Foil',
+        description: 'Undangan pernikahan hardcover tebal dengan sentuhan hotprint foil emas berkilau dan pita satin mewah.',
+        price: 15000,
+        discount_price: 12500,
+        size_options: '15 x 20 cm, A5 Lipat 2',
+        material_options: 'Board 30 + Jasmine Glitter, Art Paper 260gsm Laminasi Doff',
+        color_options: 'Gold Champagne, Emerald Green, Navy Blue, Maroon Velvet',
+        images: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=1200&q=80',
+        estimated_time: '5-7 Hari Kerja',
+        min_order: 100,
+        is_active: 1
+      },
+      {
+        category_id: 1,
+        name: 'Undangan Akrilik Transparan Eksklusif (UV Print)',
+        description: 'Kemewahan undangan akrilik bening 2mm dengan cetak tinta UV timbul anti air dan amplop beludru premium.',
+        price: 35000,
+        discount_price: 29000,
+        size_options: '15 x 21 cm, 12 x 18 cm',
+        material_options: 'Akrilik Bening 2mm, Akrilik Frosted Doff 2mm',
+        color_options: 'White Ink, Gold Ink, Full Color UV',
+        images: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80',
+        estimated_time: '7-10 Hari Kerja',
+        min_order: 50,
+        is_active: 1
+      },
+      {
+        category_id: 2,
+        name: 'Souvenir Custom & Goodie Bag Pernikahan',
+        description: 'Pilihan pouch kulit sintetis, tumbler custom grafir nama, dan tote bag kanvas elegan untuk cinderamata tamu.',
+        price: 18000,
+        discount_price: 15000,
+        size_options: '20 x 12 cm, Standard Pouch',
+        material_options: 'Kulit Sintetis Premium, Kanvas Tebal, Stainless 500ml',
+        color_options: 'Havana Brown, Black Onyx, Sage Green, Dusty Pink',
+        images: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=80',
+        estimated_time: '7-14 Hari Kerja',
+        min_order: 100,
+        is_active: 1
+      },
+      {
+        category_id: 3,
+        name: 'Wedding Photobook Magazine (Album Kenangan)',
+        description: 'Cetak album foto kenangan wedding & prewedding gaya majalah luxury dengan kertas tebal anti air.',
+        price: 450000,
+        discount_price: 380000,
+        size_options: '20 x 30 cm (A4 Landscape), 30 x 30 cm Square',
+        material_options: 'Luster Photo Paper 260gsm, Silk Matte Paper',
+        color_options: 'Full Color HD Print',
+        images: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80',
+        estimated_time: '3-5 Hari Kerja',
+        min_order: 1,
+        is_active: 1
+      },
+      {
+        category_id: 4,
+        name: 'Banner & Backdrop Wedding Photobooth 3x2m',
+        description: 'Backdrop photobooth dan welcome banner cetak resolusi tinggi warna tajam dan tidak memantulkan cahaya blitz foto.',
+        price: 90000,
+        discount_price: 65000,
+        size_options: '3 x 2 Meter, 2 x 2 Meter, 1 x 2 Meter',
+        material_options: 'Korea Matte Flexi 440gsm, Jerman Doff 510gsm',
+        color_options: 'Full Color Hi-Res',
+        images: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=80',
+        estimated_time: '1-2 Hari Kerja',
+        min_order: 1,
+        is_active: 1
+      }
     ];
 
     for (const p of printingProducts) {
       await dbRun(
-        `INSERT INTO printing_products (category_id, name, description, price, discount_price, size_options, material_options, color_options, design_template_url, images, is_custom_design, estimated_time, min_order, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [p.category_id, p.name, p.description, p.price, p.discount_price, p.size_options, p.material_options, p.color_options, p.design_template_url, p.images, p.is_custom_design, p.estimated_time, p.min_order, p.is_active]
+        `INSERT INTO printing_products (category_id, name, description, price, discount_price, size_options, material_options, color_options, images, estimated_time, min_order, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [p.category_id, p.name, p.description, p.price, p.discount_price, p.size_options, p.material_options, p.color_options, p.images, p.estimated_time, p.min_order, p.is_active]
       );
     }
 
@@ -575,7 +941,7 @@ async function seedPrintingData(): Promise<void> {
 export async function restartDatabase(): Promise<void> {
   try {
     if (db) {
-      if (!useTurso) {
+      if (!useTurso()) {
         db.close();
       }
       db = null;

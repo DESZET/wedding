@@ -188,7 +188,7 @@ export default function WeddingShow() {
     <section
       ref={sectionRef}
       id="wedding-show"
-      className="py-20 px-4 bg-background overflow-hidden relative"
+      className="py-20 px-4 bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden relative"
     >
       {/* Parallax Background Element */}
       <motion.div 
@@ -237,7 +237,7 @@ export default function WeddingShow() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={isVideoVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="p-8 bg-white"
+                className="p-8 bg-gradient-to-br from-primary/10 to-primary/5"
               >
                 <h3 className="text-xl font-bold text-foreground mb-2">
                   Menggunjungi Koleksi Wedding Venue Eksklusif
@@ -305,7 +305,7 @@ export default function WeddingShow() {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 bg-white">
+                <div className="p-6 bg-gradient-to-br from-primary/10 to-primary/5">
                   <h3 className="text-xl font-bold text-foreground mb-3">
                     {venue.title}
                   </h3>
@@ -354,7 +354,7 @@ export default function WeddingShow() {
             initial="hidden"
             animate={isInfoVisible ? "visible" : "hidden"}
             variants={slideUpVariants}
-            className="bg-gray-50 rounded-lg p-8 md:p-12"
+            className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-8 md:p-12"
           >
             <motion.h3 
               variants={textVariants}

@@ -16,6 +16,7 @@ interface HajiPackage {
   timeline: { month: string; activities: string[] }[];
   images: string[];
   featured: boolean;
+  is_active?: boolean;
   registration_deadline: string;
   available_quota: number;
   training_sessions: number;
@@ -31,23 +32,47 @@ interface HajiPackage {
   updatedAt: string;
 }
 
+// Helper for safely parsing JSON or structured strings into objects/arrays without crashing
+function safeJsonParse<T>(val: any, fallback: T): T {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'object') return val as T;
+  if (typeof val !== 'string') return fallback;
+  const trimmed = val.trim();
+  if (!trimmed) return fallback;
+
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    if (Array.isArray(fallback)) {
+      const items = trimmed
+        .split(/[\n,]/)
+        .map(s => s.trim())
+        .filter(Boolean);
+      return (items.length > 0 ? items : fallback) as unknown as T;
+    }
+    return fallback;
+  }
+}
+
 // Get all haji packages
 export const getHajiPackages: RequestHandler = async (req, res) => {
   try {
     const items = await dbAll("SELECT * FROM haji_packages ORDER BY createdAt DESC");
 
-    // Parse JSON fields
+    // Parse JSON fields safely
     const parsedItems = items.map((item: any) => ({
       ...item,
-      payment_terms: item.payment_terms ? JSON.parse(item.payment_terms) : [],
-      included_features: item.included_features ? JSON.parse(item.included_features) : [],
-      excluded_features: item.excluded_features ? JSON.parse(item.excluded_features) : [],
-      requirements: item.requirements ? JSON.parse(item.requirements) : [],
-      timeline: item.timeline ? JSON.parse(item.timeline) : [],
-      images: item.images ? JSON.parse(item.images) : [],
-      accommodation_details: item.accommodation_details ? JSON.parse(item.accommodation_details) : {},
+      package_type: 'haji',
+      payment_terms: safeJsonParse<string[]>(item.payment_terms, []),
+      included_features: safeJsonParse<string[]>(item.included_features, []),
+      excluded_features: safeJsonParse<string[]>(item.excluded_features, []),
+      requirements: safeJsonParse<string[]>(item.requirements, []),
+      timeline: safeJsonParse<any[]>(item.timeline, []),
+      images: safeJsonParse<string[]>(item.images, []),
+      accommodation_details: safeJsonParse<any>(item.accommodation_details, {}),
       featured: Boolean(item.featured),
-      medical_facility: Boolean(item.medical_facility)
+      medical_facility: Boolean(item.medical_facility),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
     }));
 
     const response: ListResponse<HajiPackage> = {
@@ -72,18 +97,19 @@ export const getHajiPackage: RequestHandler = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Haji package not found' });
     }
 
-    // Parse JSON fields (same as getHajiPackages)
     const parsedItem = {
       ...item,
-      payment_terms: item.payment_terms ? JSON.parse(item.payment_terms) : [],
-      included_features: item.included_features ? JSON.parse(item.included_features) : [],
-      excluded_features: item.excluded_features ? JSON.parse(item.excluded_features) : [],
-      requirements: item.requirements ? JSON.parse(item.requirements) : [],
-      timeline: item.timeline ? JSON.parse(item.timeline) : [],
-      images: item.images ? JSON.parse(item.images) : [],
-      accommodation_details: item.accommodation_details ? JSON.parse(item.accommodation_details) : {},
+      package_type: 'haji',
+      payment_terms: safeJsonParse<string[]>(item.payment_terms, []),
+      included_features: safeJsonParse<string[]>(item.included_features, []),
+      excluded_features: safeJsonParse<string[]>(item.excluded_features, []),
+      requirements: safeJsonParse<string[]>(item.requirements, []),
+      timeline: safeJsonParse<any[]>(item.timeline, []),
+      images: safeJsonParse<string[]>(item.images, []),
+      accommodation_details: safeJsonParse<any>(item.accommodation_details, {}),
       featured: Boolean(item.featured),
-      medical_facility: Boolean(item.medical_facility)
+      medical_facility: Boolean(item.medical_facility),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
     };
 
     const response: ApiResponse<HajiPackage> = {
@@ -137,18 +163,19 @@ export const createHajiPackage: RequestHandler = async (req, res) => {
 
     const newItem = await dbGet("SELECT * FROM haji_packages WHERE id = ?", [result.lastID]);
 
-    // Parse JSON fields for response
     const parsedNewItem = {
       ...newItem,
-      payment_terms: newItem.payment_terms ? JSON.parse(newItem.payment_terms) : [],
-      included_features: newItem.included_features ? JSON.parse(newItem.included_features) : [],
-      excluded_features: newItem.excluded_features ? JSON.parse(newItem.excluded_features) : [],
-      requirements: newItem.requirements ? JSON.parse(newItem.requirements) : [],
-      timeline: newItem.timeline ? JSON.parse(newItem.timeline) : [],
-      images: newItem.images ? JSON.parse(newItem.images) : [],
-      accommodation_details: newItem.accommodation_details ? JSON.parse(newItem.accommodation_details) : {},
+      package_type: 'haji',
+      payment_terms: safeJsonParse<string[]>(newItem.payment_terms, []),
+      included_features: safeJsonParse<string[]>(newItem.included_features, []),
+      excluded_features: safeJsonParse<string[]>(newItem.excluded_features, []),
+      requirements: safeJsonParse<string[]>(newItem.requirements, []),
+      timeline: safeJsonParse<any[]>(newItem.timeline, []),
+      images: safeJsonParse<string[]>(newItem.images, []),
+      accommodation_details: safeJsonParse<any>(newItem.accommodation_details, {}),
       featured: Boolean(newItem.featured),
-      medical_facility: Boolean(newItem.medical_facility)
+      medical_facility: Boolean(newItem.medical_facility),
+      is_active: newItem.is_active !== undefined ? Boolean(newItem.is_active) : true
     };
 
     const response: ApiResponse<HajiPackage> = {
@@ -174,13 +201,11 @@ export const updateHajiPackage: RequestHandler = async (req, res) => {
     const { id } = req.params;
     const updates: Partial<HajiPackage> = req.body;
 
-    // Check if item exists
     const existingItem = await dbGet("SELECT * FROM haji_packages WHERE id = ?", [id]);
     if (!existingItem) {
       return res.status(404).json({ success: false, error: 'Haji package not found' });
     }
 
-    // Build update query dynamically
     const updateFields = [];
     const values = [];
 
@@ -275,9 +300,24 @@ export const updateHajiPackage: RequestHandler = async (req, res) => {
 
     const updatedItem = await dbGet("SELECT * FROM haji_packages WHERE id = ?", [id]);
 
+    const parsedUpdatedItem = {
+      ...updatedItem,
+      package_type: 'haji',
+      payment_terms: safeJsonParse<string[]>(updatedItem.payment_terms, []),
+      included_features: safeJsonParse<string[]>(updatedItem.included_features, []),
+      excluded_features: safeJsonParse<string[]>(updatedItem.excluded_features, []),
+      requirements: safeJsonParse<string[]>(updatedItem.requirements, []),
+      timeline: safeJsonParse<any[]>(updatedItem.timeline, []),
+      images: safeJsonParse<string[]>(updatedItem.images, []),
+      accommodation_details: safeJsonParse<any>(updatedItem.accommodation_details, {}),
+      featured: Boolean(updatedItem.featured),
+      medical_facility: Boolean(updatedItem.medical_facility),
+      is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true
+    };
+
     const response: ApiResponse<HajiPackage> = {
       success: true,
-      data: updatedItem,
+      data: parsedUpdatedItem,
       message: 'Haji package updated successfully'
     };
     res.json(response);

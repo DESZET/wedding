@@ -2,15 +2,30 @@ import { RequestHandler } from "express";
 import { dbRun, dbGet, dbAll } from "../database";
 import { PackageItem, CreatePackageItem, UpdatePackageItem, ApiResponse, ListResponse } from "../../shared/api";
 
+const parseSafeJson = (str: any, fallback: any = []) => {
+  if (!str) return fallback;
+  if (Array.isArray(str)) return str;
+  try {
+    return JSON.parse(str);
+  } catch {
+    if (typeof str === 'string' && str.includes(',')) {
+      return str.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+    return [str];
+  }
+};
+
 // Get all packages
 export const getPackages: RequestHandler = async (req, res) => {
   try {
     const items = await dbAll("SELECT * FROM packages ORDER BY createdAt DESC");
     
-    // Parse features JSON for each package
+    // Parse features & images JSON for each package
     const parsedItems = items.map((item: any) => ({
       ...item,
-      features: item.features ? JSON.parse(item.features) : []
+      features: parseSafeJson(item.features),
+      images: parseSafeJson(item.images),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
     }));
     
     const response: ListResponse<PackageItem> = {
@@ -35,10 +50,11 @@ export const getPackage: RequestHandler = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Package not found' });
     }
 
-    // Parse features JSON
     const parsedItem = {
       ...item,
-      features: item.features ? JSON.parse(item.features) : []
+      features: parseSafeJson(item.features),
+      images: parseSafeJson(item.images),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
     };
 
     const response: ApiResponse<PackageItem> = {
@@ -55,26 +71,27 @@ export const getPackage: RequestHandler = async (req, res) => {
 // Create package
 export const createPackage: RequestHandler = async (req, res) => {
   try {
-    const { name, price, description, highlighted, longDescription, features }: CreatePackageItem = req.body;
+    const { name, price, discount_price, description, highlighted, longDescription, features, images, is_active }: CreatePackageItem = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ success: false, error: 'Name and price are required' });
     }
 
-    // Convert features array to JSON string if provided
     const featuresJson = features ? JSON.stringify(features) : null;
+    const imagesJson = images ? JSON.stringify(images) : null;
 
     const result = await dbRun(
-      "INSERT INTO packages (name, price, description, highlighted, longDescription, features) VALUES (?, ?, ?, ?, ?, ?)",
-      [name, price, description || '', highlighted ? 1 : 0, longDescription || '', featuresJson]
+      "INSERT INTO packages (name, price, discount_price, description, highlighted, longDescription, features, images, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [name, price, discount_price || null, description || '', highlighted ? 1 : 0, longDescription || '', featuresJson, imagesJson, is_active !== undefined ? (is_active ? 1 : 0) : 1]
     );
 
     const newItem = await dbGet("SELECT * FROM packages WHERE id = ?", [result.lastID]);
 
-    // Parse features JSON for response
     const parsedNewItem = {
       ...newItem,
-      features: newItem.features ? JSON.parse(newItem.features) : []
+      features: parseSafeJson(newItem.features),
+      images: parseSafeJson(newItem.images),
+      is_active: newItem.is_active !== undefined ? Boolean(newItem.is_active) : true
     };
 
     const response: ApiResponse<PackageItem> = {
@@ -113,6 +130,10 @@ export const updatePackage: RequestHandler = async (req, res) => {
       updateFields.push("price = ?");
       values.push(updates.price);
     }
+    if (updates.discount_price !== undefined) {
+      updateFields.push("discount_price = ?");
+      values.push(updates.discount_price);
+    }
     if (updates.description !== undefined) {
       updateFields.push("description = ?");
       values.push(updates.description);
@@ -129,6 +150,14 @@ export const updatePackage: RequestHandler = async (req, res) => {
       updateFields.push("features = ?");
       values.push(JSON.stringify(updates.features));
     }
+    if (updates.images !== undefined) {
+      updateFields.push("images = ?");
+      values.push(JSON.stringify(updates.images));
+    }
+    if (updates.is_active !== undefined) {
+      updateFields.push("is_active = ?");
+      values.push(updates.is_active ? 1 : 0);
+    }
 
     if (updateFields.length === 0) {
       return res.status(400).json({ success: false, error: 'No fields to update' });
@@ -144,10 +173,11 @@ export const updatePackage: RequestHandler = async (req, res) => {
 
     const updatedItem = await dbGet("SELECT * FROM packages WHERE id = ?", [id]);
 
-    // Parse features JSON for response
     const parsedUpdatedItem = {
       ...updatedItem,
-      features: updatedItem.features ? JSON.parse(updatedItem.features) : []
+      features: parseSafeJson(updatedItem.features),
+      images: parseSafeJson(updatedItem.images),
+      is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true
     };
 
     const response: ApiResponse<PackageItem> = {

@@ -169,13 +169,7 @@ export default function Hero() {
           initial="hidden"
           animate={isVisible ? "visible" : "hidden"}
         >
-          {/* Badge */}
-          <motion.div variants={itemVariants} className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/15 bg-white/5 backdrop-blur-md text-white/70 text-xs font-medium tracking-wider uppercase">
-              <Sparkles className="w-3 h-3" />
-              Premium Wedding Organizer
-            </div>
-          </motion.div>
+
 
           {/* Main Heading — serif for elegance */}
           <motion.h1

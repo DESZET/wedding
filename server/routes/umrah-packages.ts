@@ -33,6 +33,7 @@ interface UmrahPackage {
   departure_dates: { date: string; seats: number; price_variation: number }[];
   images: string[];
   featured: boolean;
+  is_active?: boolean;
   best_seller: boolean;
   early_bird_discount: boolean;
   payment_plans: { name: string; installments: number }[];
@@ -55,29 +56,53 @@ interface UmrahPackage {
   updatedAt: string;
 }
 
+// Helper for safely parsing JSON or structured strings into objects/arrays without crashing
+function safeJsonParse<T>(val: any, fallback: T): T {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'object') return val as T;
+  if (typeof val !== 'string') return fallback;
+  const trimmed = val.trim();
+  if (!trimmed) return fallback;
+
+  // Try standard JSON parse
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    // If fallback is an array and the string is comma/newline separated, convert to string array
+    if (Array.isArray(fallback)) {
+      const items = trimmed
+        .split(/[\n,]/)
+        .map(s => s.trim())
+        .filter(Boolean);
+      return (items.length > 0 ? items : fallback) as unknown as T;
+    }
+    return fallback;
+  }
+}
+
 // Get all umrah packages
 export const getUmrahPackages: RequestHandler = async (req, res) => {
   try {
     const items = await dbAll("SELECT * FROM umrah_packages ORDER BY createdAt DESC");
 
-    // Parse JSON fields
+    // Parse JSON fields safely
     const parsedItems = items.map((item: any) => ({
       ...item,
       // Handle package_type - default to 'umrah' for old records
       package_type: item.package_type || 'umrah',
-      included_features: item.included_features ? JSON.parse(item.included_features) : [],
-      excluded_features: item.excluded_features ? JSON.parse(item.excluded_features) : [],
-      itinerary: item.itinerary ? JSON.parse(item.itinerary) : [],
-      important_notes: item.important_notes ? JSON.parse(item.important_notes) : [],
-      departure_dates: item.departure_dates ? JSON.parse(item.departure_dates) : [],
-      images: item.images ? JSON.parse(item.images) : [],
-      payment_plans: item.payment_plans ? JSON.parse(item.payment_plans) : [],
-      tags: item.tags ? JSON.parse(item.tags) : [],
+      included_features: safeJsonParse<string[]>(item.included_features, []),
+      excluded_features: safeJsonParse<string[]>(item.excluded_features, []),
+      itinerary: safeJsonParse<any[]>(item.itinerary, []),
+      important_notes: safeJsonParse<string[]>(item.important_notes, []),
+      departure_dates: safeJsonParse<any[]>(item.departure_dates, []),
+      images: safeJsonParse<string[]>(item.images, []),
+      payment_plans: safeJsonParse<any[]>(item.payment_plans, []),
+      tags: safeJsonParse<string[]>(item.tags, []),
       // Haji fields
-      payment_terms: item.payment_terms ? JSON.parse(item.payment_terms) : [],
-      requirements: item.requirements ? JSON.parse(item.requirements) : [],
-      timeline: item.timeline ? JSON.parse(item.timeline) : [],
-      accommodation_details: item.accommodation_details ? JSON.parse(item.accommodation_details) : {},
+      payment_terms: safeJsonParse<string[]>(item.payment_terms, []),
+      requirements: safeJsonParse<string[]>(item.requirements, []),
+      timeline: safeJsonParse<any[]>(item.timeline, []),
+      accommodation_details: safeJsonParse<any>(item.accommodation_details, {}),
       meals_included: Boolean(item.meals_included),
       tour_guide: Boolean(item.tour_guide),
       visa_assistance: Boolean(item.visa_assistance),
@@ -85,7 +110,8 @@ export const getUmrahPackages: RequestHandler = async (req, res) => {
       featured: Boolean(item.featured),
       best_seller: Boolean(item.best_seller),
       early_bird_discount: Boolean(item.early_bird_discount),
-      medical_facility: Boolean(item.medical_facility)
+      medical_facility: Boolean(item.medical_facility),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
     }));
 
     const response: ListResponse<UmrahPackage> = {
@@ -114,18 +140,18 @@ export const getUmrahPackage: RequestHandler = async (req, res) => {
     const parsedItem = {
       ...item,
       package_type: item.package_type || 'umrah',
-      included_features: item.included_features ? JSON.parse(item.included_features) : [],
-      excluded_features: item.excluded_features ? JSON.parse(item.excluded_features) : [],
-      itinerary: item.itinerary ? JSON.parse(item.itinerary) : [],
-      important_notes: item.important_notes ? JSON.parse(item.important_notes) : [],
-      departure_dates: item.departure_dates ? JSON.parse(item.departure_dates) : [],
-      images: item.images ? JSON.parse(item.images) : [],
-      payment_plans: item.payment_plans ? JSON.parse(item.payment_plans) : [],
-      tags: item.tags ? JSON.parse(item.tags) : [],
-      payment_terms: item.payment_terms ? JSON.parse(item.payment_terms) : [],
-      requirements: item.requirements ? JSON.parse(item.requirements) : [],
-      timeline: item.timeline ? JSON.parse(item.timeline) : [],
-      accommodation_details: item.accommodation_details ? JSON.parse(item.accommodation_details) : {},
+      included_features: safeJsonParse<string[]>(item.included_features, []),
+      excluded_features: safeJsonParse<string[]>(item.excluded_features, []),
+      itinerary: safeJsonParse<any[]>(item.itinerary, []),
+      important_notes: safeJsonParse<string[]>(item.important_notes, []),
+      departure_dates: safeJsonParse<any[]>(item.departure_dates, []),
+      images: safeJsonParse<string[]>(item.images, []),
+      payment_plans: safeJsonParse<any[]>(item.payment_plans, []),
+      tags: safeJsonParse<string[]>(item.tags, []),
+      payment_terms: safeJsonParse<string[]>(item.payment_terms, []),
+      requirements: safeJsonParse<string[]>(item.requirements, []),
+      timeline: safeJsonParse<any[]>(item.timeline, []),
+      accommodation_details: safeJsonParse<any>(item.accommodation_details, {}),
       meals_included: Boolean(item.meals_included),
       tour_guide: Boolean(item.tour_guide),
       visa_assistance: Boolean(item.visa_assistance),
@@ -133,7 +159,8 @@ export const getUmrahPackage: RequestHandler = async (req, res) => {
       featured: Boolean(item.featured),
       best_seller: Boolean(item.best_seller),
       early_bird_discount: Boolean(item.early_bird_discount),
-      medical_facility: Boolean(item.medical_facility)
+      medical_facility: Boolean(item.medical_facility),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
     };
 
     const response: ApiResponse<UmrahPackage> = {
@@ -219,18 +246,18 @@ export const createUmrahPackage: RequestHandler = async (req, res) => {
     const parsedNewItem = {
       ...newItem,
       package_type: newItem.package_type || 'umrah',
-      included_features: newItem.included_features ? JSON.parse(newItem.included_features) : [],
-      excluded_features: newItem.excluded_features ? JSON.parse(newItem.excluded_features) : [],
-      itinerary: newItem.itinerary ? JSON.parse(newItem.itinerary) : [],
-      important_notes: newItem.important_notes ? JSON.parse(newItem.important_notes) : [],
-      departure_dates: newItem.departure_dates ? JSON.parse(newItem.departure_dates) : [],
-      images: newItem.images ? JSON.parse(newItem.images) : [],
-      payment_plans: newItem.payment_plans ? JSON.parse(newItem.payment_plans) : [],
-      tags: newItem.tags ? JSON.parse(newItem.tags) : [],
-      payment_terms: newItem.payment_terms ? JSON.parse(newItem.payment_terms) : [],
-      requirements: newItem.requirements ? JSON.parse(newItem.requirements) : [],
-      timeline: newItem.timeline ? JSON.parse(newItem.timeline) : [],
-      accommodation_details: newItem.accommodation_details ? JSON.parse(newItem.accommodation_details) : {},
+      included_features: safeJsonParse<string[]>(newItem.included_features, []),
+      excluded_features: safeJsonParse<string[]>(newItem.excluded_features, []),
+      itinerary: safeJsonParse<any[]>(newItem.itinerary, []),
+      important_notes: safeJsonParse<string[]>(newItem.important_notes, []),
+      departure_dates: safeJsonParse<any[]>(newItem.departure_dates, []),
+      images: safeJsonParse<string[]>(newItem.images, []),
+      payment_plans: safeJsonParse<any[]>(newItem.payment_plans, []),
+      tags: safeJsonParse<string[]>(newItem.tags, []),
+      payment_terms: safeJsonParse<string[]>(newItem.payment_terms, []),
+      requirements: safeJsonParse<string[]>(newItem.requirements, []),
+      timeline: safeJsonParse<any[]>(newItem.timeline, []),
+      accommodation_details: safeJsonParse<any>(newItem.accommodation_details, {}),
       meals_included: Boolean(newItem.meals_included),
       tour_guide: Boolean(newItem.tour_guide),
       visa_assistance: Boolean(newItem.visa_assistance),
@@ -238,7 +265,8 @@ export const createUmrahPackage: RequestHandler = async (req, res) => {
       featured: Boolean(newItem.featured),
       best_seller: Boolean(newItem.best_seller),
       early_bird_discount: Boolean(newItem.early_bird_discount),
-      medical_facility: Boolean(newItem.medical_facility)
+      medical_facility: Boolean(newItem.medical_facility),
+      is_active: newItem.is_active !== undefined ? Boolean(newItem.is_active) : true
     };
 
     const response: ApiResponse<UmrahPackage> = {
@@ -439,9 +467,9 @@ export const updateUmrahPackage: RequestHandler = async (req, res) => {
       updateFields.push("medical_facility = ?");
       values.push(updates.medical_facility ? 1 : 0);
     }
-    if (updates.accommodation_details !== undefined) {
-      updateFields.push("accommodation_details = ?");
-      values.push(JSON.stringify(updates.accommodation_details));
+    if (updates.is_active !== undefined) {
+      updateFields.push("is_active = ?");
+      values.push(updates.is_active ? 1 : 0);
     }
 
     if (updateFields.length === 0) {
@@ -458,9 +486,35 @@ export const updateUmrahPackage: RequestHandler = async (req, res) => {
 
     const updatedItem = await dbGet("SELECT * FROM umrah_packages WHERE id = ?", [id]);
 
+    const parsedUpdatedItem = {
+      ...updatedItem,
+      package_type: updatedItem.package_type || 'umrah',
+      included_features: safeJsonParse<string[]>(updatedItem.included_features, []),
+      excluded_features: safeJsonParse<string[]>(updatedItem.excluded_features, []),
+      itinerary: safeJsonParse<any[]>(updatedItem.itinerary, []),
+      important_notes: safeJsonParse<string[]>(updatedItem.important_notes, []),
+      departure_dates: safeJsonParse<any[]>(updatedItem.departure_dates, []),
+      images: safeJsonParse<string[]>(updatedItem.images, []),
+      payment_plans: safeJsonParse<any[]>(updatedItem.payment_plans, []),
+      tags: safeJsonParse<string[]>(updatedItem.tags, []),
+      payment_terms: safeJsonParse<string[]>(updatedItem.payment_terms, []),
+      requirements: safeJsonParse<string[]>(updatedItem.requirements, []),
+      timeline: safeJsonParse<any[]>(updatedItem.timeline, []),
+      accommodation_details: safeJsonParse<any>(updatedItem.accommodation_details, {}),
+      meals_included: Boolean(updatedItem.meals_included),
+      tour_guide: Boolean(updatedItem.tour_guide),
+      visa_assistance: Boolean(updatedItem.visa_assistance),
+      vaccination_assistance: Boolean(updatedItem.vaccination_assistance),
+      featured: Boolean(updatedItem.featured),
+      best_seller: Boolean(updatedItem.best_seller),
+      early_bird_discount: Boolean(updatedItem.early_bird_discount),
+      medical_facility: Boolean(updatedItem.medical_facility),
+      is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true
+    };
+
     const response: ApiResponse<UmrahPackage> = {
       success: true,
-      data: updatedItem,
+      data: parsedUpdatedItem,
       message: 'Umrah package updated successfully'
     };
     res.json(response);

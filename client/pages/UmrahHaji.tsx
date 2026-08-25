@@ -6,12 +6,13 @@ import {
   FileText, CreditCard, Smartphone, Headphones, Truck, BookOpen,
   CheckCircle, Bookmark, Filter, ArrowRight, Video, Instagram,
   Facebook, Twitter, Mail, Phone, Map, Download, Play, Pause,
-  Search
+  Search, Sparkles
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import UmrahHajiTimeline from "@/components/UmrahHajiTimeline";
 import SectionWrapper from "@/components/SectionWrapper";
 import ReviewSection from "@/components/ReviewSection";
+import UmrahDetailModal from "@/components/UmrahDetailModal";
 
 
 interface UmrahPackage {
@@ -125,6 +126,8 @@ export default function ModernUmrahHaji() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState([0, 100000000]);
   const [sortBy, setSortBy] = useState('popular');
+  const [currentPackageIndex, setCurrentPackageIndex] = useState(0);
+  const packageCarouselRef = useRef<HTMLDivElement>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -154,9 +157,9 @@ export default function ModernUmrahHaji() {
 
     const loadData = async () => {
       try {
-        const [umrahRes, HajiRes, faqRes, testimonialRes, galleryRes] = await Promise.all([
+        const [umrahRes, hajiRes, faqRes, testimonialRes, galleryRes] = await Promise.all([
           fetch('/api/umrah-packages').then(res => res.json()).catch(err => ({ success: false, data: [] })),
-          fetch('/api/umrah-packages').then(res => res.json()).catch(err => ({ success: false, data: [] })),
+          fetch('/api/haji-packages').then(res => res.json()).catch(err => ({ success: false, data: [] })),
           fetch('/api/service-faqs?type=umrah-haji').then(res => res.json()).catch(err => ({ success: false, data: [] })),
           fetch('/api/testimonials?type=umrah-haji').then(res => res.json()).catch(err => ({ success: false, data: [] })),
           fetch('/api/gallery?category=umrah-haji').then(res => res.json()).catch(err => ({ success: false, data: [] }))
@@ -171,13 +174,11 @@ export default function ModernUmrahHaji() {
           setUmrahPackages([]);
         }
 
-        if (HajiRes.success && Array.isArray(HajiRes.data)) {
-          // Filter only haji packages from the same table
-          setHajiPackages(HajiRes.data.filter((p: any) => p.package_type === 'haji') as any[]);
-        } else {
-          console.warn('Invalid Haji packages data:', HajiRes);
-          setHajiPackages([]);
-        }
+        const hajiList: any[] = [
+          ...(hajiRes.success && Array.isArray(hajiRes.data) ? hajiRes.data : []),
+          ...(umrahRes.success && Array.isArray(umrahRes.data) ? umrahRes.data.filter((p: any) => p.package_type === 'haji') : [])
+        ];
+        setHajiPackages(hajiList);
 
         if (faqRes.success && Array.isArray(faqRes.data)) {
           setFaqs(faqRes.data);
@@ -199,7 +200,7 @@ export default function ModernUmrahHaji() {
 
         // Only load sample data if BOTH are truly empty
         const umrahEmpty = !umrahRes.success || !Array.isArray(umrahRes.data) || umrahRes.data.length === 0;
-        const hajiEmpty = !HajiRes.success || !Array.isArray(HajiRes.data) || HajiRes.data.length === 0;
+        const hajiEmpty = !hajiRes.success || !Array.isArray(hajiRes.data) || hajiRes.data.length === 0;
 
         if (umrahEmpty && hajiEmpty) {
           console.log('Loading sample data as fallback - both APIs empty');
@@ -220,112 +221,257 @@ export default function ModernUmrahHaji() {
     const sampleUmrahPackages: UmrahPackage[] = [
       {
         id: 1,
-        name: "Umrah Premium Plus",
-        description: "Paket umrah eksklusif dengan hotel bintang 5 dan penerbangan langsung",
-        duration: 12,
-        price: 35000000,
-        discount_price: 32000000,
+        name: "Umrah Reguler Barakah 9 Hari",
+        description: "Paket umrah favorit dengan penerbangan langsung Saudi Airlines dan hotel bintang 4 dekat Masjidil Haram.",
+        duration: 9,
+        price: 28500000,
+        discount_price: 26900000,
         departure_city: "Jakarta",
-        airline: "Garuda Indonesia",
-        airline_logo: "/airline-logo/garuda.png",
-        hotel_mekah: "Makkah Clock Royal Tower",
-        hotel_madinah: "Anwar Madinah Movenpick",
-        hotel_rating: 5,
-        distance_haram: "200m",
+        airline: "Saudi Airlines",
+        airline_logo: "/airline-logo/saudi.png",
+        hotel_mekah: "Le Meridien Towers Makkah",
+        hotel_madinah: "Grand Plaza Madinah",
+        hotel_rating: 4,
+        distance_haram: "150m ke Pelataran",
         meals_included: true,
         tour_guide: true,
         visa_assistance: true,
         vaccination_assistance: true,
-        transport_type: "Private Bus",
-        group_size: 30,
-        availability: 15,
+        transport_type: "Bus AC Eksekutif & Kereta Cepat Haramain",
+        group_size: 40,
+        availability: 12,
         rating: 4.9,
-        reviews_count: 245,
+        reviews_count: 320,
         included_features: [
-          "Tiket pesawat kelas ekonomi",
-          "Hotel bintang 5",
-          "Makan 3x sehari",
-          "Ziarah lengkap",
-          "Pembimbing ibadah",
-          "Asuransi perjalanan",
-          "Transportasi AC"
+          "Tiket pesawat PP Direct Jakarta - Jeddah/Madinah",
+          "Hotel Makkah & Madinah Bintang 4",
+          "Makan 3x sehari Fullboard Buffet menu Indonesia",
+          "Ziarah lengkap Makkah & Madinah + Thaif",
+          "Free Kereta Cepat Haramain (Madinah - Makkah)",
+          "Perlengkapan Ibadah & Koper Fiber Lengkap",
+          "Air Zamzam 5 Liter Resmi"
         ],
         excluded_features: [
-          "Biaya pribadi",
-          "Vaksin meningitis",
-          "Overseas charge"
+          "Pembuatan Paspor",
+          "Pengeluaran Pribadi (Laundry/Telepon)"
         ],
-        itinerary: [
-          { day: 1, title: "Keberangkatan", description: "Meeting point dan penerbangan ke Jeddah", icon: "plane" },
-          { day: 2, title: "Kedatangan Mekah", description: "Check-in hotel dan persiapan umrah", icon: "hotel" },
-          { day: 3, title: "Umrah", description: "Pelaksanaan umrah dan ziarah", icon: "book" }
-        ],
-        important_notes: ["Wajib vaksin meningitis", "Paspor minimal 6 bulan"],
+        itinerary: [],
+        important_notes: ["Paspor minimal berlaku 8 bulan", "Vaksin meningitis"],
         departure_dates: [
-          { date: "2024-03-15", seats: 20, price_variation: 0 },
-          { date: "2024-04-10", seats: 15, price_variation: 500000 }
+          { date: "2024-10-15", seats: 20, price_variation: 0 },
+          { date: "2024-11-20", seats: 15, price_variation: 0 }
         ],
-        images: ["/umrah/1.jpg", "/umrah/2.jpg", "/umrah/3.jpg"],
+        images: [
+          "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80"
+        ],
         featured: true,
         best_seller: true,
         early_bird_discount: true,
-        payment_plans: [
-          { name: "Cash", installments: 1 },
-          { name: "Cicilan 3x", installments: 3 },
-          { name: "Cicilan 6x", installments: 6 }
+        payment_plans: [{ name: "DP 5 Juta", installments: 1 }],
+        tags: ["Paling Populer", "Direct Flight", "Free Kereta Cepat"]
+      },
+      {
+        id: 2,
+        name: "Umrah VIP Royal Clock Tower 12 Hari",
+        description: "Pengalaman ibadah termewah menginap di Makkah Clock Tower bintang 5 persis di depan Ka'bah.",
+        duration: 12,
+        price: 42000000,
+        discount_price: 38500000,
+        departure_city: "Jakarta / Surabaya",
+        airline: "Garuda Indonesia",
+        airline_logo: "/airline-logo/garuda.png",
+        hotel_mekah: "Makkah Clock Royal Tower (Fairmont)",
+        hotel_madinah: "Anwar Al Madinah Movenpick",
+        hotel_rating: 5,
+        distance_haram: "50m (Pelataran Depan)",
+        meals_included: true,
+        tour_guide: true,
+        visa_assistance: true,
+        vaccination_assistance: true,
+        transport_type: "Private Bus VIP & High Speed Train",
+        group_size: 25,
+        availability: 8,
+        rating: 5.0,
+        reviews_count: 185,
+        included_features: [
+          "Tiket Garuda Indonesia Direct Flight",
+          "Hotel Bintang 5 View Ka'bah",
+          "Makan 3x Sehari International Buffet",
+          "Kereta Cepat Haramain First Class",
+          "Ziarah Eksklusif Kota Thaif & Jabal Nur",
+          "Perlengkapan Mewah Koper 24 inch + Tas Paspor Anti Maling",
+          "Handling VIP Bandara Soetta & Jeddah"
         ],
-        tags: ["Premium", "Ramadhan", "Direct Flight"]
+        excluded_features: [
+          "Pembuatan Paspor",
+          "Pengeluaran Pribadi"
+        ],
+        itinerary: [],
+        important_notes: ["Paspor minimal berlaku 8 bulan"],
+        departure_dates: [
+          { date: "2024-11-10", seats: 10, price_variation: 0 }
+        ],
+        images: [
+          "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80"
+        ],
+        featured: true,
+        best_seller: false,
+        early_bird_discount: true,
+        payment_plans: [{ name: "DP 5 Juta", installments: 1 }],
+        tags: ["Bintang 5", "Clock Tower", "VIP Service"]
+      },
+      {
+        id: 3,
+        name: "Umrah Plus Wisata Halal Turki 12 Hari",
+        description: "Kombinasi ibadah umrah khusyuk dan napak tilas sejarah Islam di Istanbul & Cappadocia.",
+        duration: 12,
+        price: 38000000,
+        discount_price: 35000000,
+        departure_city: "Jakarta",
+        airline: "Turkish Airlines",
+        airline_logo: "/airline-logo/turkish.png",
+        hotel_mekah: "Swissotel Makkah",
+        hotel_madinah: "Pullman Zamzam Madinah",
+        hotel_rating: 5,
+        distance_haram: "100m ke Haram",
+        meals_included: true,
+        tour_guide: true,
+        visa_assistance: true,
+        vaccination_assistance: true,
+        transport_type: "Bus AC Pariwisata",
+        group_size: 35,
+        availability: 15,
+        rating: 4.9,
+        reviews_count: 140,
+        included_features: [
+          "Tiket Pesawat Turkish Airlines PP",
+          "Wisata Blue Mosque, Hagia Sophia & Bosphorus Cruise",
+          "Hotel Bintang 5 di Makkah, Madinah & Istanbul",
+          "Fullboard Meals & Wisata Kuliner Khas Turki",
+          "Visa Umrah + Visa Turki",
+          "Perlengkapan Ibadah Lengkap + Air Zamzam 5L"
+        ],
+        excluded_features: [
+          "Optional Hot Air Balloon Cappadocia",
+          "Pengeluaran Pribadi"
+        ],
+        itinerary: [],
+        important_notes: ["Paspor minimal berlaku 8 bulan"],
+        departure_dates: [
+          { date: "2024-12-05", seats: 15, price_variation: 0 }
+        ],
+        images: [
+          "https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80"
+        ],
+        featured: true,
+        best_seller: false,
+        early_bird_discount: false,
+        payment_plans: [{ name: "DP 5 Juta", installments: 1 }],
+        tags: ["Plus Turki", "Bosphorus Cruise", "Sejarah Islam"]
       }
     ];
 
     const sampleHajiPackages: HajiPackage[] = [
       {
         id: 1,
-        name: "Haji Reguler 1445H",
-        description: "Paket Haji reguler dengan akomodasi terbaik dan bimbingan lengkap",
-        quota_year: "1445H / 2024",
-        price: 45000000,
-        discount_price: 42000000,
+        name: "Haji Furoda / Mujamalah (Langsung Berangkat)",
+        description: "Ibadah haji resmi dengan Visa Mujamalah Kerajaan Arab Saudi tanpa perlu antre bertahun-tahun.",
+        quota_year: "1446H / 2025M",
+        price: 280000000,
+        discount_price: 265000000,
         payment_terms: [
-          "DP 30% saat pendaftaran",
-          "Pelunasan 3 bulan sebelum keberangkatan",
-          "Bisa dicicil 12x"
+          "DP USD 5,000 saat pendaftaran",
+          "Pelunasan setelah visa terbit (H-45)",
+          "Garansi uang kembali 100% jika visa tidak terbit"
         ],
         included_features: [
-          "Tiket pesawat pp kelas ekonomi",
-          "Akomodasi hotel di Mekah & Madinah",
-          "Konsumsi lengkap",
-          "Bimbingan manasik",
-          "Transportasi di Arab Saudi",
-          "Ziarah wajib dan sunnah"
+          "Visa Haji Furoda Resmi Kerajaan Arab Saudi",
+          "Tiket Pesawat Saudi Airlines Direct PP",
+          "Hotel Bintang 5 Dekat Masjidil Haram & Nabawi",
+          "Maktab VIP Tenda AC Arafah & Mina",
+          "Fullboard Buffet Dining & Snack 24 Jam",
+          "Dokter & Tim Medis Standby Khusus",
+          "Perlengkapan Haji Eksklusif & Air Zamzam 5L"
         ],
         excluded_features: [
-          "Biaya pribadi",
-          "Pengeluaran di luar program",
-          "Bagasi lebih"
+          "Dam / Qurban Pribadi",
+          "Pengeluaran Pribadi"
         ],
         requirements: [
-          "Muslim/Muslimah",
-          "Sehat jasmani & rohani",
-          "Paspor minimal 2 tahun",
-          "Surat keterangan sehat"
+          "Paspor asli dengan masa berlaku minimal 1 tahun",
+          "KTP & KK",
+          "Buku Nikah / Akta Lahir",
+          "Vaksin Meningitis & Polio"
         ],
         timeline: [
-          { month: "Januari", activities: ["Pendaftaran", "Pembayaran DP"] },
-          { month: "Februari", activities: ["Manasik 1", "Pengurusan dokumen"] }
+          { month: "Januari - Maret", activities: ["Pendaftaran & Pembayaran DP"] },
+          { month: "April", activities: ["Manasik Haji Intensif"] },
+          { month: "Dzulqa'dah", activities: ["Penerbitan Visa & Keberangkatan"] }
         ],
-        images: ["/haji/1.jpg", "/haji/2.jpg", "/haji/3.jpg"],
+        images: [
+          "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80"
+        ],
         featured: true,
-        registration_deadline: "2024-02-28",
-        available_quota: 25,
-        training_sessions: 12,
+        registration_deadline: "2025-04-15",
+        available_quota: 10,
+        training_sessions: 8,
         medical_facility: true,
-        rating: 4.8,
-        reviews_count: 189,
+        rating: 5.0,
+        reviews_count: 98,
         accommodation_details: {
-          mekah: { hotel: "Swissotel Makkah", nights: 20, distance: "500m" },
-          madinah: { hotel: "Pullman Zamzam Madinah", nights: 10, distance: "300m" },
+          mekah: { hotel: "Makkah Clock Royal Tower (Fairmont)", nights: 15, distance: "50m" },
+          madinah: { hotel: "Anwar Al Madinah Movenpick", nights: 8, distance: "50m" },
           jeddah: { hotel: "Hilton Jeddah", nights: 2 }
+        }
+      },
+      {
+        id: 2,
+        name: "Haji Plus Kuota Kemenag RI",
+        description: "Haji khusus resmi kuota pemerintah dengan masa tunggu singkat dan fasilitas hotel bintang 5.",
+        quota_year: "1446H - 1448H",
+        price: 165000000,
+        discount_price: 155000000,
+        payment_terms: [
+          "Setoran awal BPIH USD 4,500 untuk nomor porsi",
+          "Pelunasan saat tahun keberangkatan tiba"
+        ],
+        included_features: [
+          "Nomor Porsi Resmi Haji Khusus Kemenag",
+          "Akomodasi Hotel Bintang 5 Dekat Haram",
+          "Tenda AC Maktab VIP Mina & Arafah",
+          "Bimbingan Manasik Lengkap Bersama Ulama",
+          "Konsumsi 3x Sehari Menu Nusantara",
+          "Perlengkapan Haji Komplit & Air Zamzam"
+        ],
+        excluded_features: [
+          "Dam Qurban Pribadi",
+          "Pengeluaran Pribadi"
+        ],
+        requirements: [
+          "KTP, KK, Buku Nikah/Akta",
+          "Paspor Asli"
+        ],
+        timeline: [
+          { month: "Setiap Saat", activities: ["Pendaftaran Nomor Porsi"] }
+        ],
+        images: [
+          "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80"
+        ],
+        featured: false,
+        registration_deadline: "2025-05-01",
+        available_quota: 20,
+        training_sessions: 6,
+        medical_facility: true,
+        rating: 4.9,
+        reviews_count: 145,
+        accommodation_details: {
+          mekah: { hotel: "Swissotel Al Maqam Makkah", nights: 12, distance: "100m" },
+          madinah: { hotel: "Pullman Zamzam Madinah", nights: 8, distance: "100m" }
         }
       }
     ];
@@ -340,6 +486,32 @@ export default function ModernUmrahHaji() {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const scrollPackageToIndex = (index: number) => {
+    const list = activeTab === 'umrah' ? umrahPackages : hajiPackages;
+    if (index < 0) index = 0;
+    if (index >= list.length) index = list.length - 1;
+    setCurrentPackageIndex(index);
+    if (packageCarouselRef.current) {
+      const cardWidth = packageCarouselRef.current.offsetWidth;
+      packageCarouselRef.current.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handlePackageScroll = () => {
+    if (packageCarouselRef.current) {
+      const cardWidth = packageCarouselRef.current.offsetWidth;
+      const scrollLeft = packageCarouselRef.current.scrollLeft;
+      const newIndex = Math.round(scrollLeft / cardWidth);
+      const list = activeTab === 'umrah' ? umrahPackages : hajiPackages;
+      if (newIndex !== currentPackageIndex && newIndex >= 0 && newIndex < list.length) {
+        setCurrentPackageIndex(newIndex);
+      }
+    }
   };
 
   const handleBookingClick = (pkg: UmrahPackage | HajiPackage, type: 'umrah' | 'haji') => {
@@ -372,8 +544,8 @@ export default function ModernUmrahHaji() {
   };
 
   const toggleSavePackage = (id: number) => {
-    setSavedPackages(prev => 
-      prev.includes(id) 
+    setSavedPackages(prev =>
+      prev.includes(id)
         ? prev.filter(pkgId => pkgId !== id)
         : [...prev, id]
     );
@@ -733,51 +905,51 @@ export default function ModernUmrahHaji() {
                   placeholder="Nama Lengkap"
                   className="p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={bookingForm.pilgrim_name}
-                  onChange={(e) => setBookingForm({...bookingForm, pilgrim_name: e.target.value})}
+                  onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_name: e.target.value })}
                 />
                 <input
                   type="email"
                   placeholder="Email"
                   className="p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={bookingForm.pilgrim_email}
-                  onChange={(e) => setBookingForm({...bookingForm, pilgrim_email: e.target.value})}
+                  onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_email: e.target.value })}
                 />
                 <input
                   type="tel"
                   placeholder="Nomor WhatsApp"
                   className="p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={bookingForm.pilgrim_phone}
-                  onChange={(e) => setBookingForm({...bookingForm, pilgrim_phone: e.target.value})}
+                  onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_phone: e.target.value })}
                 />
                 <input
                   type="text"
                   placeholder="Nomor Paspor"
                   className="p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={bookingForm.pilgrim_passport}
-                  onChange={(e) => setBookingForm({...bookingForm, pilgrim_passport: e.target.value})}
+                  onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_passport: e.target.value })}
                 />
                 <input
                   type="date"
                   placeholder="Tanggal Expired Paspor"
                   className="p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={bookingForm.pilgrim_passport_expiry}
-                  onChange={(e) => setBookingForm({...bookingForm, pilgrim_passport_expiry: e.target.value})}
+                  onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_passport_expiry: e.target.value })}
                 />
                 <input
                   type="date"
                   placeholder="Tanggal Lahir"
                   className="p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={bookingForm.pilgrim_birth_date}
-                  onChange={(e) => setBookingForm({...bookingForm, pilgrim_birth_date: e.target.value})}
+                  onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_birth_date: e.target.value })}
                 />
               </div>
-              
+
               <textarea
                 placeholder="Alamat Lengkap"
                 className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={3}
                 value={bookingForm.pilgrim_address}
-                onChange={(e) => setBookingForm({...bookingForm, pilgrim_address: e.target.value})}
+                onChange={(e) => setBookingForm({ ...bookingForm, pilgrim_address: e.target.value })}
               />
 
               <div className="flex gap-4">
@@ -805,7 +977,7 @@ export default function ModernUmrahHaji() {
                   <button
                     key={method}
                     className={`p-4 border-2 rounded-xl flex flex-col items-center gap-2 ${bookingForm.payment_method === method ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
-                    onClick={() => setBookingForm({...bookingForm, payment_method: method})}
+                    onClick={() => setBookingForm({ ...bookingForm, payment_method: method })}
                   >
                     {method === 'Transfer Bank' && <CreditCard className="w-8 h-8 text-blue-600" />}
                     {method === 'Credit Card' && <CreditCard className="w-8 h-8 text-green-600" />}
@@ -875,7 +1047,7 @@ export default function ModernUmrahHaji() {
         >
           <X className="w-6 h-6 text-white" />
         </button>
-        
+
         {selectedGalleryItem?.type === 'video' ? (
           <div className="w-full h-full flex items-center justify-center">
             <video
@@ -897,7 +1069,7 @@ export default function ModernUmrahHaji() {
             />
           </div>
         )}
-        
+
         <div className="absolute bottom-4 left-0 right-0 text-center">
           <h3 className="text-white text-xl font-bold">{selectedGalleryItem?.title}</h3>
           <p className="text-white/80">{selectedGalleryItem?.description}</p>
@@ -993,162 +1165,232 @@ export default function ModernUmrahHaji() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background">
-      {/* Enhanced Hero Section with Parallax */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black/50 z-10"></div>
-          <video
-            key={settings["umrah-hero-video"] || "/umrah-hero-video.mp4"}
-            autoPlay
-            muted
-            loop
-            className="w-full h-full object-cover"
-            poster={settings["umrah-hero-poster"] || "/umrah-hero-poster.jpg"}
-          >
-            <source src={settings["umrah-hero-video"] || "/umrah-hero-video.mp4"} type="video/mp4" />
-          </video>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 text-center text-white">
-          <div className="animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-2 rounded-full mb-6">
-              <Globe className="w-6 h-6" />
-              <span className="font-semibold">
-                {settings["umrah-hero-badge"] || "Travel Terpercaya Sejak 2005"}
-              </span>
-            </div>
-            
-            {settings["umrah-hero-title"] ? (
-              <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-                {settings["umrah-hero-title"]}
-              </h1>
-            ) : (
-              <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-                Journey of a<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">
-                  Lifetime
-                </span>
-              </h1>
-            )}
+    <div className="min-h-screen bg-background">
 
-            <p className="text-xl md:text-2xl max-w-3xl mx-auto mb-8 opacity-90">
-              {settings["umrah-hero-subtitle"] || "Menyempurnakan ibadah Anda dengan layanan premium, akomodasi terbaik, dan bimbingan spiritual yang mendalam."}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <button
-                onClick={() => setActiveTab('umrah')}
-                className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${activeTab === 'umrah' ? 'bg-white text-blue-700 shadow-2xl scale-105' : 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'}`}
-              >
-                🕋 Paket Umrah
-              </button>
-              <button
-                onClick={() => setActiveTab('haji')}
-                className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${activeTab === 'haji' ? 'bg-white text-emerald-700 shadow-2xl scale-105' : 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'}`}
-              >
-                🕌 Paket Haji
-              </button>
-            </div>
+      {/* Page Header - White section */}
+      <SectionWrapper id="umrah-header" delay={100} animationType="fade-in-up">
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 pt-28 pb-8 px-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs sm:text-sm font-semibold mb-4">
+            <Sparkles className="w-4 h-4 animate-pulse" />
+            <span>Penyelenggara Ibadah Umrah & Haji Berizin Resmi</span>
           </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto animate-slide-up">
-            {[
-              { icon: Users, value: settings["umrah-stat-1-val"] || "10,000+", label: settings["umrah-stat-1-lbl"] || "Jamaah Berangkat" },
-              { icon: Award, value: settings["umrah-stat-2-val"] || "98.5%", label: settings["umrah-stat-2-lbl"] || "Kepuasan Jamaah" },
-              { icon: Calendar, value: settings["umrah-stat-3-val"] || "18+", label: settings["umrah-stat-3-lbl"] || "Tahun Pengalaman" },
-              { icon: Shield, value: settings["umrah-stat-4-val"] || "100%", label: settings["umrah-stat-4-lbl"] || "Legal & Terpercaya" },
-            ].map((stat, idx) => (
-              <div key={idx} className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl">
-                <stat.icon className="w-8 h-8 mx-auto mb-2" />
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm opacity-80">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-foreground mb-3">
+            {activeTab === 'umrah' ? '🕋 Paket Umrah Unggulan' : '🕌 Paket Haji Khusus & Furoda'}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto font-light">
+            Geser (swipe) ke kiri & kanan untuk memilih program keberangkatan, lalu ketuk untuk membaca rincian artikel lengkap.
+          </p>
         </div>
+      </SectionWrapper>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <ChevronRight className="w-6 h-6 text-white rotate-90" />
-        </div>
-      </section>
+      {/* Packages Showcase Carousel Section */}
+      <SectionWrapper id="umrah-packages" delay={200} animationType="fade-in-up">
+        <div className="pt-6 pb-16 px-3 sm:px-6 md:px-8 bg-gradient-to-br from-primary/10 to-primary/5 relative overflow-hidden">
 
-      {/* Search and Filter Section */}
-      <section className="py-8 bg-white/80 backdrop-blur-sm sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Cari paket umrah atau Haji..."
-                  className="w-full p-4 pl-12 rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <select 
-                className="p-4 rounded-2xl border-2 border-gray-200 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="popular">Paling Populer</option>
-                <option value="price-low">Harga Terendah</option>
-                <option value="price-high">Harga Tertinggi</option>
-                <option value="duration">Durasi Terpendek</option>
-              </select>
-              
-              <button
-                onClick={() => setShowCompare(compareList.length > 0)}
-                className="px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-lg transition-shadow flex items-center gap-2"
-              >
-                <Filter className="w-5 h-5" />
-                Bandingkan ({compareList.length})
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+          <div className="max-w-6xl mx-auto relative z-10">
 
-      {/* Packages Grid */}
-      <SectionWrapper id="umrah-packages" delay={100} animationType="fade-in-up">
-        <div className="py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex justify-between items-center mb-12">
-              <div>
-                <h2 className="text-4xl font-bold text-gray-900">
-                  {activeTab === 'umrah' ? '🕋 Paket Umrah Terbaik' : '🕌 Paket Haji Reguler & Plus'}
-                </h2>
-                <p className="text-gray-600 mt-2">
-                  Pilih paket yang sesuai dengan kebutuhan dan anggaran Anda
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">
-                  Lihat Semua
-                </button>
-                <button 
-                  onClick={() => setShowGallery(true)}
-                  className="px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 flex items-center gap-2"
+            {/* Sub-Tabs / Pills for quick package selection */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto scrollbar-none py-1 px-2">
+              {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((pkg: any, idx: number) => (
+                <button
+                  key={pkg.id || idx}
+                  onClick={() => scrollPackageToIndex(idx)}
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${currentPackageIndex === idx
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 scale-105"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                    }`}
                 >
-                  <Video className="w-5 h-5" />
-                  Galeri
+                  <span>{pkg.name}</span>
+                  {pkg.featured && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">UNGGULAN</span>}
                 </button>
-              </div>
+              ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {activeTab === 'umrah'
-                ? umrahPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderUmrahPackageCard)
-                : hajiPackages.filter(pkg => pkg && typeof pkg === 'object').map(renderHajiPackageCard)
-              }
+            {/* Mobile-First Big Showcase Box Carousel */}
+            <div className="relative">
+
+              {/* Arrow Controls */}
+              {(activeTab === 'umrah' ? umrahPackages : hajiPackages).length > 1 && (
+                <>
+                  <button
+                    onClick={() => scrollPackageToIndex(currentPackageIndex - 1)}
+                    disabled={currentPackageIndex === 0}
+                    className={`absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentPackageIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                      }`}
+                    aria-label="Paket Sebelumnya"
+                  >
+                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500 rotate-180" />
+                  </button>
+
+                  <button
+                    onClick={() => scrollPackageToIndex(currentPackageIndex + 1)}
+                    disabled={currentPackageIndex === (activeTab === 'umrah' ? umrahPackages : hajiPackages).length - 1}
+                    className={`absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentPackageIndex === (activeTab === 'umrah' ? umrahPackages : hajiPackages).length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                      }`}
+                    aria-label="Paket Selanjutnya"
+                  >
+                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400" />
+                  </button>
+                </>
+              )}
+
+              {/* Swipeable Container */}
+              <div
+                ref={packageCarouselRef}
+                onScroll={handlePackageScroll}
+                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none rounded-3xl touch-pan-x"
+                style={{ scrollBehavior: 'smooth' }}
+              >
+                {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((pkg: any, idx: number) => {
+                  const effectivePrice = pkg.discount_price || pkg.price;
+                  const bgImage = (pkg.images && pkg.images.length > 0) ? pkg.images[0] : (activeTab === 'umrah'
+                    ? "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=1200&q=80"
+                    : "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80");
+
+                  return (
+                    <div
+                      key={pkg.id || idx}
+                      className="w-full flex-shrink-0 snap-center p-1 sm:p-2"
+                    >
+                      <div
+                        onClick={() => {
+                          setSelectedPackage(pkg);
+                          setShowPackageDetail(true);
+                        }}
+                        className="group relative rounded-3xl overflow-hidden cursor-pointer bg-slate-950 border border-white/15 shadow-2xl transition-all duration-500 hover:border-emerald-400/50"
+                      >
+                        {/* Big Image View */}
+                        <div className="relative h-[460px] sm:h-[500px] md:h-[550px] w-full overflow-hidden">
+                          <img
+                            src={bgImage}
+                            alt={pkg.name}
+                            className="w-full h-full object-cover brightness-[0.7] group-hover:scale-105 transition-transform duration-700 ease-out"
+                          />
+
+                          {/* Gradient Overlays */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/65 to-transparent"></div>
+                          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent"></div>
+
+                          {/* Top Badges */}
+                          <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
+                            <span className="px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                              <Plane className="w-3.5 h-3.5" />
+                              <span>{pkg.airline || (activeTab === 'umrah' ? 'Saudi Airlines Direct' : 'Penerbangan Haji VIP')}</span>
+                            </span>
+
+                            {pkg.featured && (
+                              <span className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-xs shadow-lg uppercase tracking-wider">
+                                ★ BEST PROGRAM
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Bottom Content Overlay */}
+                          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 z-10 space-y-4">
+
+                            {/* Price & Duration */}
+                            <div className="flex flex-wrap items-baseline justify-between gap-2">
+                              <div>
+                                <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold block mb-1">
+                                  Investasi Ibadah
+                                </span>
+                                <div className="text-3xl sm:text-5xl font-serif font-extrabold text-amber-400 tracking-tight">
+                                  {formatPrice(effectivePrice)}
+                                </div>
+                              </div>
+                              <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs sm:text-sm text-emerald-300 font-semibold">
+                                ⏱️ {pkg.duration || (activeTab === 'umrah' ? '9' : '25')} Hari Program
+                              </span>
+                            </div>
+
+                            {/* Title & Short Description */}
+                            <div>
+                              <h3 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-white mb-1 leading-snug group-hover:text-emerald-300 transition-colors">
+                                {pkg.name}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 font-light leading-relaxed">
+                                {pkg.description || "Layanan ibadah lengkap all-inclusive dengan hotel dekat masjid dan bimbingan mutawwif berpengalaman."}
+                              </p>
+                            </div>
+
+                            {/* 3 Key Feature Tags */}
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-slate-200 font-medium flex items-center gap-1.5">
+                                <Hotel className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{pkg.hotel_mekah || 'Hotel Bintang 5 Dekat Haram'}</span>
+                              </span>
+                              <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-slate-200 font-medium flex items-center gap-1.5">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{pkg.distance_haram || '±100m ke Pelataran'}</span>
+                              </span>
+                              <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-slate-200 font-medium flex items-center gap-1.5">
+                                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>All-In Visa & Perlengkapan</span>
+                              </span>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="pt-2 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+
+                              {/* Main Button: Detail Selengkapnya */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPackage(pkg);
+                                  setShowPackageDetail(true);
+                                }}
+                                className="relative group/btn overflow-hidden flex-1 py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-black text-sm sm:text-base transition-all duration-300 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 flex items-center justify-center gap-2.5 hover:scale-[1.02] active:scale-[0.98]"
+                              >
+                                <div className="absolute inset-0 w-1/2 h-full bg-white/30 transform -skew-x-12 -translate-x-full group-hover/btn:translate-x-[300%] transition-transform duration-1000 ease-out" />
+                                <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950/20" />
+                                <span className="tracking-wide">Detail Selengkapnya</span>
+                                <ArrowRight className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" />
+                              </button>
+
+                              {/* WhatsApp Consultation */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBookingClick(pkg, activeTab);
+                                }}
+                                className="py-3.5 sm:py-4 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-sm transition-all flex items-center justify-center gap-2"
+                              >
+                                <MessageCircle className="w-5 h-5 text-emerald-400" />
+                                <span>Konsultasi Seat</span>
+                              </button>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
             </div>
+
+            {/* Dots Pagination */}
+            <div className="flex items-center justify-center gap-2 mt-6">
+              {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((_: any, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => scrollPackageToIndex(idx)}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${currentPackageIndex === idx
+                      ? "w-8 bg-emerald-500"
+                      : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                    }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+
+            <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+              ← Geser layar ke kiri atau kanan untuk memilih paket →
+            </p>
+
           </div>
         </div>
       </SectionWrapper>
@@ -1158,7 +1400,7 @@ export default function ModernUmrahHaji() {
 
       {/* Why Choose Us - Enhanced */}
       <SectionWrapper id="umrah-why" delay={100} animationType="fade-in-up">
-        <div className="py-16 bg-gradient-to-r from-blue-50 to-emerald-50">
+        <div className="py-16 bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-4">
@@ -1168,7 +1410,7 @@ export default function ModernUmrahHaji() {
                 {settings["umrah-why-desc"] || "Komitmen kami adalah memberikan pengalaman ibadah yang sempurna dengan layanan terbaik"}
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {whyUs.map((feature, idx) => (
                 <div key={idx} className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
@@ -1191,9 +1433,9 @@ export default function ModernUmrahHaji() {
           </div>
         </div>
       </SectionWrapper>
-      
+
       <SectionWrapper id="umrah-reviews" delay={100} animationType="fade-in-up">
-        <div className="py-4 bg-white">
+        <div className="py-4 bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="max-w-7xl mx-auto px-4">
             <ReviewSection
               type="umrah"
@@ -1208,7 +1450,7 @@ export default function ModernUmrahHaji() {
 
       {/* FAQ Section */}
       <SectionWrapper id="umrah-faq" delay={100} animationType="fade-in-up">
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="max-w-4xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-4">
@@ -1218,11 +1460,11 @@ export default function ModernUmrahHaji() {
                 {settings["umrah-faq-subtitle"] || "Temukan jawaban untuk pertanyaan yang sering diajukan"}
               </p>
             </div>
-            
+
             <div className="space-y-4">
               {displayFaqs.map((faq, index) => (
                 <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <button 
+                  <button
                     className="w-full p-6 text-left flex justify-between items-center hover:bg-gray-50 transition-colors"
                     onClick={(e) => {
                       const content = e.currentTarget.nextElementSibling;
@@ -1252,6 +1494,14 @@ export default function ModernUmrahHaji() {
       {showBookingModal && renderBookingModal()}
       {showGallery && selectedGalleryItem && renderGalleryModal()}
       {showCompare && renderCompareModal()}
+
+      {/* Interactive Article-Style Umrah & Haji Detail Modal */}
+      <UmrahDetailModal
+        pkg={selectedPackage}
+        isOpen={showPackageDetail}
+        onClose={() => setShowPackageDetail(false)}
+        type={activeTab}
+      />
     </div>
   );
 }

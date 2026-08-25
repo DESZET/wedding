@@ -22,6 +22,8 @@ import {
   Printer,
   Globe,
   Scissors,
+  Heart,
+  Palette,
   FileImage,
   Layout,
   BookOpen,
@@ -213,17 +215,23 @@ const Admin = () => {
   const [packageForm, setPackageForm] = useState<{
     name: string;
     price: string;
+    discount_price: string;
     description: string;
     highlighted: boolean;
     longDescription: string;
     features: string;
+    images: string;
+    is_active: boolean;
   }>({
     name: '',
     price: '',
+    discount_price: '',
     description: '',
     highlighted: false,
     longDescription: '',
-    features: ''
+    features: '',
+    images: '',
+    is_active: true
   });
   const [venueForm, setVenueForm] = useState<{ title: string; category: string; price: string; capacity: string; description: string; image: string }>({ title: '', category: '', price: '', capacity: '', description: '', image: '' });
   const [videoForm, setVideoForm] = useState<CreateVideoItem>({ title: '', description: '', videoPath: '', thumbnail: '' });
@@ -429,11 +437,16 @@ const Admin = () => {
             break;
           case 'packages':
             endpoint = '/packages';
-            // Convert features from comma-separated string to array
             const packageData = {
-              ...packageForm,
-              features: packageForm.features ? packageForm.features.split(',').map((f: string) => f.trim()).filter((f: string) => f) : [],
-              price: parseFloat(packageForm.price) || 0
+              name: packageForm.name || '',
+              price: parseFloat(packageForm.price) || 0,
+              discount_price: packageForm.discount_price ? parseFloat(packageForm.discount_price) : null,
+              description: packageForm.description || '',
+              longDescription: packageForm.longDescription || '',
+              highlighted: Boolean(packageForm.highlighted),
+              is_active: Boolean(packageForm.is_active),
+              features: packageForm.features ? packageForm.features.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : [],
+              images: packageForm.images ? packageForm.images.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : []
             };
             response = await apiRequest(endpoint, {
               method: 'POST',
@@ -526,26 +539,33 @@ const Admin = () => {
             }
             break;
           case 'umrah-haji':
-            const pkgType = packageType || selectedItem?.type;
+            const pkgType = packageType || selectedItem?.type || 'umrah';
+            // Helper function to convert newline/comma-separated string to array
+            const stringToArray = (str: any) => {
+              if (!str) return [];
+              if (Array.isArray(str)) return str;
+              return String(str).split(/[\n,]/).map((item: string) => item.trim()).filter(Boolean);
+            };
+
+            const parseItineraryLines = (str: any) => {
+              if (!str) return [];
+              if (Array.isArray(str)) return str;
+              return String(str).split('\n').map((line, idx) => {
+                const trimmed = line.trim();
+                if (!trimmed) return null;
+                const match = trimmed.match(/^(?:Hari\s*)?(\d+)?(?:\s*[:\-]\s*)?(.*?)(?:\s*[-–—]\s*(.*))?$/i);
+                if (match) {
+                  const day = parseInt(match[1]) || (idx + 1);
+                  const title = (match[2] || trimmed).trim();
+                  const description = (match[3] || '').trim();
+                  return { day, title, description };
+                }
+                return { day: idx + 1, title: trimmed, description: '' };
+              }).filter(Boolean);
+            };
+
             if (pkgType === 'umrah') {
               endpoint = '/umrah-packages';
-              // Helper function to convert newline/comma-separated string to array
-              const stringToArray = (str: string) => {
-                if (!str) return [];
-                return str.split(/[\n,]/).map((item: string) => item.trim()).filter((item: string) => item);
-              };
-              // Helper function to parse JSON safely
-              const parseJSON = (str: any) => {
-                if (!str) return {};
-                if (typeof str === 'object') return str;
-                try {
-                  return JSON.parse(str);
-                } catch {
-                  return {};
-                }
-              };
-
-              // Convert string values to proper types for Umrah package
               const umrahData = {
                 name: umrahPackageForm.name || '',
                 description: umrahPackageForm.description || '',
@@ -554,74 +574,57 @@ const Admin = () => {
                 discount_price: umrahPackageForm.discount_price ? parseFloat(String(umrahPackageForm.discount_price)) : null,
                 duration: parseInt(String(umrahPackageForm.duration)) || 9,
                 departure_city: umrahPackageForm.departure_city || 'Jakarta',
-                airline: umrahPackageForm.airline || '',
+                airline: umrahPackageForm.airline || 'Saudi Airlines',
                 airline_logo: umrahPackageForm.airline_logo || '',
                 hotel_mekah: umrahPackageForm.hotel_mekah || '',
                 hotel_madinah: umrahPackageForm.hotel_madinah || '',
-                hotel_rating: parseInt(String(umrahPackageForm.hotel_rating)) || 4,
-                distance_haram: umrahPackageForm.distance_haram || '',
+                hotel_rating: parseInt(String(umrahPackageForm.hotel_rating)) || (umrahPackageForm.hotel_rating?.includes('5') ? 5 : (umrahPackageForm.hotel_rating?.includes('3') ? 3 : 4)),
+                distance_haram: umrahPackageForm.distance_haram || '±150m ke Pelataran',
                 meals_included: Boolean(umrahPackageForm.meals_included),
                 tour_guide: Boolean(umrahPackageForm.tour_guide),
                 visa_assistance: Boolean(umrahPackageForm.visa_assistance),
                 vaccination_assistance: Boolean(umrahPackageForm.vaccination_assistance),
-                transport_type: umrahPackageForm.transport_type || '',
-                group_size: parseInt(String(umrahPackageForm.group_size)) || 0,
-                availability: parseInt(String(umrahPackageForm.availability)) || 0,
-                rating: parseFloat(String(umrahPackageForm.rating)) || 0,
+                transport_type: umrahPackageForm.transport_type || 'Bus AC Eksekutif & Kereta Cepat Haramain',
+                group_size: parseInt(String(umrahPackageForm.group_size)) || 40,
+                availability: parseInt(String(umrahPackageForm.availability)) || 15,
+                rating: parseFloat(String(umrahPackageForm.rating)) || 4.9,
                 reviews_count: parseInt(String(umrahPackageForm.reviews_count)) || 0,
                 featured: Boolean(umrahPackageForm.featured),
                 best_seller: Boolean(umrahPackageForm.best_seller),
                 early_bird_discount: Boolean(umrahPackageForm.early_bird_discount),
-                // JSON fields - convert from strings to arrays
+                is_active: Boolean(umrahPackageForm.is_active),
                 included_features: stringToArray(umrahPackageForm.included_features),
                 excluded_features: stringToArray(umrahPackageForm.excluded_features),
-                itinerary: stringToArray(umrahPackageForm.itinerary),
+                itinerary: parseItineraryLines(umrahPackageForm.itinerary),
                 important_notes: stringToArray(umrahPackageForm.important_notes),
                 departure_dates: stringToArray(umrahPackageForm.departure_dates),
                 images: stringToArray(umrahPackageForm.images),
                 payment_plans: stringToArray(umrahPackageForm.payment_plans),
                 tags: stringToArray(umrahPackageForm.tags),
-                // Haji fields for umrah_packages table
-                quota_year: umrahPackageForm.quota_year || '',
-                payment_terms: stringToArray(umrahPackageForm.payment_terms),
-                requirements: stringToArray(umrahPackageForm.requirements),
-                timeline: stringToArray(umrahPackageForm.timeline),
-                registration_deadline: umrahPackageForm.registration_deadline || '',
-                available_quota: parseInt(String(umrahPackageForm.available_quota)) || 0,
-                training_sessions: parseInt(String(umrahPackageForm.training_sessions)) || 0,
-                medical_facility: Boolean(umrahPackageForm.medical_facility),
-                accommodation_details: parseJSON(umrahPackageForm.accommodation_details)
               };
               response = await apiRequest(endpoint, {
-                method: actionMode === 'add' ? 'POST' : 'PUT',
+                method: 'POST',
                 body: JSON.stringify(umrahData)
               });
               if (response.success) {
-                setUmrahPackages(prev => actionMode === 'add' ? [...prev, response.data] : prev.map(item => item.id === selectedItem?.id ? response.data : item));
+                setUmrahPackages(prev => [...prev, response.data]);
               }
             } else if (pkgType === 'haji') {
               endpoint = '/haji-packages';
-              // Helper function to convert newline/comma-separated string to array
-              const stringToArray = (str: string) => {
-                if (!str) return [];
-                return str.split(/[\n,]/).map((item: string) => item.trim()).filter((item: string) => item);
-              };
-
-              // Convert string values to proper types for Haji package
               const hajiData = {
                 name: hajiPackageForm.name || '',
                 description: hajiPackageForm.description || '',
-                quota_year: hajiPackageForm.quota_year || '',
+                quota_year: hajiPackageForm.quota_year || '1446H / 2025M',
                 price: parseFloat(String(hajiPackageForm.price)) || 0,
                 discount_price: hajiPackageForm.discount_price ? parseFloat(String(hajiPackageForm.discount_price)) : null,
                 featured: Boolean(hajiPackageForm.featured),
+                is_active: Boolean(hajiPackageForm.is_active),
                 registration_deadline: hajiPackageForm.registration_deadline || '',
-                available_quota: parseInt(String(hajiPackageForm.available_quota)) || 0,
-                training_sessions: parseInt(String(hajiPackageForm.training_sessions)) || 0,
+                available_quota: parseInt(String(hajiPackageForm.available_quota)) || 25,
+                training_sessions: parseInt(String(hajiPackageForm.training_sessions)) || 12,
                 medical_facility: Boolean(hajiPackageForm.medical_facility),
-                rating: parseFloat(String(hajiPackageForm.rating)) || 0,
+                rating: parseFloat(String(hajiPackageForm.rating)) || 4.9,
                 reviews_count: parseInt(String(hajiPackageForm.reviews_count)) || 0,
-                // JSON fields
                 payment_terms: stringToArray(hajiPackageForm.payment_terms),
                 included_features: stringToArray(hajiPackageForm.included_features),
                 excluded_features: stringToArray(hajiPackageForm.excluded_features),
@@ -631,26 +634,26 @@ const Admin = () => {
                 accommodation_details: {
                   mekah: {
                     hotel: hajiPackageForm.accommodation_mekah_hotel || '',
-                    nights: hajiPackageForm.accommodation_mekah_nights || 20,
-                    distance: hajiPackageForm.accommodation_mekah_distance || '500m'
+                    nights: parseInt(String(hajiPackageForm.accommodation_mekah_nights)) || 20,
+                    distance: hajiPackageForm.accommodation_mekah_distance || '±50m ke Masjidil Haram'
                   },
                   madinah: {
                     hotel: hajiPackageForm.accommodation_madinah_hotel || '',
-                    nights: hajiPackageForm.accommodation_madinah_nights || 10,
-                    distance: hajiPackageForm.accommodation_madinah_distance || '300m'
+                    nights: parseInt(String(hajiPackageForm.accommodation_madinah_nights)) || 10,
+                    distance: hajiPackageForm.accommodation_madinah_distance || '±100m ke Nabawi'
                   },
                   jeddah: {
                     hotel: hajiPackageForm.accommodation_jeddah_hotel || '',
-                    nights: hajiPackageForm.accommodation_jeddah_nights || 2
+                    nights: parseInt(String(hajiPackageForm.accommodation_jeddah_nights)) || 2
                   }
                 }
               };
               response = await apiRequest(endpoint, {
-                method: actionMode === 'add' ? 'POST' : 'PUT',
+                method: 'POST',
                 body: JSON.stringify(hajiData)
               });
               if (response.success) {
-                setHajiPackages(prev => actionMode === 'add' ? [...prev, response.data] : prev.map(item => item.id === selectedItem?.id ? response.data : item));
+                setHajiPackages(prev => [...prev, response.data]);
               }
             }
             break;
@@ -683,9 +686,20 @@ const Admin = () => {
             break;
           case 'packages':
             endpoint = `/packages/${selectedItem.id}`;
+            const packageEditData = {
+              name: packageForm.name || '',
+              price: parseFloat(packageForm.price) || 0,
+              discount_price: packageForm.discount_price ? parseFloat(packageForm.discount_price) : null,
+              description: packageForm.description || '',
+              longDescription: packageForm.longDescription || '',
+              highlighted: Boolean(packageForm.highlighted),
+              is_active: Boolean(packageForm.is_active),
+              features: packageForm.features ? packageForm.features.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : [],
+              images: packageForm.images ? packageForm.images.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : []
+            };
             response = await apiRequest(endpoint, {
               method: 'PUT',
-              body: JSON.stringify(packageForm)
+              body: JSON.stringify(packageEditData)
             });
             if (response.success) {
               setPackages(prev => prev.map(item =>
@@ -742,17 +756,31 @@ const Admin = () => {
             }
             break;
           case 'umrah-haji':
+            const stringToArrayEdit = (str: any) => {
+              if (!str) return [];
+              if (Array.isArray(str)) return str;
+              return String(str).split(/[\n,]/).map((item: string) => item.trim()).filter(Boolean);
+            };
+
+            const parseItineraryLinesEdit = (str: any) => {
+              if (!str) return [];
+              if (Array.isArray(str)) return str;
+              return String(str).split('\n').map((line, idx) => {
+                const trimmed = line.trim();
+                if (!trimmed) return null;
+                const match = trimmed.match(/^(?:Hari\s*)?(\d+)?(?:\s*[:\-]\s*)?(.*?)(?:\s*[-–—]\s*(.*))?$/i);
+                if (match) {
+                  const day = parseInt(match[1]) || (idx + 1);
+                  const title = (match[2] || trimmed).trim();
+                  const description = (match[3] || '').trim();
+                  return { day, title, description };
+                }
+                return { day: idx + 1, title: trimmed, description: '' };
+              }).filter(Boolean);
+            };
+
             if (selectedItem?.type === 'umrah') {
               endpoint = `/umrah-packages/${selectedItem.id}`;
-              const stringToArrayEdit = (str: string) => {
-                if (!str) return [];
-                return str.split(/[\n,]/).map((item: string) => item.trim()).filter((item: string) => item);
-              };
-              const parseJSONEdit = (str: any) => {
-                if (!str) return {};
-                if (typeof str === 'object') return str;
-                try { return JSON.parse(str); } catch { return {}; }
-              };
               const umrahEditData = {
                 name: umrahPackageForm.name || '',
                 description: umrahPackageForm.description || '',
@@ -761,41 +789,33 @@ const Admin = () => {
                 discount_price: umrahPackageForm.discount_price ? parseFloat(String(umrahPackageForm.discount_price)) : null,
                 duration: parseInt(String(umrahPackageForm.duration)) || 9,
                 departure_city: umrahPackageForm.departure_city || 'Jakarta',
-                airline: umrahPackageForm.airline || '',
+                airline: umrahPackageForm.airline || 'Saudi Airlines',
                 airline_logo: umrahPackageForm.airline_logo || '',
                 hotel_mekah: umrahPackageForm.hotel_mekah || '',
                 hotel_madinah: umrahPackageForm.hotel_madinah || '',
-                hotel_rating: umrahPackageForm.hotel_rating || '4 Star',
-                distance_haram: umrahPackageForm.distance_haram || '',
+                hotel_rating: parseInt(String(umrahPackageForm.hotel_rating)) || (umrahPackageForm.hotel_rating?.includes('5') ? 5 : (umrahPackageForm.hotel_rating?.includes('3') ? 3 : 4)),
+                distance_haram: umrahPackageForm.distance_haram || '±150m ke Pelataran',
                 meals_included: Boolean(umrahPackageForm.meals_included),
                 tour_guide: Boolean(umrahPackageForm.tour_guide),
                 visa_assistance: Boolean(umrahPackageForm.visa_assistance),
                 vaccination_assistance: Boolean(umrahPackageForm.vaccination_assistance),
-                transport_type: umrahPackageForm.transport_type || '',
-                group_size: parseInt(String(umrahPackageForm.group_size)) || 0,
-                availability: parseInt(String(umrahPackageForm.availability)) || 0,
-                rating: parseFloat(String(umrahPackageForm.rating)) || 0,
+                transport_type: umrahPackageForm.transport_type || 'Bus AC Eksekutif & Kereta Cepat Haramain',
+                group_size: parseInt(String(umrahPackageForm.group_size)) || 40,
+                availability: parseInt(String(umrahPackageForm.availability)) || 15,
+                rating: parseFloat(String(umrahPackageForm.rating)) || 4.9,
                 reviews_count: parseInt(String(umrahPackageForm.reviews_count)) || 0,
                 featured: Boolean(umrahPackageForm.featured),
                 best_seller: Boolean(umrahPackageForm.best_seller),
                 early_bird_discount: Boolean(umrahPackageForm.early_bird_discount),
+                is_active: Boolean(umrahPackageForm.is_active),
                 included_features: stringToArrayEdit(umrahPackageForm.included_features),
                 excluded_features: stringToArrayEdit(umrahPackageForm.excluded_features),
-                itinerary: stringToArrayEdit(umrahPackageForm.itinerary),
+                itinerary: parseItineraryLinesEdit(umrahPackageForm.itinerary),
                 important_notes: stringToArrayEdit(umrahPackageForm.important_notes),
                 departure_dates: stringToArrayEdit(umrahPackageForm.departure_dates),
                 images: stringToArrayEdit(umrahPackageForm.images),
                 payment_plans: stringToArrayEdit(umrahPackageForm.payment_plans),
                 tags: stringToArrayEdit(umrahPackageForm.tags),
-                quota_year: umrahPackageForm.quota_year || '',
-                payment_terms: stringToArrayEdit(umrahPackageForm.payment_terms),
-                requirements: stringToArrayEdit(umrahPackageForm.requirements),
-                timeline: stringToArrayEdit(umrahPackageForm.timeline),
-                registration_deadline: umrahPackageForm.registration_deadline || '',
-                available_quota: parseInt(String(umrahPackageForm.available_quota)) || 0,
-                training_sessions: parseInt(String(umrahPackageForm.training_sessions)) || 0,
-                medical_facility: Boolean(umrahPackageForm.medical_facility),
-                accommodation_details: parseJSONEdit(umrahPackageForm.accommodation_details)
               };
               response = await apiRequest(endpoint, {
                 method: 'PUT',
@@ -808,22 +828,19 @@ const Admin = () => {
               }
             } else if (selectedItem?.type === 'haji') {
               endpoint = `/haji-packages/${selectedItem.id}`;
-              const stringToArrayEdit = (str: string) => {
-                if (!str) return [];
-                return str.split(/[\n,]/).map((item: string) => item.trim()).filter((item: string) => item);
-              };
               const hajiEditData = {
                 name: hajiPackageForm.name || '',
                 description: hajiPackageForm.description || '',
-                quota_year: hajiPackageForm.quota_year || '',
+                quota_year: hajiPackageForm.quota_year || '1446H / 2025M',
                 price: parseFloat(String(hajiPackageForm.price)) || 0,
                 discount_price: hajiPackageForm.discount_price ? parseFloat(String(hajiPackageForm.discount_price)) : null,
                 featured: Boolean(hajiPackageForm.featured),
+                is_active: Boolean(hajiPackageForm.is_active),
                 registration_deadline: hajiPackageForm.registration_deadline || '',
-                available_quota: parseInt(String(hajiPackageForm.available_quota)) || 0,
-                training_sessions: parseInt(String(hajiPackageForm.training_sessions)) || 0,
+                available_quota: parseInt(String(hajiPackageForm.available_quota)) || 25,
+                training_sessions: parseInt(String(hajiPackageForm.training_sessions)) || 12,
                 medical_facility: Boolean(hajiPackageForm.medical_facility),
-                rating: parseFloat(String(hajiPackageForm.rating)) || 0,
+                rating: parseFloat(String(hajiPackageForm.rating)) || 4.9,
                 reviews_count: parseInt(String(hajiPackageForm.reviews_count)) || 0,
                 payment_terms: stringToArrayEdit(hajiPackageForm.payment_terms),
                 included_features: stringToArrayEdit(hajiPackageForm.included_features),
@@ -834,17 +851,17 @@ const Admin = () => {
                 accommodation_details: {
                   mekah: {
                     hotel: hajiPackageForm.accommodation_mekah_hotel || '',
-                    nights: hajiPackageForm.accommodation_mekah_nights || 20,
-                    distance: hajiPackageForm.accommodation_mekah_distance || '500m'
+                    nights: parseInt(String(hajiPackageForm.accommodation_mekah_nights)) || 20,
+                    distance: hajiPackageForm.accommodation_mekah_distance || '±50m ke Masjidil Haram'
                   },
                   madinah: {
                     hotel: hajiPackageForm.accommodation_madinah_hotel || '',
-                    nights: hajiPackageForm.accommodation_madinah_nights || 10,
-                    distance: hajiPackageForm.accommodation_madinah_distance || '300m'
+                    nights: parseInt(String(hajiPackageForm.accommodation_madinah_nights)) || 10,
+                    distance: hajiPackageForm.accommodation_madinah_distance || '±100m ke Nabawi'
                   },
                   jeddah: {
                     hotel: hajiPackageForm.accommodation_jeddah_hotel || '',
-                    nights: hajiPackageForm.accommodation_jeddah_nights || 2
+                    nights: parseInt(String(hajiPackageForm.accommodation_jeddah_nights)) || 2
                   }
                 }
               };
@@ -891,7 +908,17 @@ const Admin = () => {
         setTestimonialForm(item);
         break;
       case 'packages':
-        setPackageForm(item);
+        setPackageForm({
+          name: item.name || '',
+          price: String(item.price || ''),
+          discount_price: item.discount_price ? String(item.discount_price) : '',
+          description: item.description || '',
+          longDescription: item.longDescription || '',
+          features: Array.isArray(item.features) ? item.features.join('\n') : (item.features || ''),
+          images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
+          highlighted: Boolean(item.highlighted),
+          is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
+        });
         break;
       case 'venues':
         setVenueForm(item);
@@ -907,48 +934,100 @@ const Admin = () => {
           setPrintingProductForm({
             ...item,
             min_order: parseInt(item.min_order) || 1,
-            size_options: Array.isArray(item.size_options) ? item.size_options.join(', ') : item.size_options,
-            material_options: Array.isArray(item.material_options) ? item.material_options.join(', ') : item.material_options,
-            color_options: Array.isArray(item.color_options) ? item.color_options.join(', ') : item.color_options,
-            finishing_options: Array.isArray(item.finishing_options) ? item.finishing_options.join(', ') : item.finishing_options,
-            features: Array.isArray(item.features) ? item.features.join(', ') : item.features
+            size_options: Array.isArray(item.size_options) ? item.size_options.join(', ') : (item.size_options || ''),
+            material_options: Array.isArray(item.material_options) ? item.material_options.join(', ') : (item.material_options || ''),
+            color_options: Array.isArray(item.color_options) ? item.color_options.join(', ') : (item.color_options || ''),
+            finishing_options: Array.isArray(item.finishing_options) ? item.finishing_options.join(', ') : (item.finishing_options || ''),
+            features: Array.isArray(item.features) ? item.features.join(', ') : (item.features || ''),
+            images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || '')
           });
         }
         break;
       case 'umrah-haji':
         if (itemType === 'umrah') {
+          const itineraryStr = Array.isArray(item.itinerary)
+            ? item.itinerary.map((it: any) => typeof it === 'object' ? `Hari ${it.day || ''}: ${it.title || ''}${it.description || it.desc ? ` - ${it.description || it.desc}` : ''}` : String(it)).join('\n')
+            : (item.itinerary || '');
+
           setUmrahPackageForm({
-            ...item,
+            name: item.name || '',
+            description: item.description || '',
+            duration: item.duration || 9,
             price: String(item.price || ''),
             discount_price: item.discount_price ? String(item.discount_price) : '',
-            hotel_rating: item.hotel_rating ? String(item.hotel_rating) : '4 Star',
+            departure_city: item.departure_city || 'Jakarta',
+            airline: item.airline || 'Saudi Airlines',
+            airline_logo: item.airline_logo || '',
+            hotel_mekah: item.hotel_mekah || '',
+            hotel_madinah: item.hotel_madinah || '',
+            hotel_rating: item.hotel_rating ? (typeof item.hotel_rating === 'number' ? `${item.hotel_rating} Star` : String(item.hotel_rating)) : '4 Star',
+            distance_haram: item.distance_haram || '150m ke Pelataran',
+            meals_included: item.meals_included !== undefined ? Boolean(item.meals_included) : true,
+            tour_guide: item.tour_guide !== undefined ? Boolean(item.tour_guide) : true,
+            visa_assistance: item.visa_assistance !== undefined ? Boolean(item.visa_assistance) : true,
+            vaccination_assistance: item.vaccination_assistance !== undefined ? Boolean(item.vaccination_assistance) : true,
             included_features: Array.isArray(item.included_features) ? item.included_features.join('\n') : (item.included_features || ''),
             excluded_features: Array.isArray(item.excluded_features) ? item.excluded_features.join('\n') : (item.excluded_features || ''),
-            departure_dates: Array.isArray(item.departure_dates) ? item.departure_dates.join(', ') : (item.departure_dates || ''),
-            images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
-            payment_plans: Array.isArray(item.payment_plans) ? item.payment_plans.join('\n') : (item.payment_plans || ''),
-            tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || ''),
+            itinerary: itineraryStr,
             important_notes: Array.isArray(item.important_notes) ? item.important_notes.join('\n') : (item.important_notes || ''),
-            itinerary: Array.isArray(item.itinerary) ? item.itinerary.join('\n') : (item.itinerary || ''),
+            departure_dates: Array.isArray(item.departure_dates) 
+              ? item.departure_dates.map((d: any) => typeof d === 'object' ? (d.date || JSON.stringify(d)) : String(d)).join(', ') 
+              : (item.departure_dates || ''),
+            images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
+            featured: Boolean(item.featured),
+            is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+            package_type: 'umrah',
+            transport_type: item.transport_type || 'Bus AC Eksekutif & Kereta Cepat Haramain',
+            group_size: item.group_size || 40,
+            availability: item.availability || 15,
+            rating: item.rating || 4.9,
+            reviews_count: item.reviews_count || 0,
+            best_seller: Boolean(item.best_seller),
+            early_bird_discount: Boolean(item.early_bird_discount),
+            payment_plans: Array.isArray(item.payment_plans)
+              ? item.payment_plans.map((p: any) => typeof p === 'object' ? (p.name || JSON.stringify(p)) : String(p)).join('\n')
+              : (item.payment_plans || ''),
+            tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || ''),
+            quota_year: item.quota_year || '',
+            payment_terms: Array.isArray(item.payment_terms) ? item.payment_terms.join('\n') : (item.payment_terms || ''),
+            requirements: Array.isArray(item.requirements) ? item.requirements.join('\n') : (item.requirements || ''),
+            timeline: Array.isArray(item.timeline) ? item.timeline.join('\n') : (item.timeline || ''),
+            registration_deadline: item.registration_deadline || '',
+            available_quota: item.available_quota || 0,
+            training_sessions: item.training_sessions || 0,
+            medical_facility: Boolean(item.medical_facility),
+            accommodation_details: item.accommodation_details || {}
           });
         } else if (itemType === 'haji') {
           const acc = item.accommodation_details || {};
           setHajiPackageForm({
-            ...item,
+            name: item.name || '',
+            description: item.description || '',
+            quota_year: item.quota_year || '1446H / 2025M',
             price: String(item.price || ''),
             discount_price: item.discount_price ? String(item.discount_price) : '',
             payment_terms: Array.isArray(item.payment_terms) ? item.payment_terms.join('\n') : (item.payment_terms || ''),
             included_features: Array.isArray(item.included_features) ? item.included_features.join('\n') : (item.included_features || ''),
             excluded_features: Array.isArray(item.excluded_features) ? item.excluded_features.join('\n') : (item.excluded_features || ''),
             requirements: Array.isArray(item.requirements) ? item.requirements.join('\n') : (item.requirements || ''),
-            timeline: Array.isArray(item.timeline) ? item.timeline.join('\n') : (item.timeline || ''),
+            timeline: Array.isArray(item.timeline) 
+              ? item.timeline.map((t: any) => typeof t === 'object' ? `${t.month || ''}: ${Array.isArray(t.activities) ? t.activities.join(', ') : ''}` : String(t)).join('\n')
+              : (item.timeline || ''),
             images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
+            featured: Boolean(item.featured),
+            is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+            rating: item.rating || 4.9,
+            reviews_count: item.reviews_count || 0,
+            registration_deadline: item.registration_deadline || '',
+            available_quota: item.available_quota || 25,
+            training_sessions: item.training_sessions || 12,
+            medical_facility: item.medical_facility !== undefined ? Boolean(item.medical_facility) : true,
             accommodation_mekah_hotel: acc.mekah?.hotel || '',
             accommodation_mekah_nights: acc.mekah?.nights || 20,
-            accommodation_mekah_distance: acc.mekah?.distance || '500m',
+            accommodation_mekah_distance: acc.mekah?.distance || '±50m ke Masjidil Haram',
             accommodation_madinah_hotel: acc.madinah?.hotel || '',
             accommodation_madinah_nights: acc.madinah?.nights || 10,
-            accommodation_madinah_distance: acc.madinah?.distance || '300m',
+            accommodation_madinah_distance: acc.madinah?.distance || '±100m ke Nabawi',
             accommodation_jeddah_hotel: acc.jeddah?.hotel || '',
             accommodation_jeddah_nights: acc.jeddah?.nights || 2,
           });
@@ -1087,7 +1166,17 @@ const Admin = () => {
   const resetForms = () => {
     setGalleryForm({ title: '', category: '', image: '' });
     setTestimonialForm({ name: '', rating: 5, text: '', date: '' });
-    setPackageForm({ name: '', price: '', description: '', highlighted: false, longDescription: '', features: '' });
+    setPackageForm({
+      name: '',
+      price: '',
+      discount_price: '',
+      description: '',
+      highlighted: false,
+      longDescription: '',
+      features: '',
+      images: '',
+      is_active: true
+    });
     setVenueForm({ title: '', category: '', price: '', capacity: '', description: '', image: '' });
     setVideoForm({ title: '', description: '', videoPath: '', thumbnail: '' });
     setStatsForm({ label: '', value: '', image: '' });
@@ -1208,7 +1297,67 @@ const Admin = () => {
 
     switch (activeMenu) {
       case 'dashboard':
-        return <DashboardContent />;
+        return (
+          <DashboardContent
+            weddingPackages={packages}
+            printingProducts={printingProducts}
+            printingPackages={printingPackages}
+            umrahPackages={umrahPackages.filter((p: any) => !p.package_type || p.package_type === 'umrah')}
+            hajiPackages={[...hajiPackages, ...umrahPackages.filter((p: any) => p.package_type === 'haji')]}
+            stats={{
+              gallery: galleryItems.length,
+              testimonials: testimonials.length,
+              packages: packages.length,
+              venues: venues.length,
+              printing: printingProducts.length,
+              umrah: umrahPackages.filter((p: any) => !p.package_type || p.package_type === 'umrah').length,
+              haji: [...hajiPackages, ...umrahPackages.filter((p: any) => p.package_type === 'haji')].length,
+            }}
+            onNavigate={(menu: MenuItem) => {
+              setActiveMenu(menu);
+              setActionMode('view');
+              resetForms();
+            }}
+            onEditWedding={(item: any) => {
+              setActiveMenu('packages');
+              handleEdit(item, 'packages');
+            }}
+            onAddWedding={() => {
+              setActiveMenu('packages');
+              setSelectedItem(null);
+              setActionMode('add');
+            }}
+            onEditPrinting={(item: any) => {
+              setActiveMenu('printing');
+              handleEdit(item, 'printing', 'product');
+            }}
+            onAddPrinting={() => {
+              setActiveMenu('printing');
+              setSelectedItem({ type: 'product' });
+              setActionMode('add');
+            }}
+            onEditUmrah={(item: any) => {
+              setActiveMenu('umrah-haji');
+              handleEdit(item, 'umrah-haji', 'umrah');
+            }}
+            onAddUmrah={() => {
+              setActiveMenu('umrah-haji');
+              setPackageType('umrah');
+              setSelectedItem({ type: 'umrah' });
+              setActionMode('add');
+            }}
+            onEditHaji={(item: any) => {
+              setActiveMenu('umrah-haji');
+              handleEdit(item, 'umrah-haji', 'haji');
+            }}
+            onAddHaji={() => {
+              setActiveMenu('umrah-haji');
+              setPackageType('haji');
+              setSelectedItem({ type: 'haji' });
+              setActionMode('add');
+            }}
+          />
+        );
       case 'gallery':
         return <GalleryContent
           items={galleryItems}
@@ -1254,6 +1403,7 @@ const Admin = () => {
         return <PrintingAdminContent
           activeSubMenu={activePrintingSubMenu}
           products={printingProducts}
+          categories={printingCategories}
           packages={printingPackages}
           onEditProduct={(item) => handleEdit(item, 'printing', 'product')}
           onDeleteProduct={(id) => handleDelete(id, 'printing', 'product')}
@@ -1412,51 +1562,181 @@ const Admin = () => {
           )}
 
           {activeMenu === 'packages' && (
-            <>
-              <input
-                type="text"
-                placeholder="Nama Paket"
-                className="w-full p-3 border rounded-lg"
-                value={packageForm.name}
-                onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Harga"
-                className="w-full p-3 border rounded-lg"
-                value={packageForm.price}
-                onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
-              />
-              <textarea
-                placeholder="Deskripsi Singkat"
-                className="w-full p-3 border rounded-lg"
-                rows={2}
-                value={packageForm.description}
-                onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-              />
-              <textarea
-                placeholder="Deskripsi Lengkap (akan ditampilkan di halaman paket)"
-                className="w-full p-3 border rounded-lg"
-                rows={4}
-                value={packageForm.longDescription}
-                onChange={(e) => setPackageForm({ ...packageForm, longDescription: e.target.value })}
-              />
-              <textarea
-                placeholder="Fitur Paket (pisahkan dengan koma, contoh: Dekorasi, Catering, Souvenir, Foto/Video, MC & Entertainment)"
-                className="w-full p-3 border rounded-lg"
-                rows={3}
-                value={packageForm.features}
-                onChange={(e) => setPackageForm({ ...packageForm, features: e.target.value })}
-              />
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={packageForm.highlighted}
-                  onChange={(e) => setPackageForm({ ...packageForm, highlighted: e.target.checked })}
+            <div className="space-y-6">
+              {/* SECTION 1: INFORMASI UTAMA & HARGA */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm border-b pb-2">
+                  <Heart size={18} className="text-rose-500 fill-rose-500" />
+                  <span>1. Informasi Utama & Investasi Pernikahan</span>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Paket Pernikahan *</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Paket Silver Modern Minimalist"
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                    value={packageForm.name}
+                    onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Singkat / Subtitle</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Pilihan tepat untuk resepsi intim dan sakral..."
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    value={packageForm.description}
+                    onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ringkasan & Detail Konsep (Tab Overview)</label>
+                  <textarea
+                    placeholder="Jelaskan secara mendalam tentang konsep pernikahan ini..."
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    rows={4}
+                    value={packageForm.longDescription}
+                    onChange={(e) => setPackageForm({ ...packageForm, longDescription: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Harga Investasi (Rp) *</label>
+                    <input
+                      type="number"
+                      placeholder="35000000"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-bold"
+                      value={packageForm.price}
+                      onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-rose-700 mb-1">Harga Diskon / Coret (Rp)</label>
+                    <input
+                      type="number"
+                      placeholder="Masukkan jika ada harga promo"
+                      className="w-full p-2.5 border border-rose-200 rounded-lg text-sm bg-white font-bold text-rose-700"
+                      value={packageForm.discount_price}
+                      onChange={(e) => setPackageForm({ ...packageForm, discount_price: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: FITUR KEUNGGULAN */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-rose-700 font-bold text-sm border-b pb-2">
+                  <Sparkles size={18} />
+                  <span>2. Fitur Keunggulan Paket (1 per baris)</span>
+                </div>
+                <textarea
+                  placeholder={"Dekorasi Pelaminan Modern Floral 6-8 Meter\nRias & Gaun Pengantin Akad + Resepsi (MUA Eksklusif)\nKatering 300 Porsi Menu Utama + 2 Gubukan\nDokumentasi Foto Full Day + Video Teaser\nTim WO Lapangan 4 Kru + MC Profesional"}
+                  className="w-full p-3 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                  rows={5}
+                  value={packageForm.features}
+                  onChange={(e) => setPackageForm({ ...packageForm, features: e.target.value })}
                 />
-                <span>Ditampilkan sebagai pilihan utama (paket populer)</span>
-              </label>
-            </>
+              </div>
+
+              {/* SECTION 3: GALERI FOTO KUSTOM */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
+                    <FileImage size={18} />
+                    <span>3. Galeri Foto Paket (Opsional)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Mendukung multi-upload & URL</span>
+                </div>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full p-2 border rounded-lg text-xs bg-white"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        const uploadResponse = await uploadFile(file);
+                        if (uploadResponse.success) {
+                          const newPath = uploadResponse.data.path;
+                          const existing = packageForm.images ? packageForm.images.trim() : '';
+                          const updated = existing ? `${existing}, ${newPath}` : newPath;
+                          setPackageForm({ ...packageForm, images: updated });
+                        } else {
+                          alert('Gagal upload gambar');
+                        }
+                      } catch (error) {
+                        console.error('Upload error:', error);
+                        alert('Terjadi kesalahan saat upload gambar');
+                      }
+                    }
+                  }}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Atau masukkan URL gambar (pisahkan dengan koma)"
+                  className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                  value={packageForm.images}
+                  onChange={(e) => setPackageForm({ ...packageForm, images: e.target.value })}
+                />
+
+                {Boolean(packageForm.images) && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {(Array.isArray(packageForm.images)
+                      ? packageForm.images
+                      : (typeof packageForm.images === 'string' ? packageForm.images.split(',') : [])
+                    ).map((img: string, idx: number) => typeof img === 'string' && img.trim() && (
+                      <div key={idx} className="relative">
+                        <img src={img.trim()} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const arr = Array.isArray(packageForm.images)
+                              ? packageForm.images
+                              : (typeof packageForm.images === 'string' ? packageForm.images.split(',') : []);
+                            const imgs = arr.map((s: string) => s.trim()).filter((_: any, i: number) => i !== idx);
+                            setPackageForm({ ...packageForm, images: imgs.join(', ') });
+                          }}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 4: LABEL & STATUS */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b pb-2">
+                  <CheckCircle size={18} />
+                  <span>4. Labeling & Status</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={packageForm.highlighted}
+                      onChange={(e) => setPackageForm({ ...packageForm, highlighted: e.target.checked })}
+                    />
+                    <span className="font-semibold text-slate-700">★ Tampilkan sebagai Pilihan Utama</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={packageForm.is_active}
+                      onChange={(e) => setPackageForm({ ...packageForm, is_active: e.target.checked })}
+                    />
+                    <span className="font-bold text-emerald-900">Status Aktif di Halaman Web</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           )}
 
           {activeMenu === 'videos' && (
@@ -1712,305 +1992,221 @@ const Admin = () => {
 
 
           {activeMenu === 'printing' && selectedItem?.type === 'product' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium mb-1">Kategori Produk</label>
-                <select
-                  className="w-full p-3 border rounded-lg"
-                  value={printingProductForm.category_id || ''}
-                  onChange={(e) => setPrintingProductForm({ ...printingProductForm, category_id: parseInt(e.target.value) || null })}
-                >
-                  <option value="">Pilih Kategori</option>
-                  {printingCategories.map((cat: any) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <input
-                type="text"
-                placeholder={
-                  activePrintingSubMenu === 'sablon-kaos' ? "Nama Produk Kaos (Contoh: Kaos Polos Premium)" :
-                    activePrintingSubMenu === 'undangan' ? "Nama Undangan (Contoh: Undangan Pernikahan Premium)" :
-                      "Nama Banner (Contoh: Banner Acara Custom)"
-                }
-                className="w-full p-3 border rounded-lg"
-                value={printingProductForm.name}
-                onChange={(e) => setPrintingProductForm({ ...printingProductForm, name: e.target.value })}
-              />
-              <textarea
-                placeholder="Deskripsi Produk"
-                className="w-full p-3 border rounded-lg"
-                rows={3}
-                value={printingProductForm.description}
-                onChange={(e) => setPrintingProductForm({ ...printingProductForm, description: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* SECTION 1: KATEGORI & INFORMASI UTAMA */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm border-b pb-2">
+                  <Printer size={18} />
+                  <span>1. Kategori & Informasi Utama Produk</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Kategori Produk *</label>
+                    <select
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                      value={printingProductForm.category_id || ''}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, category_id: parseInt(e.target.value) || null })}
+                    >
+                      <option value="">Pilih Kategori</option>
+                      {printingCategories.map((cat: any) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Produk Cetak *</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Undangan Akrilik Transparan Eksklusif (UV Print)"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                      value={printingProductForm.name}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, name: e.target.value })}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-1">Harga Normal</label>
-                  <input
-                    type="number"
-                    placeholder="Harga"
-                    className="w-full p-3 border rounded-lg"
-                    value={printingProductForm.price}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, price: e.target.value })}
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Produk / Headline Keunggulan</label>
+                  <textarea
+                    placeholder="Contoh: Kemewahan undangan akrilik bening 2mm dengan cetak tinta UV timbul anti air dan amplop beludru premium..."
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    rows={3}
+                    value={printingProductForm.description}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, description: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Harga Diskon (opsional)</label>
-                  <input
-                    type="number"
-                    placeholder="Harga Diskon"
-                    className="w-full p-3 border rounded-lg"
-                    value={printingProductForm.discount_price}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, discount_price: e.target.value })}
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Harga Normal / Pcs (Rp) *</label>
+                    <input
+                      type="number"
+                      placeholder="35000"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-bold"
+                      value={printingProductForm.price}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-rose-700 mb-1">Harga Diskon / Pcs (Rp)</label>
+                    <input
+                      type="number"
+                      placeholder="29000"
+                      className="w-full p-2.5 border border-rose-200 rounded-lg text-sm bg-white font-bold text-rose-700"
+                      value={printingProductForm.discount_price}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, discount_price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Min. Order (Pcs)</label>
+                    <input
+                      type="number"
+                      placeholder="50"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.min_order}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, min_order: parseInt(e.target.value) || 1 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Estimasi Pengerjaan</label>
+                    <input
+                      type="text"
+                      placeholder="Estimasi 7-10 Hari Kerja"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.estimated_time}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, estimated_time: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {activePrintingSubMenu === 'sablon-kaos' && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Ukuran Kaos</label>
-                      <select
-                        multiple
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.size_options ? printingProductForm.size_options.split(', ') : []}
-                        onChange={(e) => {
-                          const selected = Array.from(e.target.selectedOptions, option => option.value);
-                          setPrintingProductForm({ ...printingProductForm, size_options: selected.join(', ') });
-                        }}
-                      >
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                        <option value="XXL">XXL</option>
-                        <option value="XXXL">XXXL</option>
-                      </select>
-                      <small className="text-gray-500">Tahan Ctrl untuk pilih multiple</small>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Jenis Kain</label>
-                      <select
-                        multiple
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.material_options ? printingProductForm.material_options.split(', ') : []}
-                        onChange={(e) => {
-                          const selected = Array.from(e.target.selectedOptions, option => option.value);
-                          setPrintingProductForm({ ...printingProductForm, material_options: selected.join(', ') });
-                        }}
-                      >
-                        <option value="Cotton Combed">Cotton Combed</option>
-                        <option value="Cotton Carded">Cotton Carded</option>
-                        <option value="Polyester">Polyester</option>
-                        <option value="Mix Cotton">Mix Cotton</option>
-                      </select>
-                      <small className="text-gray-500">Tahan Ctrl untuk pilih multiple</small>
-                    </div>
-                  </div>
+              {/* SECTION 2: BAHAN, UKURAN & FINISHING */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm border-b pb-2">
+                  <Palette size={18} />
+                  <span>2. Spesifikasi Bahan, Ukuran & Finishing (Tab Bahan & Simulasi)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Metode Sablon</label>
-                    <select
-                      className="w-full p-3 border rounded-lg"
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Pilihan Ukuran (Pisahkan dengan koma)</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: 15 x 21 cm, 12 x 18 cm, A5, A4"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.size_options}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, size_options: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Pilihan Jenis Bahan / Kertas</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Akrilik Bening 2mm, Jasmine Glitter, Art Paper 260gsm"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.material_options}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, material_options: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Pilihan Warna / Tinta / Varian</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: White Ink, Gold Ink, Full Color UV"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.color_options}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, color_options: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Pilihan Finishing & Aksesoris</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Hotprint Foil Emas, Amplop Beludru Premium, Wax Seal"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
                       value={printingProductForm.finishing_options}
                       onChange={(e) => setPrintingProductForm({ ...printingProductForm, finishing_options: e.target.value })}
-                    >
-                      <option value="">Pilih Metode</option>
-                      <option value="Screen Printing">Screen Printing</option>
-                      <option value="DTG (Direct to Garment)">DTG (Direct to Garment)</option>
-                      <option value="Heat Transfer">Heat Transfer</option>
-                      <option value="Rubber Print">Rubber Print</option>
-                    </select>
+                    />
                   </div>
-                </>
-              )}
+                </div>
+              </div>
 
-              {activePrintingSubMenu === 'undangan' && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Ukuran Undangan</label>
-                      <select
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.size_options}
-                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, size_options: e.target.value })}
-                      >
-                        <option value="">Pilih Ukuran</option>
-                        <option value="A5">A5 (14.8 x 21 cm)</option>
-                        <option value="A4">A4 (21 x 29.7 cm)</option>
-                        <option value="B5">B5 (17.6 x 25 cm)</option>
-                        <option value="Custom">Custom</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Jenis Kertas</label>
-                      <select
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.material_options}
-                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, material_options: e.target.value })}
-                      >
-                        <option value="">Pilih Kertas</option>
-                        <option value="Art Paper 100gsm">Art Paper 100gsm</option>
-                        <option value="Art Paper 120gsm">Art Paper 120gsm</option>
-                        <option value="Art Paper 150gsm">Art Paper 150gsm</option>
-                        <option value="Ivory 100gsm">Ivory 100gsm</option>
-                        <option value="Ivory 120gsm">Ivory 120gsm</option>
-                        <option value="Duplex">Duplex</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Teknik Cetak</label>
-                      <select
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.finishing_options}
-                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, finishing_options: e.target.value })}
-                      >
-                        <option value="">Pilih Teknik</option>
-                        <option value="Offset">Offset</option>
-                        <option value="Digital Printing">Digital Printing</option>
-                        <option value="Screen Printing">Screen Printing</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Isi per Pack</label>
-                      <select
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.color_options}
-                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, color_options: e.target.value })}
-                      >
-                        <option value="">Pilih Isi</option>
-                        <option value="25 lembar">25 lembar</option>
-                        <option value="50 lembar">50 lembar</option>
-                        <option value="100 lembar">100 lembar</option>
-                        <option value="Custom">Custom</option>
-                      </select>
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* SECTION 3: FITUR & RATING */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm border-b pb-2">
+                  <Sparkles size={18} />
+                  <span>3. Fitur Keunggulan & Rating Produk</span>
+                </div>
 
-              {activePrintingSubMenu === 'banner' && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Ukuran Banner (cm)</label>
-                      <input
-                        type="text"
-                        placeholder="200 x 100"
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.size_options}
-                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, size_options: e.target.value })}
-                      />
-                      <small className="text-gray-500">Format: lebar x tinggi</small>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Jenis Bahan</label>
-                      <select
-                        className="w-full p-3 border rounded-lg"
-                        value={printingProductForm.material_options}
-                        onChange={(e) => setPrintingProductForm({ ...printingProductForm, material_options: e.target.value })}
-                      >
-                        <option value="">Pilih Bahan</option>
-                        <option value="Vinyl">Vinyl</option>
-                        <option value="Canvas">Canvas</option>
-                        <option value="Flexy">Flexy</option>
-                        <option value="Tarpaulin">Tarpaulin</option>
-                        <option value="Backlit">Backlit</option>
-                      </select>
-                    </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Fitur & Poin Keunggulan (Pisahkan dengan koma atau baris baru)</label>
+                  <textarea
+                    placeholder={"Cetak Tinta UV Timbul Anti Air\nFree Amplop Eksklusif & Plastik OPP\nRevisi Desain Sampai Deal\nPacking Aman Double Bubble Wrap"}
+                    className="w-full p-2.5 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                    rows={3}
+                    value={printingProductForm.features}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, features: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Rating Produk (1.0 - 5.0)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      placeholder="4.9"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.rating}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, rating: parseFloat(e.target.value) || 5 })}
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Finishing</label>
-                    <select
-                      multiple
-                      className="w-full p-3 border rounded-lg"
-                      value={printingProductForm.finishing_options ? printingProductForm.finishing_options.split(', ') : []}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value);
-                        setPrintingProductForm({ ...printingProductForm, finishing_options: selected.join(', ') });
-                      }}
-                    >
-                      <option value="Eyelet">Eyelet</option>
-                      <option value="Hemming">Hemming</option>
-                      <option value="Rope">Rope</option>
-                      <option value="Pole Pocket">Pole Pocket</option>
-                      <option value="Fringe">Fringe</option>
-                    </select>
-                    <small className="text-gray-500">Tahan Ctrl untuk pilih multiple</small>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jumlah Ulasan / Review</label>
+                    <input
+                      type="number"
+                      placeholder="28"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingProductForm.reviews_count}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, reviews_count: parseInt(e.target.value) || 0 })}
+                    />
                   </div>
-                </>
-              )}
+                </div>
+              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Minimal Order</label>
-                  <input
-                    type="number"
-                    placeholder="Minimal Order"
-                    className="w-full p-3 border rounded-lg"
-                    value={printingProductForm.min_order}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, min_order: parseInt(e.target.value) })}
-                  />
+              {/* SECTION 4: FOTO & GALERI */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
+                    <FileImage size={18} />
+                    <span>4. Foto Produk Percetakan</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Mendukung multi-upload & URL</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Estimasi Waktu</label>
-                  <input
-                    type="text"
-                    placeholder="3-5 hari"
-                    className="w-full p-3 border rounded-lg"
-                    value={printingProductForm.estimated_time}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, estimated_time: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    placeholder="4.5"
-                    className="w-full p-3 border rounded-lg"
-                    value={printingProductForm.rating}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, rating: parseFloat(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Jumlah Review</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    className="w-full p-3 border rounded-lg"
-                    value={printingProductForm.reviews_count}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, reviews_count: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-              <textarea
-                placeholder="Fitur Produk (pisahkan dengan koma)"
-                className="w-full p-3 border rounded-lg"
-                rows={2}
-                value={printingProductForm.features}
-                onChange={(e) => setPrintingProductForm({ ...printingProductForm, features: e.target.value })}
-              />
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Gambar Produk (opsional)</label>
+
                 <input
                   type="file"
                   accept="image/*"
-                  className="w-full p-3 border rounded-lg"
+                  className="w-full p-2 border rounded-lg text-xs bg-white"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setPrintingProductForm({ ...printingProductForm, images: uploadResponse.data.path });
+                          const newPath = uploadResponse.data.path;
+                          const existing = printingProductForm.images ? printingProductForm.images.trim() : '';
+                          const updated = existing ? `${existing}, ${newPath}` : newPath;
+                          setPrintingProductForm({ ...printingProductForm, images: updated });
                         } else {
                           alert('Gagal upload gambar');
                         }
@@ -2021,58 +2217,386 @@ const Admin = () => {
                     }
                   }}
                 />
-                {printingProductForm.images && (
-                  <div className="mt-2">
-                    <img src={printingProductForm.images} alt="Product Preview" className="w-32 h-32 object-cover rounded" />
+
+                <input
+                  type="text"
+                  placeholder="Atau masukkan URL gambar (pisahkan dengan koma)"
+                  className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                  value={printingProductForm.images}
+                  onChange={(e) => setPrintingProductForm({ ...printingProductForm, images: e.target.value })}
+                />
+
+                {Boolean(printingProductForm.images) && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {(Array.isArray(printingProductForm.images)
+                      ? printingProductForm.images
+                      : (typeof printingProductForm.images === 'string' ? printingProductForm.images.split(',') : [])
+                    ).map((img: string, idx: number) => typeof img === 'string' && img.trim() && (
+                      <div key={idx} className="relative">
+                        <img src={img.trim()} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const arr = Array.isArray(printingProductForm.images)
+                              ? printingProductForm.images
+                              : (typeof printingProductForm.images === 'string' ? printingProductForm.images.split(',') : []);
+                            const imgs = arr.map((s: string) => s.trim()).filter((_: any, i: number) => i !== idx);
+                            setPrintingProductForm({ ...printingProductForm, images: imgs.join(', ') });
+                          }}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
+                        >×</button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={printingProductForm.is_featured}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_featured: e.target.checked })}
-                  />
-                  <span>Produk Unggulan</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={printingProductForm.is_new}
-                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_new: e.target.checked })}
-                  />
-                  <span>Produk Baru</span>
-                </label>
+
+              {/* SECTION 5: LABEL & STATUS */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b pb-2">
+                  <CheckCircle size={18} />
+                  <span>5. Labeling & Status Produk</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={printingProductForm.is_featured}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_featured: e.target.checked })}
+                    />
+                    <span className="font-semibold text-slate-700">★ Produk Unggulan (Featured)</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={printingProductForm.is_new}
+                      onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_new: e.target.checked })}
+                    />
+                    <span className="font-semibold text-slate-700">⚡ Produk Baru (New Tag)</span>
+                  </label>
+                </div>
               </div>
-            </>
+            </div>
           )}
 
           {activeMenu === 'umrah-haji' && selectedItem?.type === 'umrah' && (
-            <>
-              <input
-                type="text"
-                placeholder="Nama Paket Umrah"
-                className="w-full p-3 border rounded-lg"
-                value={umrahPackageForm.name}
-                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, name: e.target.value })}
-              />
-              <textarea
-                placeholder="Deskripsi Paket"
-                className="w-full p-3 border rounded-lg"
-                rows={3}
-                value={umrahPackageForm.description}
-                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, description: e.target.value })}
-              />
+            <div className="space-y-6">
+              {/* SECTION 1: INFORMASI UTAMA & HARGA */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm border-b pb-2">
+                  <Plane size={18} />
+                  <span>1. Informasi Utama & Harga Paket</span>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Paket Umrah *</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Umrah Reguler Barakah 9 Hari"
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                    value={umrahPackageForm.name}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, name: e.target.value })}
+                  />
+                </div>
 
-              {/* Image Upload Section */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Gambar Paket</label>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Paket</label>
+                  <textarea
+                    placeholder="Jelaskan keunggulan dan gambaran umum program ibadah umrah ini..."
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    rows={2}
+                    value={umrahPackageForm.description}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Durasi (Hari)</label>
+                    <input
+                      type="number"
+                      placeholder="9"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-semibold"
+                      value={umrahPackageForm.duration}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, duration: parseInt(e.target.value) || 9 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Harga Normal (Rp) *</label>
+                    <input
+                      type="number"
+                      placeholder="28500000"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-semibold text-slate-900"
+                      value={umrahPackageForm.price}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-700 mb-1">Harga Diskon / Coret (Rp)</label>
+                    <input
+                      type="number"
+                      placeholder="26900000 (Harga yang dibayar)"
+                      className="w-full p-2.5 border border-emerald-300 rounded-lg text-sm bg-white font-bold text-emerald-700"
+                      value={umrahPackageForm.discount_price}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, discount_price: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Kota Keberangkatan</label>
+                    <input
+                      type="text"
+                      placeholder="Jakarta / Surabaya / Solo"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.departure_city}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, departure_city: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Maskapai Penerbangan</label>
+                    <input
+                      type="text"
+                      placeholder="Saudi Airlines / Garuda Indonesia"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.airline}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, airline: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tags / Label Badge (pisahkan koma)</label>
+                  <input
+                    type="text"
+                    placeholder="Paling Populer, Direct Flight, Free Kereta Cepat, Ramadhan"
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    value={umrahPackageForm.tags}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, tags: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 2: AKOMODASI & TRANSPORTASI */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm border-b pb-2">
+                  <Hotel size={18} />
+                  <span>2. Akomodasi Hotel & Transportasi</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Hotel Makkah</label>
+                    <input
+                      type="text"
+                      placeholder="Makkah Clock Royal Tower / Le Meridien"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.hotel_mekah}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_mekah: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jarak ke Masjidil Haram</label>
+                    <input
+                      type="text"
+                      placeholder="±50m ke Pelataran"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.distance_haram}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, distance_haram: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Bintang Hotel</label>
+                    <select
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                      value={umrahPackageForm.hotel_rating}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_rating: e.target.value })}
+                    >
+                      <option value="3 Star">3 Star (Bintang 3)</option>
+                      <option value="4 Star">4 Star (Bintang 4)</option>
+                      <option value="5 Star">5 Star (Bintang 5)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Hotel Madinah</label>
+                    <input
+                      type="text"
+                      placeholder="Anwar Al Madinah Movenpick / Grand Plaza"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.hotel_madinah}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_madinah: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Tipe Transportasi Darat</label>
+                    <input
+                      type="text"
+                      placeholder="Bus AC Eksekutif & Kereta Cepat Haramain"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.transport_type}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, transport_type: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: ITINERARY RUNDOWN */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
+                    <Calendar size={18} />
+                    <span>3. Itinerary / Rundown Kegiatan Hari demi Hari</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">1 baris per hari kegiatan</span>
+                </div>
+                <textarea
+                  placeholder={"Hari 1: Keberangkatan Menuju Jeddah / Madinah - Berkumpul di Bandara Soetta T3 dan penerbangan langsung\nHari 2: Ziarah Kota Madinah & Shalat Raudhah - Ziarah Makam Rasulullah SAW dan tasreh Raudhah\nHari 3: Ziarah Luar Madinah - Ziarah Masjid Quba, Jabal Uhud, dan Kebun Kurma\nHari 4: Menuju Makkah & Pelaksanaan Umrah 1 - Miqat di Bir Ali, Kereta Cepat ke Makkah, Thawaf, Sa'i, Tahallul\nHari 5: Ibadah Mandiri di Masjidil Haram - Memperbanyak thawaf sunnah dan tilawah\nHari 6: Ziarah Kota Makkah & Umrah 2 - Ziarah Padang Arafah, Muzdalifah, Mina, Miqat Ji'ranah\nHari 7: Ziarah Wisata Sejarah Kota Thaif - Wisata Thaif dan penyulingan parfum mawar\nHari 8: Thawaf Wada' & Kepulangan - Thawaf Wada' dan menuju Bandara Jeddah\nHari 9: Tiba di Tanah Air - Tiba di Jakarta dan pembagian air zamzam 5L"}
+                  className="w-full p-3 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                  rows={6}
+                  value={umrahPackageForm.itinerary}
+                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, itinerary: e.target.value })}
+                />
+              </div>
+
+              {/* SECTION 4: FASILITAS & PERLENGKAPAN */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-rose-700 font-bold text-sm border-b pb-2">
+                  <Sparkles size={18} />
+                  <span>4. Fasilitas, Perlengkapan & Catatan</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fasilitas Termasuk All-In (1 per baris)</label>
+                    <textarea
+                      placeholder={"Tiket Pesawat PP Direct Flight Saudi Airlines / Garuda\nHotel Bintang Dekat Masjidil Haram & Nabawi\nMakan 3x Sehari Fullboard Buffet Indonesia\nVisa Resmi Umrah & Asuransi Perjalanan\nTransportasi Bus AC & Kereta Cepat Haramain\nMutawwif / Tour Leader Berpengalaman\nCity Tour / Ziarah Makkah, Madinah & Thaif"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={5}
+                      value={umrahPackageForm.included_features}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, included_features: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fasilitas Tidak Termasuk (1 per baris)</label>
+                    <textarea
+                      placeholder={"Pembuatan Paspor Pribadi\nPengeluaran Pribadi (Laundry, Kelebihan Bagasi)\nKebutuhan Medis Khusus di luar Asuransi"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={5}
+                      value={umrahPackageForm.excluded_features}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, excluded_features: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Skema Pembayaran / DP (1 per baris)</label>
+                    <textarea
+                      placeholder={"DP Booking Seat: Rp 5.000.000 / jamaah\nPenyerahan Dokumen: H-30 keberangkatan\nPelunasan Biaya: H-20 keberangkatan\nManasik Umrah Akbar: H-14 keberangkatan"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={3}
+                      value={umrahPackageForm.payment_plans}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, payment_plans: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Catatan Penting / Syarat Dokumen (1 per baris)</label>
+                    <textarea
+                      placeholder={"Paspor asli masa berlaku minimal 8 bulan\nNama di paspor minimal 2 kata\nFotokopi KTP, KK, dan Buku Nikah / Akta Lahir\nPasfoto 4x6 latar belakang putih (2 lembar)\nBukti vaksin meningitis"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={3}
+                      value={umrahPackageForm.important_notes}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, important_notes: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: KUOTA, TANGGAL & RATING */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-cyan-700 font-bold text-sm border-b pb-2">
+                  <Users size={18} />
+                  <span>5. Kuota, Tanggal & Penilaian</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Kapasitas Grup</label>
+                    <input
+                      type="number"
+                      placeholder="40"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.group_size}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, group_size: parseInt(e.target.value) || 40 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Sisa Kursi / Seat</label>
+                    <input
+                      type="number"
+                      placeholder="12"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-bold text-emerald-700"
+                      value={umrahPackageForm.availability}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, availability: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Rating (0 - 5)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      placeholder="4.9"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.rating}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, rating: parseFloat(e.target.value) || 4.9 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jumlah Ulasan</label>
+                    <input
+                      type="number"
+                      placeholder="320"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={umrahPackageForm.reviews_count}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, reviews_count: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Pilihan Tanggal Keberangkatan (pisahkan koma)</label>
+                  <input
+                    type="text"
+                    placeholder="2024-10-15, 2024-11-20, 2024-12-10"
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    value={umrahPackageForm.departure_dates}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, departure_dates: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 6: UPLOAD FOTO & GALERI */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-violet-700 font-bold text-sm">
+                    <FileImage size={18} />
+                    <span>6. Foto & Galeri Paket</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Mendukung multi upload & URL foto</span>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="file"
                     accept="image/*"
-                    className="flex-1 p-3 border rounded-lg"
+                    className="flex-1 p-2.5 border rounded-lg text-xs bg-white"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -2094,25 +2618,36 @@ const Admin = () => {
                     }}
                   />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Atau masukkan URL gambar (pisahkan dengan koma)"
-                  className="w-full p-3 border rounded-lg text-sm"
-                  value={umrahPackageForm.images}
-                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, images: e.target.value })}
-                />
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">URL Gambar (pisahkan dengan koma)</label>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/..., https://..."
+                    className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                    value={umrahPackageForm.images}
+                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, images: e.target.value })}
+                  />
+                </div>
+
                 {umrahPackageForm.images && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2.5 pt-2">
                     {umrahPackageForm.images.split(',').map((img, idx) => img.trim() && (
-                      <div key={idx} className="relative">
-                        <img src={img.trim()} alt={`Preview ${idx + 1}`} className="w-24 h-24 object-cover rounded border" />
+                      <div key={idx} className="relative group">
+                        <img
+                          src={img.trim()}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-20 h-20 object-cover rounded-xl border border-slate-300 shadow-sm"
+                          onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=400&q=80'; }}
+                        />
                         <button
                           type="button"
                           onClick={() => {
                             const imgs = umrahPackageForm.images.split(',').map(s => s.trim()).filter((_, i) => i !== idx);
                             setUmrahPackageForm({ ...umrahPackageForm, images: imgs.join(', ') });
                           }}
-                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                          className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-rose-700 transition-colors"
+                          title="Hapus foto"
                         >×</button>
                       </div>
                     ))}
@@ -2120,335 +2655,347 @@ const Admin = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Durasi (hari)</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.duration}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, duration: parseInt(e.target.value) })}
-                  />
+              {/* SECTION 7: CHECKLIST FITUR & BADGE */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm border-b pb-2">
+                  <CheckCircle size={18} />
+                  <span>7. Checklist Layanan & Badge Status</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Harga</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.price}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, price: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kota Keberangkatan</label>
-                  <select
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.departure_city}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, departure_city: e.target.value })}
-                  >
-                    <option value="Jakarta">Jakarta</option>
-                    <option value="Surabaya">Surabaya</option>
-                    <option value="Medan">Medan</option>
-                    <option value="Makassar">Makassar</option>
-                    <option value="Bali">Bali</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Maskapai</label>
-                  <input
-                    type="text"
-                    placeholder="Garuda Indonesia"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.airline}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, airline: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Hotel Mekah</label>
-                  <input
-                    type="text"
-                    placeholder="Nama Hotel Mekah"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.hotel_mekah}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_mekah: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Hotel Madinah</label>
-                  <input
-                    type="text"
-                    placeholder="Nama Hotel Madinah"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.hotel_madinah}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_madinah: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating Hotel</label>
-                  <select
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.hotel_rating}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, hotel_rating: e.target.value })}
-                  >
-                    <option value="3 Star">3 Star</option>
-                    <option value="4 Star">4 Star</option>
-                    <option value="5 Star">5 Star</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Jarak ke Haram</label>
-                  <input
-                    type="text"
-                    placeholder="500m"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.distance_haram}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, distance_haram: e.target.value })}
-                  />
-                </div>
-              </div>
 
-              {/* New fields for Umrah */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tipe Transportasi</label>
-                  <input
-                    type="text"
-                    placeholder="Private Bus"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.transport_type}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, transport_type: e.target.value })}
-                  />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-emerald-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.meals_included}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, meals_included: e.target.checked })}
+                    />
+                    <span className="font-medium text-slate-700">Makan 3x Fullboard</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-emerald-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.tour_guide}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, tour_guide: e.target.checked })}
+                    />
+                    <span className="font-medium text-slate-700">Mutawwif & TL</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-emerald-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.visa_assistance}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, visa_assistance: e.target.checked })}
+                    />
+                    <span className="font-medium text-slate-700">Visa & Asuransi</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-emerald-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.vaccination_assistance}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, vaccination_assistance: e.target.checked })}
+                    />
+                    <span className="font-medium text-slate-700">Bantuan Vaksin</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-amber-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.featured}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, featured: e.target.checked })}
+                    />
+                    <span className="font-medium text-amber-900">Paket Unggulan ⭐</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-emerald-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.best_seller}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, best_seller: e.target.checked })}
+                    />
+                    <span className="font-medium text-emerald-900">Best Seller 🔥</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-blue-50/50">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.early_bird_discount}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, early_bird_discount: e.target.checked })}
+                    />
+                    <span className="font-medium text-blue-900">Early Bird Promo</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={umrahPackageForm.is_active}
+                      onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, is_active: e.target.checked })}
+                    />
+                    <span className="font-bold text-emerald-900">Status Aktif di Web</span>
+                  </label>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kapasitas Grup</label>
-                  <input
-                    type="number"
-                    placeholder="30"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.group_size}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, group_size: parseInt(e.target.value) || 30 })}
-                  />
-                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kursi Tersedia</label>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.availability}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, availability: parseInt(e.target.value) || 15 })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    placeholder="4.5"
-                    className="w-full p-3 border rounded-lg"
-                    value={umrahPackageForm.rating}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, rating: parseFloat(e.target.value) || 4.5 })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <textarea
-                  placeholder="Fasilitas Termasuk (satu per baris)"
-                  className="p-3 border rounded-lg"
-                  rows={4}
-                  value={umrahPackageForm.included_features}
-                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, included_features: e.target.value })}
-                />
-                <textarea
-                  placeholder="Fasilitas Tidak Termasuk (satu per baris)"
-                  className="p-3 border rounded-lg"
-                  rows={4}
-                  value={umrahPackageForm.excluded_features}
-                  onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, excluded_features: e.target.value })}
-                />
-              </div>
-
-              <textarea
-                placeholder="Rencana Pembayaran (satu per baris, contoh: Cash, Cicilan 3x, Cicilan 6x)"
-                className="w-full p-3 border rounded-lg"
-                rows={2}
-                value={umrahPackageForm.payment_plans}
-                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, payment_plans: e.target.value })}
-              />
-
-              <input
-                type="text"
-                placeholder="Tags (pisahkan dengan koma, contoh: Premium, Direct Flight, Ramadhan)"
-                className="w-full p-3 border rounded-lg"
-                value={umrahPackageForm.tags}
-                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, tags: e.target.value })}
-              />
-
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.meals_included}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, meals_included: e.target.checked })}
-                  />
-                  <span>Makanan Termasuk</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.tour_guide}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, tour_guide: e.target.checked })}
-                  />
-                  <span>Tour Guide</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.visa_assistance}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, visa_assistance: e.target.checked })}
-                  />
-                  <span>Visa Assistance</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.vaccination_assistance}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, vaccination_assistance: e.target.checked })}
-                  />
-                  <span>Vaccination Assistance</span>
-                </label>
-              </div>
-              <input
-                type="text"
-                placeholder="Tanggal Keberangkatan (pisahkan koma)"
-                className="w-full p-3 border rounded-lg"
-                value={umrahPackageForm.departure_dates}
-                onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, departure_dates: e.target.value })}
-              />
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.featured}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, featured: e.target.checked })}
-                  />
-                  <span>Paket Unggulan</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.best_seller}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, best_seller: e.target.checked })}
-                  />
-                  <span>Best Seller</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.early_bird_discount}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, early_bird_discount: e.target.checked })}
-                  />
-                  <span>Early Bird Discount</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={umrahPackageForm.is_active}
-                    onChange={(e) => setUmrahPackageForm({ ...umrahPackageForm, is_active: e.target.checked })}
-                  />
-                  <span>Aktif</span>
-                </label>
-              </div>
-            </>
+            </div>
           )}
 
           {activeMenu === 'umrah-haji' && selectedItem?.type === 'haji' && (
-            <>
-              <input
-                type="text"
-                placeholder="Nama Paket Haji"
-                className="w-full p-3 border rounded-lg"
-                value={hajiPackageForm.name}
-                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, name: e.target.value })}
-              />
-              <textarea
-                placeholder="Deskripsi Paket"
-                className="w-full p-3 border rounded-lg"
-                rows={3}
-                value={hajiPackageForm.description}
-                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, description: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* SECTION 1: INFORMASI UTAMA HAJI */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-purple-700 font-bold text-sm border-b pb-2">
+                  <Shield size={18} />
+                  <span>1. Informasi Paket Haji & Kuota</span>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-1">Tahun Kuota</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Paket Haji *</label>
                   <input
                     type="text"
-                    placeholder="1445H/2024"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.quota_year}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, quota_year: e.target.value })}
+                    placeholder="Contoh: Paket Haji Furoda Mujamalah (Langsung Berangkat)"
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                    value={hajiPackageForm.name}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, name: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Harga</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.price}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, price: e.target.value })}
-                  />
-                </div>
-              </div>
-              <textarea
-                placeholder="Cara Pembayaran (satu per baris)"
-                className="w-full p-3 border rounded-lg"
-                rows={3}
-                value={hajiPackageForm.payment_terms}
-                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, payment_terms: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <textarea
-                  placeholder="Fasilitas Termasuk (satu per baris)"
-                  className="p-3 border rounded-lg"
-                  rows={4}
-                  value={hajiPackageForm.included_features}
-                  onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, included_features: e.target.value })}
-                />
-                <textarea
-                  placeholder="Fasilitas Tidak Termasuk (satu per baris)"
-                  className="p-3 border rounded-lg"
-                  rows={4}
-                  value={hajiPackageForm.excluded_features}
-                  onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, excluded_features: e.target.value })}
-                />
-              </div>
-              <textarea
-                placeholder="Persyaratan (satu per baris)"
-                className="w-full p-3 border rounded-lg"
-                rows={4}
-                value={hajiPackageForm.requirements}
-                onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, requirements: e.target.value })}
-              />
 
-              {/* Image Upload Section */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Gambar Paket</label>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Paket Haji</label>
+                  <textarea
+                    placeholder="Deskripsi keunggulan haji, visa furoda / khusus, fasilitas maktab, dll..."
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    rows={2}
+                    value={hajiPackageForm.description}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Tahun Kuota</label>
+                    <input
+                      type="text"
+                      placeholder="1446H / 2025M"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                      value={hajiPackageForm.quota_year}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, quota_year: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Harga Normal (Rp) *</label>
+                    <input
+                      type="number"
+                      placeholder="295000000"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-semibold"
+                      value={hajiPackageForm.price}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-purple-700 mb-1">Harga Diskon / Coret (Rp)</label>
+                    <input
+                      type="number"
+                      placeholder="285000000"
+                      className="w-full p-2.5 border border-purple-300 rounded-lg text-sm bg-white font-bold text-purple-700"
+                      value={hajiPackageForm.discount_price}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, discount_price: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Batas Akhir Pendaftaran</label>
+                    <input
+                      type="text"
+                      placeholder="30 Ramadhan 1446H"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.registration_deadline}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, registration_deadline: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Sisa Kuota / Seat Tersedia</label>
+                    <input
+                      type="number"
+                      placeholder="15"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-bold text-purple-700"
+                      value={hajiPackageForm.available_quota}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, available_quota: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Sesi Bimbingan / Manasik</label>
+                    <input
+                      type="number"
+                      placeholder="12"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.training_sessions}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, training_sessions: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: AKOMODASI HOTEL MEKAH, MADINAH & JEDDAH */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm border-b pb-2">
+                  <Hotel size={18} />
+                  <span>2. Rincian Akomodasi Hotel Haji</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Hotel Makkah</label>
+                    <input
+                      type="text"
+                      placeholder="Makkah Clock Royal Tower"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_mekah_hotel}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_hotel: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jumlah Malam Makkah</label>
+                    <input
+                      type="number"
+                      placeholder="20"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_mekah_nights}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_nights: parseInt(e.target.value) || 20 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jarak ke Masjidil Haram</label>
+                    <input
+                      type="text"
+                      placeholder="±50m ke Pelataran"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_mekah_distance}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_distance: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Hotel Madinah</label>
+                    <input
+                      type="text"
+                      placeholder="Anwar Al Madinah Movenpick"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_madinah_hotel}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_hotel: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jumlah Malam Madinah</label>
+                    <input
+                      type="number"
+                      placeholder="10"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_madinah_nights}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_nights: parseInt(e.target.value) || 10 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Jarak ke Masjid Nabawi</label>
+                    <input
+                      type="text"
+                      placeholder="±100m ke Nabawi"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_madinah_distance}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_distance: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Hotel Transit Jeddah (opsional)</label>
+                    <input
+                      type="text"
+                      placeholder="Casablanca Grand Hotel Jeddah"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_jeddah_hotel}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_jeddah_hotel: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Malam Jeddah</label>
+                    <input
+                      type="number"
+                      placeholder="2"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={hajiPackageForm.accommodation_jeddah_nights}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_jeddah_nights: parseInt(e.target.value) || 2 })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: FASILITAS, SYARAT & TAHAPAN PEMBAYARAN */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-rose-700 font-bold text-sm border-b pb-2">
+                  <Sparkles size={18} />
+                  <span>3. Fasilitas, Persyaratan & Tahapan Bayar</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fasilitas Termasuk (1 per baris)</label>
+                    <textarea
+                      placeholder={"Visa Haji Furoda Resmi Kerajaan Arab Saudi\nTiket Pesawat Saudi Airlines Direct PP\nHotel Bintang 5 Dekat Masjidil Haram & Nabawi\nMaktab VIP Tenda AC Arafah & Mina\nFullboard Buffet Dining & Snack 24 Jam\nDokter & Tim Medis Standby Khusus\nPerlengkapan Haji Eksklusif & Air Zamzam 5L"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={4}
+                      value={hajiPackageForm.included_features}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, included_features: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Fasilitas Tidak Termasuk (1 per baris)</label>
+                    <textarea
+                      placeholder={"Biaya Dam / Qurban\nPengeluaran Pribadi (Laundry, Telepon)\nBiaya Pembuatan Paspor"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={4}
+                      value={hajiPackageForm.excluded_features}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, excluded_features: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Tahapan Pembayaran & DP (1 per baris)</label>
+                    <textarea
+                      placeholder={"DP USD 5,000 saat pendaftaran\nPelunasan setelah visa terbit (H-45)\nGaransi uang kembali 100% jika visa tidak terbit"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={3}
+                      value={hajiPackageForm.payment_terms}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, payment_terms: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Persyaratan Dokumen (1 per baris)</label>
+                    <textarea
+                      placeholder={"Paspor asli masa berlaku minimal 8 bulan\nFotokopi KTP & KK\nBuku Nikah / Akta Lahir\nPasfoto 4x6 latar belakang putih 10 lembar\nBuku Vaksin Meningitis & Polio"}
+                      className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                      rows={3}
+                      value={hajiPackageForm.requirements}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, requirements: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: FOTO & GALERI HAJI */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-violet-700 font-bold text-sm">
+                    <FileImage size={18} />
+                    <span>4. Foto & Galeri Paket Haji</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Upload & URL foto</span>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="file"
                     accept="image/*"
-                    className="flex-1 p-3 border rounded-lg"
+                    className="flex-1 p-2.5 border rounded-lg text-xs bg-white"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -2470,25 +3017,36 @@ const Admin = () => {
                     }}
                   />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Atau masukkan URL gambar (pisahkan dengan koma)"
-                  className="w-full p-3 border rounded-lg text-sm"
-                  value={hajiPackageForm.images}
-                  onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, images: e.target.value })}
-                />
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">URL Gambar (pisahkan dengan koma)</label>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/..., https://..."
+                    className="w-full p-2.5 border rounded-lg text-xs bg-white"
+                    value={hajiPackageForm.images}
+                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, images: e.target.value })}
+                  />
+                </div>
+
                 {hajiPackageForm.images && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2.5 pt-2">
                     {hajiPackageForm.images.split(',').map((img, idx) => img.trim() && (
-                      <div key={idx} className="relative">
-                        <img src={img.trim()} alt={`Preview ${idx + 1}`} className="w-24 h-24 object-cover rounded border" />
+                      <div key={idx} className="relative group">
+                        <img
+                          src={img.trim()}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-20 h-20 object-cover rounded-xl border border-slate-300 shadow-sm"
+                          onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=400&q=80'; }}
+                        />
                         <button
                           type="button"
                           onClick={() => {
                             const imgs = hajiPackageForm.images.split(',').map(s => s.trim()).filter((_, i) => i !== idx);
                             setHajiPackageForm({ ...hajiPackageForm, images: imgs.join(', ') });
                           }}
-                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                          className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-rose-700 transition-colors"
+                          title="Hapus foto"
                         >×</button>
                       </div>
                     ))}
@@ -2496,190 +3054,41 @@ const Admin = () => {
                 )}
               </div>
 
-              {/* Rating and Reviews */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    placeholder="4.5"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.rating}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, rating: parseFloat(e.target.value) || 4.5 })}
-                  />
+              {/* SECTION 5: CHECKLIST & STATUS */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-purple-800 font-bold text-sm border-b pb-2">
+                  <CheckCircle size={18} />
+                  <span>5. Checklist Layanan & Status</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Jumlah Ulasan</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.reviews_count}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, reviews_count: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
 
-              {/* Registration Deadline and Quota */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Batas Registrasi</label>
-                  <input
-                    type="date"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.registration_deadline}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, registration_deadline: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kuota Tersedia</label>
-                  <input
-                    type="number"
-                    placeholder="25"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.available_quota}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, available_quota: parseInt(e.target.value) || 25 })}
-                  />
-                </div>
-              </div>
-
-              {/* Training Sessions */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Sesi Pelatihan</label>
-                  <input
-                    type="number"
-                    placeholder="12"
-                    className="w-full p-3 border rounded-lg"
-                    value={hajiPackageForm.training_sessions}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, training_sessions: parseInt(e.target.value) || 12 })}
-                  />
-                </div>
-                <div className="flex items-center pt-6">
-                  <label className="flex items-center gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-purple-50/50">
                     <input
                       type="checkbox"
                       checked={hajiPackageForm.medical_facility}
                       onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, medical_facility: e.target.checked })}
                     />
-                    <span>Fasilitas Medis</span>
+                    <span className="font-medium text-slate-700">Fasilitas & Dokter Medis Khusus</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-amber-50/50">
+                    <input
+                      type="checkbox"
+                      checked={hajiPackageForm.featured}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, featured: e.target.checked })}
+                    />
+                    <span className="font-medium text-amber-900">Paket Unggulan ⭐</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-purple-50 border border-purple-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hajiPackageForm.is_active}
+                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, is_active: e.target.checked })}
+                    />
+                    <span className="font-bold text-purple-900">Status Aktif di Web</span>
                   </label>
                 </div>
               </div>
-
-              {/* Accommodation Details */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <h4 className="font-semibold">Detail Akomodasi</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Hotel Mekah</label>
-                    <input
-                      type="text"
-                      placeholder="Nama Hotel Mekah"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_mekah_hotel}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_hotel: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Malam Mekah</label>
-                    <input
-                      type="number"
-                      placeholder="20"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_mekah_nights}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_nights: parseInt(e.target.value) || 20 })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Jarak Mekah</label>
-                    <input
-                      type="text"
-                      placeholder="500m"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_mekah_distance}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_mekah_distance: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Hotel Madinah</label>
-                    <input
-                      type="text"
-                      placeholder="Nama Hotel Madinah"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_madinah_hotel}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_hotel: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Malam Madinah</label>
-                    <input
-                      type="number"
-                      placeholder="10"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_madinah_nights}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_nights: parseInt(e.target.value) || 10 })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Jarak Madinah</label>
-                    <input
-                      type="text"
-                      placeholder="300m"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_madinah_distance}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_madinah_distance: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Hotel Jeddah</label>
-                    <input
-                      type="text"
-                      placeholder="Nama Hotel Jeddah"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_jeddah_hotel}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_jeddah_hotel: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Malam Jeddah</label>
-                    <input
-                      type="number"
-                      placeholder="2"
-                      className="w-full p-3 border rounded-lg"
-                      value={hajiPackageForm.accommodation_jeddah_nights}
-                      onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, accommodation_jeddah_nights: parseInt(e.target.value) || 2 })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={hajiPackageForm.featured}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, featured: e.target.checked })}
-                  />
-                  <span>Paket Unggulan</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={hajiPackageForm.is_active}
-                    onChange={(e) => setHajiPackageForm({ ...hajiPackageForm, is_active: e.target.checked })}
-                  />
-                  <span>Aktif</span>
-                </label>
-              </div>
-            </>
+            </div>
           )}
 
           <div className="flex gap-3 pt-4">
@@ -2709,81 +3118,176 @@ const Admin = () => {
     return menuItems.find(item => item.id === menuId)?.label || '';
   };
 
+  // Group menu items for sidebar sections
+  const menuGroups = [
+    { label: null, items: menuItems.filter(m => m.id === 'dashboard') },
+    { label: 'Konten Wedding', items: menuItems.filter(m => ['gallery', 'testimonials', 'packages', 'venues', 'videos', 'wedding-show'].includes(m.id)) },
+    { label: 'Bisnis', items: menuItems.filter(m => ['printing', 'umrah-haji'].includes(m.id)) },
+    { label: 'Pengaturan', items: menuItems.filter(m => ['appearance', 'settings'].includes(m.id)) },
+  ];
+
+  const mobileNavItems = [
+    { id: 'dashboard', label: 'Home', icon: <Home size={20} /> },
+    { id: 'gallery', label: 'Gallery', icon: <Image size={20} /> },
+    { id: 'packages', label: 'Wedding', icon: <Package size={20} /> },
+    { id: 'printing', label: 'Cetak', icon: <Printer size={20} /> },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/20">
+      {/* ═══ TOP BAR ═══ */}
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div className="px-3 sm:px-6 h-16 flex items-center justify-between gap-3">
+          {/* Left: Hamburger + Brand */}
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors flex-shrink-0"
+              aria-label="Toggle sidebar"
             >
-              <Menu size={20} />
+              {sidebarOpen ? <ChevronLeft size={20} className="text-slate-600" /> : <Menu size={20} className="text-slate-600" />}
             </button>
-            <div>
-              <h1 className="text-xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-gray-500">Galeria Wedding Management</p>
+            <div className="min-w-0 hidden sm:block">
+              <h1 className="text-base font-bold text-slate-900 truncate tracking-tight">Galeria Admin</h1>
+              <p className="text-[11px] text-slate-400 truncate">Wedding & Business Management</p>
             </div>
+            {/* Mobile brand */}
+            <span className="sm:hidden text-sm font-bold text-slate-900 truncate">Galeria</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <Eye size={20} />
+          {/* Center: Breadcrumb (desktop only) */}
+          <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+            <Home size={12} />
+            <span>/</span>
+            <span className="text-slate-700 font-semibold">{getMenuLabel(activeMenu)}</span>
+            {actionMode !== 'view' && (
+              <>
+                <span>/</span>
+                <span className="text-amber-600">{actionMode === 'add' ? 'Tambah Baru' : 'Edit'}</span>
+              </>
+            )}
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <button
+              onClick={() => window.open('/', '_blank')}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 text-xs font-semibold shadow-sm shadow-amber-200 transition-all active:scale-95"
+            >
+              <Eye size={14} />
+              <span>Preview</span>
             </button>
             <button
               onClick={() => window.open('/', '_blank')}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+              className="sm:hidden p-2 hover:bg-amber-50 rounded-xl transition-colors"
             >
-              Preview Site
+              <Eye size={18} className="text-amber-600" />
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg">
-              <LogOut size={20} />
-            </button>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-bold shadow-sm cursor-pointer">
+              A
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <div className={`
-          bg-white border-r min-h-screen transition-all duration-300
-          ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'}
+      {/* ═══ MOBILE SIDEBAR OVERLAY ═══ */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <div className="flex min-h-[calc(100vh-64px)]">
+        {/* ═══ SIDEBAR ═══ */}
+        <aside className={`
+          fixed md:sticky top-16 md:top-0 h-[calc(100vh-64px)] z-50 md:z-10
+          bg-white border-r border-slate-200/60 flex-shrink-0
+          transition-all duration-300 ease-in-out
+          ${sidebarOpen
+            ? 'w-64 min-w-[16rem] translate-x-0 shadow-2xl md:shadow-none'
+            : 'w-0 min-w-0 -translate-x-full md:translate-x-0 md:w-0 overflow-hidden border-r-0'
+          }
         `}>
-          <div className="p-4">
-            <nav className="space-y-1">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveMenu(item.id as MenuItem);
-                    setActionMode('view');
-                    resetForms();
-                  }}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                    ${activeMenu === item.id
-                      ? 'bg-primary text-white'
-                      : 'hover:bg-gray-100 text-gray-700'
-                    }
-                  `}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
+          <div className="w-64 h-full flex flex-col overflow-y-auto admin-scrollbar">
+            {/* Sidebar Header */}
+            <div className="px-5 pt-5 pb-3 flex-shrink-0">
+              <div className="flex items-center gap-2.5 mb-1">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-sm">
+                  <Heart size={14} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">Galeria Wedding</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Control Panel</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Nav Groups */}
+            <nav className="flex-1 px-3 pb-6 space-y-5">
+              {menuGroups.map((group, gi) => (
+                <div key={gi}>
+                  {group.label && (
+                    <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-300">{group.label}</p>
+                  )}
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveMenu(item.id as MenuItem);
+                          setActionMode('view');
+                          resetForms();
+                          if (window.innerWidth < 768) setSidebarOpen(false);
+                        }}
+                        className={`
+                          w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all whitespace-nowrap group
+                          ${activeMenu === item.id
+                            ? 'bg-gradient-to-r from-amber-50 to-amber-100/50 text-amber-700 font-semibold shadow-sm border border-amber-200/50'
+                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                          }
+                        `}
+                      >
+                        <span className={`flex-shrink-0 transition-colors ${activeMenu === item.id ? 'text-amber-600' : 'text-slate-400 group-hover:text-slate-500'}`}>
+                          {item.icon}
+                        </span>
+                        <span className="truncate">{item.label}</span>
+                        {activeMenu === item.id && (
+                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </nav>
-          </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
+            {/* Sidebar Footer */}
+            <div className="px-4 py-3 border-t border-slate-100 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 text-xs font-bold">
+                  A
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-700 truncate">Administrator</p>
+                  <p className="text-[10px] text-slate-400 truncate">admin@galeria.com</p>
+                </div>
+                <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0">
+                  <LogOut size={14} className="text-slate-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ═══ MAIN CONTENT ═══ */}
+        <main className="flex-1 min-w-0 overflow-x-hidden pb-20 md:pb-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
             {/* Page Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">{getMenuLabel(activeMenu)}</h2>
-                <p className="text-gray-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+              <div className="min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">{getMenuLabel(activeMenu)}</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                   {actionMode === 'view'
                     ? `Kelola data ${getMenuLabel(activeMenu).toLowerCase()}`
                     : actionMode === 'add' ? 'Tambah data baru' : 'Edit data'
@@ -2791,326 +3295,758 @@ const Admin = () => {
                 </p>
               </div>
 
-              {actionMode === 'view' && activeMenu !== 'dashboard' && activeMenu !== 'settings' && activeMenu !== 'appearance' && (
-                <div className="flex gap-2">
-                  {activeMenu === 'printing' && (
-                    <button
-                      onClick={() => {
-                        // Get the button label based on current activePrintingSubMenu
-                        const getCategoryLabel = () => {
-                          switch (activePrintingSubMenu) {
-                            case 'undangan': return 'Undangan';
-                            case 'sablon-kaos': return 'Sablon Kaos';
-                            case 'banner': return 'Banner';
-                            case 'id-card': return 'ID Card';
-                            case 'kartu-nama': return 'Kartu Nama';
-                            case 'brosur-flyer': return 'Brosur & Flyer';
-                            case 'stiker-label': return 'Stiker & Label';
-                            case 'kemasan-produk': return 'Kemasan Produk';
-                            case 'merchandise': return 'Merchandise';
-                            default: return 'Produk';
-                          }
-                        };
-
-                        setSelectedItem({ type: 'product' });
-                        setActionMode('add');
-
-                        // Set default form values based on active sub-menu
-                        const getDefaultFormValues = () => {
-                          switch (activePrintingSubMenu) {
-                            case 'undangan':
-                              return {
-                                name: 'Undangan Pernikahan Premium',
-                                description: 'Undangan pernikahan dengan desain elegan dan bahan berkualitas',
-                                price: '15000',
-                                discount_price: '',
-                                size_options: 'A5,A6',
-                                material_options: 'Art Paper 260gsm',
-                                color_options: 'Full Color',
-                                finishing_options: 'Offset',
-                                images: '',
-                                estimated_time: '3-5 hari',
-                                min_order: 25,
-                                features: 'Desain custom, bahan premium, finishing gold foil',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 1
-                              };
-                            case 'sablon-kaos':
-                              return {
-                                name: 'Kaos Custom Premium',
-                                description: 'Kaos dengan sablon custom untuk event dan merchandise',
-                                price: '45000',
-                                discount_price: '',
-                                size_options: 'S,M,L,XL',
-                                material_options: 'Cotton Combed 30s',
-                                color_options: 'Full Color',
-                                finishing_options: 'Screen Printing',
-                                images: '',
-                                estimated_time: '7-10 hari',
-                                min_order: 10,
-                                features: 'Bahan cotton combed, sablon berkualitas, berbagai ukuran',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 2
-                              };
-                            case 'banner':
-                              return {
-                                name: 'Banner Acara Custom',
-                                description: 'Banner untuk acara dengan bahan vinyl outdoor tahan cuaca',
-                                price: '75000',
-                                discount_price: '',
-                                size_options: '200x100cm',
-                                material_options: 'Vinyl Outdoor',
-                                color_options: 'Full Color',
-                                finishing_options: 'Eyelet,Hemming',
-                                images: '',
-                                estimated_time: '2-3 hari',
-                                min_order: 1,
-                                features: 'Bahan tahan cuaca, eyelet, hemning, full color printing',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 3
-                              };
-                            case 'id-card':
-                              return {
-                                name: 'ID Card Custom',
-                                description: 'ID Card untuk karyawan, event, atau organisasi dengan desain custom',
-                                price: '5000',
-                                discount_price: '',
-                                size_options: 'Standard (85.6 x 54 mm)',
-                                material_options: 'PVC Premium',
-                                color_options: 'Full Color',
-                                finishing_options: 'Laminasi Glossy',
-                                images: '',
-                                estimated_time: '3-5 hari',
-                                min_order: 50,
-                                features: 'Cetak full color, hologram security, tali lanyard included',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 4
-                              };
-                            case 'kartu-nama':
-                              return {
-                                name: 'Kartu Nama Premium',
-                                description: 'Kartu nama dengan desain profesional dan bahan berkualitas',
-                                price: '35000',
-                                discount_price: '',
-                                size_options: 'Standard (9 x 5.5 cm)',
-                                material_options: 'Art Paper 350gsm',
-                                color_options: 'Full Color',
-                                finishing_options: 'Spot UV',
-                                images: '',
-                                estimated_time: '3-5 hari',
-                                min_order: 100,
-                                features: 'Desain custom, finishing premium, packaging included',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 5
-                              };
-                            case 'brosur-flyer':
-                              return {
-                                name: 'Brosur/Flyer Promosi',
-                                description: 'Brosur atau flyer untuk promosi produk, event, atau bisnis',
-                                price: '500',
-                                discount_price: '',
-                                size_options: 'A4',
-                                material_options: 'Art Paper 150gsm',
-                                color_options: 'Full Color (CMYK)',
-                                finishing_options: 'Fold',
-                                images: '',
-                                estimated_time: '2-3 hari',
-                                min_order: 100,
-                                features: 'Cetak berkualitas tinggi, berbagai finishing',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 6
-                              };
-                            case 'stiker-label':
-                              return {
-                                name: 'Stiker Custom',
-                                description: 'Stiker dengan desain custom untuk produk, packaging, atau promosi',
-                                price: '2000',
-                                discount_price: '',
-                                size_options: 'Various (Custom)',
-                                material_options: 'Vinyl Glossy',
-                                color_options: 'Full Color',
-                                finishing_options: 'Die Cut',
-                                images: '',
-                                estimated_time: '3-5 hari',
-                                min_order: 100,
-                                features: 'Tahan air, durable, berbagai bentuk',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 7
-                              };
-                            case 'kemasan-produk':
-                              return {
-                                name: 'Kemasan Produk Custom',
-                                description: 'Kemasan produk custom untuk bisnis atau brand Anda',
-                                price: '5000',
-                                discount_price: '',
-                                size_options: 'Custom',
-                                material_options: 'Karton Premium',
-                                color_options: 'Full Color',
-                                finishing_options: 'Spot UV, Emboss',
-                                images: '',
-                                estimated_time: '7-14 hari',
-                                min_order: 500,
-                                features: 'Desain custom, finishing premium, berbagai ukuran',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 8
-                              };
-                            case 'merchandise':
-                              return {
-                                name: 'Merchandise Custom',
-                                description: 'Merchandise custom seperti mug, topi, atau giveaway',
-                                price: '25000',
-                                discount_price: '',
-                                size_options: 'Standard',
-                                material_options: 'Ceramic/Polyester',
-                                color_options: 'Full Color',
-                                finishing_options: 'Sublimation',
-                                images: '',
-                                estimated_time: '7-14 hari',
-                                min_order: 50,
-                                features: 'Bahan berkualitas, tahan lama, berbagai produk',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: 9
-                              };
-                            default:
-                              return {
-                                name: '',
-                                description: '',
-                                price: '',
-                                discount_price: '',
-                                size_options: '',
-                                material_options: '',
-                                color_options: '',
-                                finishing_options: '',
-                                images: '',
-                                estimated_time: '3-5 hari',
-                                min_order: 1,
-                                features: '',
-                                rating: 4.5,
-                                reviews_count: 0,
-                                is_featured: false,
-                                is_new: false,
-                                category_id: null
-                              };
-                          }
-                        };
-
-                        setPrintingProductForm(getDefaultFormValues());
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                    >
-                      <Plus size={20} />
-                      Tambah {activePrintingSubMenu === 'all' ? 'Produk' :
-                        activePrintingSubMenu === 'undangan' ? 'Undangan' :
-                          activePrintingSubMenu === 'sablon-kaos' ? 'Sablon' :
-                            activePrintingSubMenu === 'banner' ? 'Banner' :
-                              activePrintingSubMenu === 'id-card' ? 'ID Card' :
-                                activePrintingSubMenu === 'kartu-nama' ? 'Kartu Nama' :
-                                  activePrintingSubMenu === 'brosur-flyer' ? 'Brosur' :
-                                    activePrintingSubMenu === 'stiker-label' ? 'Stiker' :
-                                      activePrintingSubMenu === 'kemasan-produk' ? 'Kemasan' :
-                                        activePrintingSubMenu === 'merchandise' ? 'Merchandise' : 'Produk'}
-                    </button>
-                  )}
-                  {activeMenu === 'umrah-haji' && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setSelectedItem({ type: 'umrah' });
-                          setActionMode('add');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                      >
-                        <Plus size={20} />
-                        Tambah Paket Umrah
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedItem({ type: 'haji' });
-                          setActionMode('add');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                      >
-                        <Plus size={20} />
-                        Tambah Paket Haji
-                      </button>
-                    </>
-                  )}
-                  {!['printing', 'umrah-haji'].includes(activeMenu) && (
-                    <button
-                      onClick={() => setActionMode('add')}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                    >
-                      <Plus size={20} />
-                      Tambah Baru
-                    </button>
-                  )}
-                </div>
+              {actionMode === 'view' && !['dashboard', 'settings', 'appearance', 'printing', 'umrah-haji'].includes(activeMenu) && (
+                <button
+                  onClick={() => {
+                    resetForms();
+                    setActionMode('add');
+                  }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl hover:from-amber-600 hover:to-amber-700 shadow-sm shadow-amber-200/50 text-sm font-semibold transition-all active:scale-95 self-start"
+                >
+                  <Plus size={16} />
+                  <span>Tambah Baru</span>
+                </button>
               )}
             </div>
 
             {/* Content */}
             {renderContent()}
+          </div>
+        </main>
+      </div>
 
-            {/* Stats Overview */}
-            {activeMenu === 'dashboard' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mt-6">
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <h4 className="text-xs text-gray-500 mb-1">Gallery</h4>
-                  <p className="text-2xl font-bold">{galleryItems.length}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <h4 className="text-xs text-gray-500 mb-1">Testimonials</h4>
-                  <p className="text-2xl font-bold">{testimonials.length}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <h4 className="text-xs text-gray-500 mb-1">Packages</h4>
-                  <p className="text-2xl font-bold">{packages.length}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <h4 className="text-xs text-gray-500 mb-1">Venues</h4>
-                  <p className="text-2xl font-bold">{venues.length}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm">
-                  <h4 className="text-xs text-gray-500 mb-1">Printing</h4>
-                  <p className="text-2xl font-bold">{printingProducts.length}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500">
-                  <h4 className="text-xs text-gray-500 mb-1">Paket Umrah</h4>
-                  <p className="text-2xl font-bold text-green-600">{umrahPackages.length}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-purple-500">
-                  <h4 className="text-xs text-gray-500 mb-1">Paket Haji</h4>
-                  <p className="text-2xl font-bold text-purple-600">{hajiPackages.length}</p>
-                </div>
+      {/* ═══ MOBILE BOTTOM NAV ═══ */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/90 backdrop-blur-xl border-t border-slate-200/60 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-around px-2 h-16 max-w-lg mx-auto">
+          {mobileNavItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveMenu(item.id as MenuItem);
+                setActionMode('view');
+                resetForms();
+              }}
+              className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all min-w-[56px] ${
+                activeMenu === item.id
+                  ? 'text-amber-600'
+                  : 'text-slate-400 active:text-slate-600'
+              }`}
+            >
+              <span className={`transition-transform ${activeMenu === item.id ? 'scale-110' : ''}`}>{item.icon}</span>
+              <span className={`text-[10px] font-medium ${activeMenu === item.id ? 'font-bold' : ''}`}>{item.label}</span>
+              {activeMenu === item.id && <div className="w-4 h-0.5 rounded-full bg-amber-500 mt-0.5" />}
+            </button>
+          ))}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-slate-400 active:text-slate-600 min-w-[56px]"
+          >
+            <Menu size={20} />
+            <span className="text-[10px] font-medium">Lainnya</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  );
+};
+
+// Component untuk Dashboard dengan Ringkasan Paket Wedding, Printing, dan Umrah & Haji
+const DashboardContent = ({
+  weddingPackages = [],
+  printingProducts = [],
+  printingPackages = [],
+  umrahPackages = [],
+  hajiPackages = [],
+  stats = { gallery: 0, testimonials: 0, packages: 0, venues: 0, printing: 0, umrah: 0, haji: 0 },
+  onNavigate,
+  onEditWedding,
+  onAddWedding,
+  onEditPrinting,
+  onAddPrinting,
+  onEditUmrah,
+  onAddUmrah,
+  onEditHaji,
+  onAddHaji,
+}: any) => {
+  const [religiousTab, setReligiousTab] = useState<'all' | 'umrah' | 'haji'>('all');
+
+  const getWeddingFallbackImg = (name: string) => {
+    const n = (name || '').toLowerCase();
+    if (n.includes('diamond') || n.includes('royal') || n.includes('luxury')) {
+      return 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80';
+    } else if (n.includes('platinum') || n.includes('gold')) {
+      return 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80';
+  };
+
+  const getPrintingFallbackImg = (catId?: number) => {
+    switch (catId) {
+      case 1: return 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80';
+      case 2: return 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80';
+      case 3: return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80';
+      default: return 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80';
+    }
+  };
+
+  const formatPrintingSpec = (val: any) => {
+    if (!val) return '-';
+    if (Array.isArray(val)) return val.slice(0, 2).join(', ');
+    if (typeof val === 'string') {
+      const parts = val.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean);
+      return parts.slice(0, 2).join(', ') || '-';
+    }
+    return String(val);
+  };
+
+  const filteredReligious = useMemo(() => {
+    if (religiousTab === 'umrah') return umrahPackages.map(p => ({ ...p, _type: 'umrah' }));
+    if (religiousTab === 'haji') return hajiPackages.map(p => ({ ...p, _type: 'haji' }));
+    return [
+      ...umrahPackages.map(p => ({ ...p, _type: 'umrah' })),
+      ...hajiPackages.map(p => ({ ...p, _type: 'haji' }))
+    ];
+  }, [religiousTab, umrahPackages, hajiPackages]);
+
+  return (
+    <div className="space-y-8">
+      {/* 1. Hero Welcome Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-6 sm:p-8 shadow-xl border border-slate-800">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-amber-500/20 via-rose-500/10 to-transparent rounded-full -translate-y-1/3 translate-x-1/3 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-emerald-500/15 via-blue-500/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Sistem Aktif & Terintegrasi
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Pusat Manajemen Galeria 👋
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed font-light">
+              Kelola paket wedding eksklusif, produk percetakan digital, serta paket ibadah Umrah & Haji langsung dari dashboard terpadu.
+            </p>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={onAddWedding}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus size={14} />
+              <span>+ Paket Wedding</span>
+            </button>
+            <button
+              onClick={onAddPrinting}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md shadow-violet-600/20 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus size={14} />
+              <span>+ Produk Cetak</span>
+            </button>
+            <button
+              onClick={onAddUmrah}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus size={14} />
+              <span>+ Paket Umrah</span>
+            </button>
+            <button
+              onClick={() => window.open('/', '_blank')}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md transition-all"
+              title="Buka Website"
+            >
+              <Eye size={14} />
+              <span>Website</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Interactive Counter Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+        {[
+          { label: 'Paket Wedding', count: weddingPackages.length, icon: <Package size={18} />, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50 border-amber-100', text: 'text-amber-600', menu: 'packages' },
+          { label: 'Produk Cetak', count: printingProducts.length, icon: <Printer size={18} />, color: 'from-violet-500 to-violet-600', bg: 'bg-violet-50 border-violet-100', text: 'text-violet-600', menu: 'printing' },
+          { label: 'Paket Umrah', count: umrahPackages.length, icon: <Plane size={18} />, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-600', menu: 'umrah-haji' },
+          { label: 'Paket Haji', count: hajiPackages.length, icon: <Shield size={18} />, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-50 border-purple-100', text: 'text-purple-600', menu: 'umrah-haji' },
+          { label: 'Galeri Foto', count: stats.gallery, icon: <Image size={18} />, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50 border-blue-100', text: 'text-blue-600', menu: 'gallery' },
+          { label: 'Testimonial', count: stats.testimonials, icon: <MessageSquare size={18} />, color: 'from-pink-500 to-pink-600', bg: 'bg-pink-50 border-pink-100', text: 'text-pink-600', menu: 'testimonials' },
+          { label: 'Venue Rekanan', count: stats.venues, icon: <MapPin size={18} />, color: 'from-cyan-500 to-cyan-600', bg: 'bg-cyan-50 border-cyan-100', text: 'text-cyan-600', menu: 'venues' },
+        ].map((stat, i) => (
+          <div
+            key={i}
+            onClick={() => onNavigate && onNavigate(stat.menu as any)}
+            className="group bg-white rounded-2xl p-4 border border-slate-100 hover:border-amber-300 hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className={`w-9 h-9 rounded-xl ${stat.bg} border flex items-center justify-center ${stat.text} transition-transform group-hover:scale-110`}>
+                {stat.icon}
               </div>
-            )}
+              <span className="text-[11px] font-semibold text-slate-400 group-hover:text-amber-600 transition-colors">Buka →</span>
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{stat.count}</p>
+              <span className="text-xs font-medium text-slate-500 truncate block mt-0.5">{stat.label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* 3. PAKET WEDDING SECTION                                                   */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-100 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+              <Package size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-bold text-slate-900">Paket Pernikahan (Wedding)</h4>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
+                  {weddingPackages.length} Paket
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Katalog paket all-in wedding organizer, dekorasi, makeup, dan vendor lengkap.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={onAddWedding}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow-sm transition-all"
+            >
+              <Plus size={14} />
+              <span>Tambah Paket</span>
+            </button>
+            <button
+              onClick={() => onNavigate && onNavigate('packages')}
+              className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+            >
+              <span>Kelola Semua</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        {weddingPackages.length === 0 ? (
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <Package className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-600">Belum ada paket wedding</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Tambahkan paket pernikahan pertama Anda untuk mulai menampilkannya di website.
+            </p>
+            <button
+              onClick={onAddWedding}
+              className="mt-3 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl hover:bg-amber-600"
+            >
+              + Tambah Paket Wedding
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {weddingPackages.map((item: any) => {
+              const bannerImg = (item.images && Array.isArray(item.images) && item.images.length > 0)
+                ? item.images[0]
+                : (typeof item.images === 'string' && item.images.trim() ? item.images.split(',')[0].trim() : getWeddingFallbackImg(item.name));
+              
+              const featuresList = Array.isArray(item.features)
+                ? item.features
+                : (typeof item.features === 'string' ? item.features.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean) : []);
+
+              const hasDiscount = item.discount_price && Number(item.discount_price) > 0 && Number(item.discount_price) < Number(item.price);
+
+              return (
+                <div
+                  key={item.id}
+                  className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all flex flex-col group"
+                >
+                  <div className="relative h-40 overflow-hidden bg-slate-900">
+                    <img
+                      src={bannerImg}
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e: any) => { e.target.src = getWeddingFallbackImg(item.name); }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+                    
+                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
+                        {item.highlighted ? "★ PILIHAN UTAMA" : "PAKET WEDDING"}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shadow ${item.is_active !== false ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                        {item.is_active !== false ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-2 left-2.5">
+                      <span className="text-[11px] font-medium text-amber-300 backdrop-blur-md bg-black/50 px-2 py-0.5 rounded-md">
+                        {featuresList.length > 0 ? `${featuresList.length} Fasilitas All-In` : 'Vendor Lengkap'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <h5 className="font-serif font-bold text-base text-slate-900 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                        {item.name}
+                      </h5>
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                        {item.description || item.longDescription || "Paket pernikahan lengkap dengan koordinasi vendor profesional."}
+                      </p>
+
+                      <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Harga Paket</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-base font-extrabold text-slate-900">
+                              Rp {Number(item.price || 0).toLocaleString('id-ID')}
+                            </span>
+                            {hasDiscount && (
+                              <span className="text-xs text-rose-500 line-through">
+                                Rp {Number(item.discount_price).toLocaleString('id-ID')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-500 bg-white px-2 py-1 rounded-lg border">
+                          All-In
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex gap-2 border-t border-slate-100">
+                      <button
+                        onClick={() => onEditWedding && onEditWedding(item)}
+                        className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                      >
+                        <Edit size={13} />
+                        <span>Edit Paket</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* 4. PRODUK & PAKET PERCETAKAN (PRINTING) SECTION                           */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-100 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-600">
+              <Printer size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-bold text-slate-900">Produk & Paket Percetakan (Printing)</h4>
+                <span className="px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-xs font-bold">
+                  {printingProducts.length} Produk
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Katalog undangan pernikahan, sablon kaos, banner, stiker label, dan merchandise.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={onAddPrinting}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-sm transition-all"
+            >
+              <Plus size={14} />
+              <span>Tambah Produk</span>
+            </button>
+            <button
+              onClick={() => onNavigate && onNavigate('printing')}
+              className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+            >
+              <span>Kelola Semua</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        {printingProducts.length === 0 ? (
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <Printer className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-600">Belum ada produk percetakan</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Tambahkan produk cetak seperti undangan atau sablon untuk katalog pelanggan.
+            </p>
+            <button
+              onClick={onAddPrinting}
+              className="mt-3 px-4 py-2 bg-violet-600 text-white text-xs font-bold rounded-xl hover:bg-violet-700"
+            >
+              + Tambah Produk Percetakan
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {printingProducts.slice(0, 6).map((product: any) => {
+              const img = (product.images && Array.isArray(product.images) && product.images.length > 0)
+                ? product.images[0]
+                : (typeof product.images === 'string' && product.images.trim()
+                    ? product.images.split(',')[0].trim()
+                    : getPrintingFallbackImg(product.category_id));
+              
+              const hasDiscount = product.discount_price && Number(product.discount_price) > 0 && Number(product.discount_price) < Number(product.price);
+              const categoryLabel = product.category_name || (product.category_id === 1 ? 'Undangan' : product.category_id === 2 ? 'Sablon Kaos' : product.category_id === 3 ? 'Banner' : 'Percetakan');
+
+              return (
+                <div
+                  key={product.id}
+                  className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all flex flex-col group"
+                >
+                  <div className="relative h-40 bg-slate-100 overflow-hidden">
+                    <img
+                      src={img}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e: any) => { e.target.src = getPrintingFallbackImg(product.category_id); }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20" />
+
+                    <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
+                      <span className="px-2.5 py-0.5 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold rounded-lg flex items-center gap-1">
+                        <Tag size={10} className="text-amber-400" />
+                        <span>{categoryLabel}</span>
+                      </span>
+                      <span className="px-2 py-0.5 bg-violet-600 text-white text-[10px] font-bold rounded-lg shadow-sm">
+                        Min. {product.min_order || 1} pcs
+                      </span>
+                    </div>
+
+                    <div className="absolute top-2.5 right-2.5">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shadow ${product.is_active !== false ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                        {product.is_active !== false ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <h5 className="font-bold text-slate-800 text-base line-clamp-1 group-hover:text-violet-600 transition-colors">
+                        {product.name}
+                      </h5>
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                        {product.description || 'Kualitas cetak tajam, presisi, dan bahan premium.'}
+                      </p>
+
+                      <div className="mt-2.5 bg-slate-50 rounded-xl p-2 border border-slate-100 space-y-1 text-xs text-slate-600">
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-400">Bahan:</span>
+                          <span className="font-medium text-slate-700 truncate max-w-[160px]">{formatPrintingSpec(product.material_options)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-400">Estimasi:</span>
+                          <span className="font-medium text-slate-700">{product.estimated_time || '3-5 Hari'}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5">
+                        {hasDiscount ? (
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xs text-slate-400 line-through">
+                              Rp {Number(product.price).toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-base font-extrabold text-emerald-700">
+                              Rp {Number(product.discount_price).toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-medium">/ pcs</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-base font-extrabold text-slate-900">
+                              Rp {Number(product.price || 0).toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-medium">/ pcs</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex gap-2 border-t border-slate-100">
+                      <button
+                        onClick={() => onEditPrinting && onEditPrinting(product)}
+                        className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                      >
+                        <Edit size={13} />
+                        <span>Edit Produk</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* 5. PAKET UMRAH & HAJI SECTION                                             */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-100 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600">
+              <Globe size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-bold text-slate-900">Paket Ibadah Umrah & Haji</h4>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                  {umrahPackages.length + hajiPackages.length} Paket
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Katalog paket perjalanan ibadah Umrah Reguler/Plus, Haji Furoda & Mujamalah.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={onAddUmrah}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
+            >
+              <Plus size={14} />
+              <span>+ Umrah</span>
+            </button>
+            <button
+              onClick={onAddHaji}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all"
+            >
+              <Plus size={14} />
+              <span>+ Haji</span>
+            </button>
+            <button
+              onClick={() => onNavigate && onNavigate('umrah-haji')}
+              className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+            >
+              <span>Kelola Semua</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Filter sub tabs inside dashboard */}
+        <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl w-fit">
+          <button
+            onClick={() => setReligiousTab('all')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              religiousTab === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Semua ({umrahPackages.length + hajiPackages.length})
+          </button>
+          <button
+            onClick={() => setReligiousTab('umrah')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              religiousTab === 'umrah' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            🕋 Paket Umrah ({umrahPackages.length})
+          </button>
+          <button
+            onClick={() => setReligiousTab('haji')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              religiousTab === 'haji' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            🕌 Paket Haji ({hajiPackages.length})
+          </button>
+        </div>
+
+        {filteredReligious.length === 0 ? (
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <Globe className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-600">Belum ada paket perjalanan ibadah</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Tambahkan paket perjalanan Umrah atau Haji untuk membuka pendaftaran jamaah.
+            </p>
+            <div className="flex justify-center gap-2 mt-3">
+              <button
+                onClick={onAddUmrah}
+                className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700"
+              >
+                + Tambah Paket Umrah
+              </button>
+              <button
+                onClick={onAddHaji}
+                className="px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700"
+              >
+                + Tambah Paket Haji
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredReligious.slice(0, 6).map((pkg: any) => {
+              const isHaji = pkg._type === 'haji' || pkg.package_type === 'haji';
+              const img = (pkg.images && Array.isArray(pkg.images) && pkg.images.length > 0)
+                ? pkg.images[0]
+                : (typeof pkg.images === 'string' && pkg.images.trim()
+                    ? pkg.images.split(',')[0].trim()
+                    : (isHaji ? 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80' : 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80'));
+              
+              const hasDiscount = pkg.discount_price && Number(pkg.discount_price) > 0 && Number(pkg.discount_price) < Number(pkg.price);
+
+              return (
+                <div
+                  key={`${isHaji ? 'haji' : 'umrah'}-${pkg.id}`}
+                  className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all flex flex-col group"
+                >
+                  <div className="relative h-40 bg-slate-100 overflow-hidden">
+                    <img
+                      src={img}
+                      alt={pkg.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80'; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20" />
+
+                    <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
+                      <span className={`px-2.5 py-0.5 ${isHaji ? 'bg-purple-700' : 'bg-emerald-700'} text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm`}>
+                        {isHaji ? <Shield size={10} /> : <Plane size={10} />}
+                        <span>{isHaji ? (pkg.quota_year || 'Haji Furoda') : `${pkg.duration || 9} Hari`}</span>
+                      </span>
+                      {!isHaji && pkg.airline && (
+                        <span className="px-2 py-0.5 bg-black/70 backdrop-blur-md text-emerald-300 text-[10px] font-semibold rounded-lg">
+                          {pkg.airline}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="absolute top-2.5 right-2.5">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shadow ${pkg.is_active !== false ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                        {pkg.is_active !== false ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <h5 className="font-bold text-slate-800 text-base line-clamp-1 group-hover:text-emerald-600 transition-colors">
+                        {pkg.name}
+                      </h5>
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                        {pkg.description || 'Program ibadah terpercaya dengan fasilitas akomodasi premium.'}
+                      </p>
+
+                      <div className="mt-2.5 bg-slate-50 rounded-xl p-2 border border-slate-100 space-y-1 text-xs text-slate-600">
+                        {!isHaji ? (
+                          <>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span className="text-slate-400">Hotel Mekah:</span>
+                              <span className="font-medium text-slate-700 truncate max-w-[160px]">{pkg.hotel_mekah || 'Bintang 4/5 Dekat Haram'}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span className="text-slate-400">Sisa Seat:</span>
+                              <span className="font-bold text-emerald-700">{pkg.availability || 15} Kursi</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span className="text-slate-400">Tahun Kuota:</span>
+                              <span className="font-medium text-slate-700">{pkg.quota_year || '1446H'}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span className="text-slate-400">Sisa Kuota:</span>
+                              <span className="font-bold text-purple-700">{pkg.available_quota || 10} Jamaah</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="mt-2.5">
+                        {hasDiscount ? (
+                          <div>
+                            <span className="text-xs text-slate-400 line-through mr-1.5">
+                              Rp {Number(pkg.price).toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-base font-extrabold text-emerald-700">
+                              Rp {Number(pkg.discount_price).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-base font-extrabold text-slate-900">
+                            Rp {Number(pkg.price || 0).toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex gap-2 border-t border-slate-100">
+                      <button
+                        onClick={() => {
+                          if (isHaji) {
+                            onEditHaji && onEditHaji(pkg);
+                          } else {
+                            onEditUmrah && onEditUmrah(pkg);
+                          }
+                        }}
+                        className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                      >
+                        <Edit size={13} />
+                        <span>Edit Paket {isHaji ? 'Haji' : 'Umrah'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 6. Tips & Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center"><Info size={14} className="text-amber-600" /></div>
+            <h4 className="font-bold text-sm text-slate-800">Tips Pengelolaan Katalog</h4>
+          </div>
+          <ul className="space-y-2 text-xs text-slate-500">
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />Perbarui harga dan diskon paket secara berkala untuk menarik pelanggan.</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />Cantumkan minimal order dan spesifikasi bahan pada produk cetak.</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />Pastikan ketersediaan seat dan jadwal keberangkatan umrah selalu terupdate.</li>
+            <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />Gunakan foto berkualitas tinggi dengan rasio lanskap pada semua paket.</li>
+          </ul>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center"><Clock size={14} className="text-blue-600" /></div>
+            <h4 className="font-bold text-sm text-slate-800">Status Modul Sistem</h4>
+          </div>
+          <div className="space-y-2.5 text-xs text-slate-600">
+            {[
+              { title: 'Modul Paket Wedding', status: `${weddingPackages.length} Paket terdaftar`, dot: 'bg-amber-400' },
+              { title: 'Modul Produk Percetakan', status: `${printingProducts.length} Produk aktif`, dot: 'bg-violet-400' },
+              { title: 'Modul Umrah & Haji', status: `${umrahPackages.length} Umrah, ${hajiPackages.length} Haji`, dot: 'bg-emerald-400' },
+              { title: 'Katalog & Galeri Foto', status: `${stats.gallery} Foto tersimpan`, dot: 'bg-blue-400' },
+              { title: 'Ulasan & Testimonial', status: `${stats.testimonials} Ulasan aktif`, dot: 'bg-pink-400' },
+            ].map((mod, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${mod.dot}`} />
+                  <span className="font-semibold text-slate-800 truncate">{mod.title}</span>
+                </div>
+                <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">{mod.status}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -3118,67 +4054,36 @@ const Admin = () => {
   );
 };
 
-// Component untuk masing-masing konten
-const DashboardContent = () => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <h3 className="text-lg font-bold mb-4">Selamat Datang di Admin Panel</h3>
-    <p className="text-gray-600 mb-4">
-      Gunakan panel ini untuk mengelola semua konten website Galeria Wedding.
-    </p>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="border rounded-lg p-4">
-        <h4 className="font-semibold mb-2">💡 Tips</h4>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Upload gambar dengan ukuran optimal untuk performa terbaik</li>
-          <li>• Perbarui testimonial secara berkala</li>
-          <li>• Cek semua tautan video sebelum dipublikasi</li>
-          <li>• Update status order percetakan secara berkala</li>
-          <li>• Periksa ketersediaan paket umrah & haji</li>
-        </ul>
-      </div>
-      <div className="border rounded-lg p-4">
-        <h4 className="font-semibold mb-2">📊 Aktivitas Terbaru</h4>
-        <div className="text-sm text-gray-600 space-y-2">
-          <p>• Testimonial baru ditambahkan (1 jam yang lalu)</p>
-          <p>• Gallery diupdate (2 hari yang lalu)</p>
-          <p>• Package harga diperbarui (3 hari yang lalu)</p>
-          <p>• Order percetakan baru (5 menit yang lalu)</p>
-          <p>• Booking umrah dikonfirmasi (1 jam yang lalu)</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 const GalleryContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((item: any) => (
-        <div key={item.id} className="border rounded-lg overflow-hidden">
-          <div className="aspect-video bg-gray-100 flex items-center justify-center">
+        <div key={item.id} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
+          <div className="aspect-video bg-slate-50 relative overflow-hidden">
             {item.image ? (
-              <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+              <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             ) : (
-              <Image className="text-gray-400" size={40} />
+              <div className="w-full h-full flex items-center justify-center">
+                <Image className="text-slate-300" size={40} />
+              </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="p-4">
-            <h4 className="font-semibold">{item.title}</h4>
-            <p className="text-sm text-gray-500">{item.category}</p>
+            <h4 className="font-semibold text-sm text-slate-800 truncate">{item.title}</h4>
+            <p className="text-xs text-slate-400 mt-0.5">{item.category}</p>
             <div className="flex gap-2 mt-3">
               <button
                 onClick={() => onEdit(item)}
-                className="flex-1 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                className="flex-1 py-2 bg-slate-900 text-amber-400 rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors flex items-center justify-center gap-1"
               >
-                <Edit size={16} className="inline mr-1" />
-                Edit
+                <Edit size={13} /> Edit
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                className="flex-1 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                className="py-2 px-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold hover:bg-rose-100 transition-colors border border-rose-200/50"
               >
-                <Trash2 size={16} className="inline mr-1" />
-                Hapus
+                <Trash2 size={13} />
               </button>
             </div>
           </div>
@@ -3189,178 +4094,267 @@ const GalleryContent = ({ items, onEdit, onDelete }: any) => (
 );
 
 const TestimonialsContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="space-y-4">
-      {items.map((item: any) => (
-        <div key={item.id} className="border rounded-lg p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h4 className="font-semibold">{item.name}</h4>
-              <p className="text-sm text-gray-500">{item.date}</p>
-              <div className="flex items-center gap-1 mt-1">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-yellow-400">★</span>
-                ))}
+  <div className="space-y-3">
+    {items.map((item: any) => (
+      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 text-xs font-bold flex-shrink-0">
+                {(item.name || 'U')[0].toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-semibold text-sm text-slate-800 truncate">{item.name}</h4>
+                <p className="text-[11px] text-slate-400">{item.date}</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onEdit(item)}
-                className="p-2 hover:bg-gray-100 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="p-2 hover:bg-red-100 rounded text-red-600"
-              >
-                <Trash2 size={16} />
-              </button>
+            <div className="flex items-center gap-0.5 mt-1.5 ml-10">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
+              ))}
             </div>
           </div>
+          <div className="flex gap-1.5 flex-shrink-0">
+            <button
+              onClick={() => onEdit(item)}
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 hover:text-slate-700"
+            >
+              <Edit size={14} />
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              className="p-2 hover:bg-rose-50 rounded-xl transition-colors text-rose-400 hover:text-rose-600"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
-      ))}
-    </div>
+      </div>
+    ))}
   </div>
 );
 
-const PackagesContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="space-y-4">
-      {items.map((item: any) => (
-        <div key={item.id} className="border rounded-lg p-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="font-semibold">{item.name}</h4>
-              <p className="text-gray-600">Rp {item.price.toLocaleString()}</p>
-              {item.highlighted && (
-                <span className="inline-block px-2 py-1 mt-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                  ★ Pilihan Utama
-                </span>
-              )}
+const PackagesContent = ({ items, onEdit, onDelete }: any) => {
+  const getFallbackImage = (name: string) => {
+    const n = (name || '').toLowerCase();
+    if (n.includes('diamond') || n.includes('royal') || n.includes('luxury')) {
+      return 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80';
+    } else if (n.includes('platinum') || n.includes('gold')) {
+      return 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {items.map((item: any) => {
+          const bannerImg = (item.images && Array.isArray(item.images) && item.images.length > 0)
+            ? item.images[0]
+            : (typeof item.images === 'string' && item.images.trim() ? item.images.split(',')[0].trim() : getFallbackImage(item.name));
+          
+          const featuresList = Array.isArray(item.features)
+            ? item.features
+            : (typeof item.features === 'string' ? item.features.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean) : []);
+
+          return (
+            <div key={item.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group">
+              {/* Card Banner */}
+              <div className="relative h-44 overflow-hidden bg-slate-900">
+                <img
+                  src={bannerImg}
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+                
+                {/* Badges Top */}
+                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                  <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow">
+                    {item.highlighted ? "★ PILIHAN UTAMA" : "PAKET WEDDING"}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold shadow ${item.is_active !== false ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                    {item.is_active !== false ? 'Aktif di Web' : 'Non-Aktif'}
+                  </span>
+                </div>
+
+                {/* Subtitle Badge Bottom */}
+                <div className="absolute bottom-2.5 left-3">
+                  <span className="text-[11px] font-medium text-amber-300 backdrop-blur-md bg-black/40 px-2 py-0.5 rounded-md border border-white/10">
+                    Vendor Terkoordinasi Penuh
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                <div>
+                  <h4 className="font-serif font-bold text-lg text-slate-900 leading-tight mb-1.5 group-hover:text-amber-600 transition-colors">
+                    {item.name}
+                  </h4>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {item.description || item.longDescription || "Paket pernikahan all-in lengkap dengan fasilitas vendor eksklusif."}
+                  </p>
+
+                  {/* Price Block */}
+                  <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Investasi Pernikahan</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-base font-extrabold text-slate-900">
+                          Rp {Number(item.price || 0).toLocaleString('id-ID')}
+                        </span>
+                        {item.discount_price && Number(item.discount_price) > 0 && (
+                          <span className="text-xs text-rose-500 line-through">
+                            Rp {Number(item.discount_price).toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-500 bg-white px-2 py-1 rounded-lg border">
+                      All-In Package
+                    </span>
+                  </div>
+
+                  {/* Feature Bullets Count */}
+                  {featuresList.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <Sparkles size={14} className="text-amber-500 flex-shrink-0" />
+                        <span className="font-medium">{featuresList.length} Layanan Vendor & Fasilitas Termasuk</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 flex gap-2 border-t border-slate-100">
+                  <button
+                    onClick={() => onEdit(item)}
+                    className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <Edit size={14} />
+                    <span>Edit Paket</span>
+                  </button>
+                  <button
+                    onClick={() => onDelete(item.id)}
+                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all border border-rose-200"
+                    title="Hapus Paket"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onEdit(item)}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const VenuesContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {items.map((item: any) => (
-        <div key={item.id} className="border rounded-lg overflow-hidden">
-          <div className="aspect-video bg-gray-100 flex items-center justify-center">
-            {item.image ? (
-              <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-            ) : (
-              <MapPin className="text-gray-400" size={40} />
-            )}
-          </div>
-          <div className="p-4">
-            <h4 className="font-semibold">{item.title}</h4>
-            <p className="text-sm text-gray-500">{item.category}</p>
-            <p className="text-gray-600">{item.price}</p>
-            {item.capacity && (
-              <p className="text-sm text-gray-500">Kapasitas: {item.capacity}</p>
-            )}
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => onEdit(item)}
-                className="flex-1 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-              >
-                <Edit size={16} className="inline mr-1" />
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="flex-1 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                <Trash2 size={16} className="inline mr-1" />
-                Hapus
-              </button>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {items.map((item: any) => (
+      <div key={item.id} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
+        <div className="aspect-video bg-slate-50 relative overflow-hidden">
+          {item.image ? (
+            <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <MapPin className="text-slate-300" size={40} />
             </div>
+          )}
+          {item.capacity && (
+            <span className="absolute top-3 right-3 px-2 py-0.5 bg-white/90 backdrop-blur-sm rounded-full text-[10px] font-semibold text-slate-700 shadow-sm">
+              <Users size={10} className="inline mr-0.5" /> {item.capacity}
+            </span>
+          )}
+        </div>
+        <div className="p-4">
+          <h4 className="font-semibold text-sm text-slate-800 truncate">{item.title}</h4>
+          <p className="text-xs text-slate-400 mt-0.5">{item.category}</p>
+          {item.price && <p className="text-xs font-semibold text-amber-600 mt-1">{item.price}</p>}
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => onEdit(item)}
+              className="flex-1 py-2 bg-slate-900 text-amber-400 rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors flex items-center justify-center gap-1"
+            >
+              <Edit size={13} /> Edit
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              className="py-2 px-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold hover:bg-rose-100 transition-colors border border-rose-200/50"
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
         </div>
-      ))}
-    </div>
+      </div>
+    ))}
   </div>
 );
 
 const VideosContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="space-y-4">
-      {items.map((item: any) => (
-        <div key={item.id} className="border rounded-lg p-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="font-semibold">{item.title}</h4>
-              <p className="text-sm text-gray-500">{item.description}</p>
+  <div className="space-y-3">
+    {items.map((item: any) => (
+      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
+              <Video size={18} className="text-violet-500" />
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onEdit(item)}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Hapus
-              </button>
+            <div className="min-w-0">
+              <h4 className="font-semibold text-sm text-slate-800 truncate">{item.title}</h4>
+              <p className="text-xs text-slate-400 truncate">{item.description}</p>
             </div>
           </div>
+          <div className="flex gap-1.5 flex-shrink-0">
+            <button
+              onClick={() => onEdit(item)}
+              className="px-3 py-1.5 bg-slate-900 text-amber-400 rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold hover:bg-rose-100 transition-colors border border-rose-200/50"
+            >
+              Hapus
+            </button>
+          </div>
         </div>
-      ))}
-    </div>
+      </div>
+    ))}
   </div>
 );
 
 const StatsContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="space-y-4">
-      {items.map((item: any) => (
-        <div key={item.id} className="border rounded-lg p-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="font-semibold">{item.label}</h4>
-              <p className="text-2xl font-bold text-primary">{Number(item.value) || 0}+</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onEdit(item)}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-              >
-                Hapus
-              </button>
-            </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {items.map((item: any) => (
+      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="text-xs font-medium text-slate-400 uppercase tracking-wider">{item.label}</h4>
+            <p className="text-3xl font-extrabold text-slate-900 mt-1">{Number(item.value) || 0}<span className="text-amber-500">+</span></p>
+          </div>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => onEdit(item)}
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 hover:text-slate-700"
+            >
+              <Edit size={14} />
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              className="p-2 hover:bg-rose-50 rounded-xl transition-colors text-rose-400 hover:text-rose-600"
+            >
+              <Trash2 size={14} />
+            </button>
           </div>
         </div>
-      ))}
-    </div>
+      </div>
+    ))}
   </div>
 );
 
@@ -3398,60 +4392,59 @@ const WeddingShowContent = ({ items, onEdit, onDelete, onUpdate }: any) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((item: any) => (
-          <div key={item.id} className="border rounded-lg overflow-hidden">
-            <div className="aspect-video bg-gray-100 flex items-center justify-center">
-              {item.thumbnail ? (
-                <img src={item.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
-              ) : item.videoPath ? (
-                <video src={item.videoPath} className="w-full h-full object-cover" />
-              ) : (
-                <Video className="text-gray-400" size={40} />
-              )}
-            </div>
-            <div className="p-4">
-              <p className="text-sm text-gray-500">Video ID: {item.id}</p>
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => onEdit(item)}
-                  className="flex-1 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                >
-                  <Edit size={16} className="inline mr-1" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(item.id)}
-                  className="flex-1 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
-                >
-                  <Trash2 size={16} className="inline mr-1" />
-                  Hapus
-                </button>
-                <label className={`flex-1 py-2 rounded hover:bg-green-200 cursor-pointer text-center ${uploadingStates[item.id]
-                    ? 'bg-gray-100 text-gray-500'
-                    : 'bg-green-100 text-green-700'
-                  }`}>
-                  <Upload size={16} className="inline mr-1" />
-                  {uploadingStates[item.id] ? 'Uploading...' : 'Upload Thumbnail'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingStates[item.id]}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleUploadThumbnail(item.id, file);
-                      }
-                    }}
-                  />
-                </label>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {items.map((item: any) => (
+        <div key={item.id} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
+          <div className="aspect-video bg-slate-50 relative overflow-hidden">
+            {item.thumbnail ? (
+              <img src={item.thumbnail} alt="Thumbnail" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            ) : item.videoPath ? (
+              <video src={item.videoPath} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Video className="text-slate-300" size={40} />
               </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-slate-400 mb-2">Video ID: {item.id}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onEdit(item)}
+                className="flex-1 py-2 bg-slate-900 text-amber-400 rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors flex items-center justify-center gap-1"
+              >
+                <Edit size={13} /> Edit
+              </button>
+              <button
+                onClick={() => onDelete(item.id)}
+                className="py-2 px-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold hover:bg-rose-100 transition-colors border border-rose-200/50"
+              >
+                <Trash2 size={13} />
+              </button>
+              <label className={`flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer text-center flex items-center justify-center gap-1 transition-colors border ${uploadingStates[item.id]
+                  ? 'bg-slate-50 text-slate-400 border-slate-200'
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-200/50 hover:bg-emerald-100'
+                }`}>
+                <Upload size={13} />
+                {uploadingStates[item.id] ? 'Uploading...' : 'Thumbnail'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingStates[item.id]}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleUploadThumbnail(item.id, file);
+                    }
+                  }}
+                />
+              </label>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -3495,21 +4488,16 @@ const UmrahHajiAdminContent = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-bold mb-4">Kelola Umrah & Haji</h3>
-        <p className="text-gray-600">Kelola paket umrah, haji, dan booking pelanggan</p>
-      </div>
-
+    <div className="space-y-5">
       {/* Sub-menu Tabs */}
-      <div className="flex gap-1 mb-6 border-b">
+      <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl w-fit">
         {subMenuTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveSubMenu(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 transition-colors ${activeSubMenu === tab.id
-                ? 'text-primary border-primary'
-                : 'text-gray-600 border-transparent hover:text-primary'
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeSubMenu === tab.id
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
               }`}
           >
             {tab.icon}
@@ -3520,108 +4508,261 @@ const UmrahHajiAdminContent = ({
 
       {activeSubMenu === 'umrah' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="text-lg font-semibold">Paket Umrah</h4>
+          <div className="flex justify-between items-center bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+            <div>
+              <h4 className="text-base font-bold text-slate-800">Daftar Paket Umrah ({umrahPackages.length})</h4>
+              <p className="text-xs text-slate-500">Kelola paket perjalanan ibadah umrah reguler, plus, dan vip</p>
+            </div>
             <button
               onClick={onAddUmrah}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all"
             >
               <Plus size={16} />
               Tambah Paket Umrah
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {umrahPackages.map((pkg: any) => (
-              <div key={pkg.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h5 className="font-semibold">{pkg.name}</h5>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => onEditUmrah(pkg)}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button
-                      onClick={() => onDeleteUmrah(pkg.id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+
+          {umrahPackages.length === 0 ? (
+            <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <Plane className="mx-auto text-slate-300 mb-2" size={40} />
+              <p className="text-slate-500 text-sm font-medium">Belum ada paket Umrah</p>
+              <button
+                onClick={onAddUmrah}
+                className="mt-3 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700"
+              >
+                + Tambah Paket Pertama
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {umrahPackages.map((pkg: any) => {
+                const img = Array.isArray(pkg.images) && pkg.images.length > 0 ? pkg.images[0] : (typeof pkg.images === 'string' && pkg.images ? pkg.images.split(',')[0].trim() : 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80');
+                const hasDiscount = pkg.discount_price && Number(pkg.discount_price) > 0 && Number(pkg.discount_price) < Number(pkg.price);
+
+                return (
+                  <div key={pkg.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                    <div className="relative h-44 bg-slate-100 overflow-hidden group">
+                      <img
+                        src={img}
+                        alt={pkg.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80'; }}
+                      />
+                      <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
+                        <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold rounded-lg flex items-center gap-1">
+                          <Plane size={11} className="text-emerald-400" />
+                          {pkg.airline || 'Saudi Airlines'}
+                        </span>
+                        <span className="px-2 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-lg">
+                          {pkg.duration} Hari
+                        </span>
+                      </div>
+                      <div className="absolute top-2.5 right-2.5">
+                        {pkg.is_active ? (
+                          <span className="px-2 py-0.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-md">
+                            Aktif
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-rose-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-md">
+                            Nonaktif
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <h5 className="font-bold text-slate-800 text-base line-clamp-1">{pkg.name}</h5>
+                        </div>
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-2.5">{pkg.description || 'Program ibadah umrah lengkap dan terpercaya.'}</p>
+                        
+                        <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5 text-xs text-slate-600 mb-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Hotel Mekah:</span>
+                            <span className="font-medium text-slate-700 truncate max-w-[170px]">{pkg.hotel_mekah || '-'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Jarak Haram:</span>
+                            <span className="font-medium text-slate-700">{pkg.distance_haram || '150m'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Berangkat:</span>
+                            <span className="font-medium text-slate-700">{pkg.departure_city || 'Jakarta'}</span>
+                          </div>
+                        </div>
+
+                        {/* Pricing */}
+                        <div className="pt-1">
+                          {hasDiscount ? (
+                            <div>
+                              <span className="text-xs text-slate-400 line-through mr-2">{formatPrice(pkg.price)}</span>
+                              <span className="text-base font-extrabold text-emerald-700">{formatPrice(pkg.discount_price)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-base font-extrabold text-slate-900">{formatPrice(pkg.price)}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <div className="flex gap-1">
+                          {pkg.featured && (
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-semibold rounded-md border border-amber-200">Featured</span>
+                          )}
+                          {pkg.best_seller && (
+                            <span className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-semibold rounded-md border border-rose-200">Best Seller</span>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => onEditUmrah(pkg)}
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+                            title="Edit Paket"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDeleteUmrah(pkg.id)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors"
+                            title="Hapus Paket"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
-                <div className="text-sm">
-                  <p><strong>Harga:</strong> {formatPrice(pkg.price)}</p>
-                  <p><strong>Durasi:</strong> {pkg.duration} hari</p>
-                  <p><strong>Keberangkatan:</strong> {pkg.departure_city}</p>
-                </div>
-                <div className="mt-2 flex gap-1">
-                  {pkg.featured && (
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Featured</span>
-                  )}
-                  {pkg.is_active ? (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Aktif</span>
-                  ) : (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">Nonaktif</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {activeSubMenu === 'haji' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="text-lg font-semibold">Paket Haji</h4>
+          <div className="flex justify-between items-center bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+            <div>
+              <h4 className="text-base font-bold text-slate-800">Daftar Paket Haji ({hajiPackages.length})</h4>
+              <p className="text-xs text-slate-500">Kelola paket Haji Plus, Furoda Mujamalah, dan Khusus</p>
+            </div>
             <button
               onClick={onAddHaji}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all"
             >
               <Plus size={16} />
               Tambah Paket Haji
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {hajiPackages.map((pkg: any) => (
-              <div key={pkg.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h5 className="font-semibold">{pkg.name}</h5>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => onEditHaji(pkg)}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button
-                      onClick={() => onDeleteHaji(pkg.id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+
+          {hajiPackages.length === 0 ? (
+            <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <Shield className="mx-auto text-slate-300 mb-2" size={40} />
+              <p className="text-slate-500 text-sm font-medium">Belum ada paket Haji</p>
+              <button
+                onClick={onAddHaji}
+                className="mt-3 px-4 py-2 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700"
+              >
+                + Tambah Paket Pertama
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {hajiPackages.map((pkg: any) => {
+                const img = Array.isArray(pkg.images) && pkg.images.length > 0 ? pkg.images[0] : (typeof pkg.images === 'string' && pkg.images ? pkg.images.split(',')[0].trim() : 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=600&q=80');
+                const hasDiscount = pkg.discount_price && Number(pkg.discount_price) > 0 && Number(pkg.discount_price) < Number(pkg.price);
+                const acc = pkg.accommodation_details || {};
+
+                return (
+                  <div key={pkg.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                    <div className="relative h-44 bg-slate-100 overflow-hidden group">
+                      <img
+                        src={img}
+                        alt={pkg.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=600&q=80'; }}
+                      />
+                      <div className="absolute top-2.5 left-2.5">
+                        <span className="px-2.5 py-1 bg-purple-900/80 backdrop-blur-md text-white text-[11px] font-bold rounded-lg">
+                          {pkg.quota_year || '1446H'}
+                        </span>
+                      </div>
+                      <div className="absolute top-2.5 right-2.5">
+                        {pkg.is_active ? (
+                          <span className="px-2 py-0.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-md">
+                            Aktif
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-rose-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-md">
+                            Nonaktif
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div>
+                        <h5 className="font-bold text-slate-800 text-base line-clamp-1 mb-1">{pkg.name}</h5>
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-2.5">{pkg.description || 'Paket ibadah haji langsung berangkat tanpa antre.'}</p>
+                        
+                        <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5 text-xs text-slate-600 mb-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Hotel Mekah:</span>
+                            <span className="font-medium text-slate-700 truncate max-w-[170px]">{acc.mekah?.hotel || '-'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Hotel Madinah:</span>
+                            <span className="font-medium text-slate-700 truncate max-w-[170px]">{acc.madinah?.hotel || '-'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Sisa Kuota:</span>
+                            <span className="font-bold text-purple-700">{pkg.available_quota || 0} Seat</span>
+                          </div>
+                        </div>
+
+                        {/* Pricing */}
+                        <div className="pt-1">
+                          {hasDiscount ? (
+                            <div>
+                              <span className="text-xs text-slate-400 line-through mr-2">{formatPrice(pkg.price)}</span>
+                              <span className="text-base font-extrabold text-purple-700">{formatPrice(pkg.discount_price)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-base font-extrabold text-slate-900">{formatPrice(pkg.price)}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <div className="flex gap-1">
+                          {pkg.featured && (
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-semibold rounded-md border border-amber-200">Featured</span>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => onEditHaji(pkg)}
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+                            title="Edit Paket"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDeleteHaji(pkg.id)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors"
+                            title="Hapus Paket"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
-                <div className="text-sm">
-                  <p><strong>Harga:</strong> {formatPrice(pkg.price)}</p>
-                  <p><strong>Kuota:</strong> {pkg.quota_year}</p>
-                </div>
-                <div className="mt-2 flex gap-1">
-                  {pkg.featured && (
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Featured</span>
-                  )}
-                  {pkg.is_active ? (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Aktif</span>
-                  ) : (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">Nonaktif</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -3706,6 +4847,7 @@ const UmrahHajiAdminContent = ({
 const PrintingAdminContent = ({
   activeSubMenu,
   products,
+  categories = [],
   onEditProduct,
   onDeleteProduct,
   onAddProduct,
@@ -3727,13 +4869,48 @@ const PrintingAdminContent = ({
     );
   };
 
-  // Format price
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const getCategoryName = (catId: number) => {
+    const found = (categories || []).find((c: any) => c.id === catId);
+    if (found) return found.name;
+    switch (catId) {
+      case 1: return 'Undangan Pernikahan';
+      case 2: return 'Sablon Kaos';
+      case 3: return 'Banner & Spanduk';
+      case 4: return 'ID Card';
+      case 5: return 'Kartu Nama';
+      case 6: return 'Brosur & Flyer';
+      case 7: return 'Stiker & Label';
+      case 8: return 'Kemasan Produk';
+      case 9: return 'Merchandise';
+      default: return 'Produk Percetakan';
+    }
+  };
+
+  const getFallbackProductImage = (catId: number) => {
+    switch (catId) {
+      case 1: return 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=600&q=80';
+      case 2: return 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80';
+      case 3: return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80';
+      default: return 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80';
+    }
+  };
+
+  const formatSpec = (val: any) => {
+    if (!val) return '-';
+    if (Array.isArray(val)) return val.slice(0, 2).join(', ');
+    if (typeof val === 'string') {
+      const parts = val.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean);
+      return parts.slice(0, 2).join(', ') || '-';
+    }
+    return String(val);
   };
 
   // Filter products based on active sub-menu
@@ -3759,7 +4936,7 @@ const PrintingAdminContent = ({
     } else if (activeSubMenu === 'merchandise' || activeSubMenu === '9') {
       return product.category_id === 9;
     }
-    return true; // Show all if no specific category
+    return true;
   });
 
   const subMenuTabs = [
@@ -3776,22 +4953,18 @@ const PrintingAdminContent = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-bold mb-4">Kelola Produk Printing</h3>
-        <p className="text-gray-600">Produk yang ditampilkan di halaman printing client</p>
-      </div>
-
-      {/* Sub-menu Tabs */}
-      <div className="flex gap-1 mb-6 border-b">
+    <div className="space-y-5">
+      {/* Category Tabs */}
+      <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl overflow-x-auto admin-scrollbar">
         {subMenuTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onSubMenuChange(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 font-medium border-b-2 transition-colors ${activeSubMenu === tab.id
-                ? 'text-primary border-primary'
-                : 'text-gray-600 border-transparent hover:text-primary'
-              }`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+              activeSubMenu === tab.id
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
           >
             {tab.icon}
             <span>{tab.label}</span>
@@ -3799,144 +4972,180 @@ const PrintingAdminContent = ({
         ))}
       </div>
 
-      {/* Products Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produk</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Order</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredProducts.map((product: any) => (
-              <tr key={product.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-12 w-12">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          className="h-12 w-12 rounded-lg object-cover"
-                          src={product.images[0]}
-                          alt={product.name}
-                        />
-                      ) : (
-                        <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <Printer className="h-6 w-6 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                        {product.name}
-                        {product.is_featured && (
-                          <Sparkles size={14} className="text-yellow-500" />
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500 line-clamp-1 max-w-xs">
-                        {product.description}
-                      </div>
-                      {product.discount_price && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Diskon {Math.round((1 - product.discount_price / product.price) * 100)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <div>
-                    {product.discount_price ? (
-                      <>
-                        <div className="text-sm font-medium text-red-600">
-                          {formatPrice(product.discount_price)}
-                        </div>
-                        <div className="text-xs text-gray-500 line-through">
-                          {formatPrice(product.price)}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatPrice(product.price)}
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-500">
-                      per {product.min_order} pcs
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="text-sm text-gray-900">{product.min_order} pcs</div>
-                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                    <Clock size={12} />
-                    {product.estimated_time}
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex flex-col gap-1">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${product.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                      }`}>
-                      {product.is_active ? 'Aktif' : 'Nonaktif'}
+      {/* Top Header Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <div>
+          <h4 className="text-sm font-bold text-slate-900">
+            Daftar Produk Percetakan ({filteredProducts.length})
+          </h4>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Kelola katalog produk percetakan, spesifikasi, dan harga
+          </p>
+        </div>
+        <button
+          onClick={onAddProduct}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-amber-200/50 transition-all active:scale-95 whitespace-nowrap self-start sm:self-auto"
+        >
+          <Plus size={14} />
+          <span>Tambah Produk Cetak</span>
+        </button>
+      </div>
+
+      {/* Card Grid Layout */}
+      {filteredProducts.length === 0 ? (
+        <div className="text-center py-16 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <Printer className="w-16 h-16 text-slate-300 mx-auto mb-3" />
+          <h4 className="text-base font-bold text-slate-700 mb-1">
+            Belum ada produk untuk kategori ini
+          </h4>
+          <p className="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
+            Klik tombol "Tambah Produk Cetak" untuk menambahkan item baru ke dalam katalog.
+          </p>
+          <button
+            onClick={onAddProduct}
+            className="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm"
+          >
+            + Tambah Produk Pertama
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredProducts.map((product: any) => {
+            const img = (product.images && Array.isArray(product.images) && product.images.length > 0)
+              ? product.images[0]
+              : (typeof product.images === 'string' && product.images.trim()
+                  ? product.images.split(',')[0].trim()
+                  : getFallbackProductImage(product.category_id));
+            
+            const hasDiscount = product.discount_price && Number(product.discount_price) > 0 && Number(product.discount_price) < Number(product.price);
+            const categoryLabel = product.category_name || getCategoryName(product.category_id);
+
+            return (
+              <div
+                key={product.id}
+                className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col group"
+              >
+                {/* Thumbnail Banner */}
+                <div className="relative h-44 bg-slate-100 overflow-hidden">
+                  <img
+                    src={img}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e: any) => { e.target.src = getFallbackProductImage(product.category_id); }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20" />
+
+                  {/* Top-Left Badges */}
+                  <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 max-w-[70%]">
+                    <span className="px-2.5 py-1 bg-black/65 backdrop-blur-md text-white text-[10px] font-semibold rounded-lg flex items-center gap-1">
+                      <Tag size={10} className="text-amber-400" />
+                      <span className="truncate max-w-[120px]">{categoryLabel}</span>
                     </span>
+                    <span className="px-2 py-1 bg-amber-500 text-slate-950 text-[10px] font-bold rounded-lg shadow-sm">
+                      Min. {product.min_order || 1} pcs
+                    </span>
+                  </div>
+
+                  {/* Top-Right Badges */}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
                     {product.is_featured && (
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        Featured
+                      <span className="p-1 bg-amber-400 text-slate-950 rounded-md shadow" title="Produk Unggulan">
+                        <Sparkles size={11} />
+                      </span>
+                    )}
+                    {product.is_active !== false ? (
+                      <span className="px-2 py-0.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-md shadow">
+                        Aktif
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-rose-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-md shadow">
+                        Nonaktif
                       </span>
                     )}
                   </div>
-                </td>
-                <td className="px-4 py-4">
-                  {renderStars(product.rating || 4.5)}
-                  <div className="text-xs text-gray-500 mt-1">
-                    {product.reviews_count || 0} reviews
+                </div>
+
+                {/* Card Body */}
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div>
+                    <h5 className="font-bold text-slate-800 text-base line-clamp-1 mb-1 group-hover:text-amber-600 transition-colors">
+                      {product.name}
+                    </h5>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-2.5">
+                      {product.description || 'Produk percetakan premium dengan kualitas cetak tajam dan presisi.'}
+                    </p>
+
+                    {/* Specs Box */}
+                    <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5 text-xs text-slate-600 mb-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Bahan:</span>
+                        <span className="font-medium text-slate-700 truncate max-w-[170px]">
+                          {formatSpec(product.material_options)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Ukuran:</span>
+                        <span className="font-medium text-slate-700 truncate max-w-[170px]">
+                          {formatSpec(product.size_options)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Estimasi:</span>
+                        <span className="font-medium text-slate-700">
+                          {product.estimated_time || '3-5 Hari Kerja'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="pt-1">
+                      {hasDiscount ? (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs text-slate-400 line-through">
+                            Rp {Number(product.price).toLocaleString('id-ID')}
+                          </span>
+                          <span className="text-base font-extrabold text-emerald-700">
+                            Rp {Number(product.discount_price).toLocaleString('id-ID')}
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-medium">/ pcs</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-base font-extrabold text-slate-900">
+                            Rp {Number(product.price || 0).toLocaleString('id-ID')}
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-medium">/ pcs</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-2">
+
+                  {/* Actions */}
+                  <div className="pt-2 flex gap-2 border-t border-slate-100">
                     <button
                       onClick={() => onEditProduct(product)}
-                      className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded"
-                      title="Edit Produk"
+                      className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
                     >
-                      <Edit size={16} />
+                      <Edit size={14} />
+                      <span>Edit Produk</span>
                     </button>
                     <button
                       onClick={() => onDeleteProduct(product.id, 'printing', 'product')}
-                      className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
+                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all border border-rose-200"
                       title="Hapus Produk"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-16">
-          <Printer className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-700 mb-2">
-            Belum ada produk {activeSubMenu === 'all' ? 'percetakan' : activeSubMenu === 'sablon-kaos' ? 'sablon kaos' : activeSubMenu === 'undangan' ? 'undangan' : 'banner'}
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Klik "Tambah Produk" untuk menambah produk baru{activeSubMenu === 'all' ? '' : ` kategori ${activeSubMenu === 'sablon-kaos' ? 'sablon kaos' : activeSubMenu === 'undangan' ? 'undangan' : 'banner'}`}.
-          </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 };
-
-
 
 // Hero Images Settings Component
 const HeroImagesSettings = () => {

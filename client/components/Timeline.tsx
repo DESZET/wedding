@@ -78,7 +78,7 @@ export default function Timeline() {
   return (
     <section
       id="timeline"
-      className="py-20 px-4 bg-gradient-to-br from-primary/5 via-white to-primary/10"
+      className="py-20 px-4 bg-gradient-to-br from-primary/10 to-primary/5"
       data-testid="timeline-section"
     >
       <div className="max-w-6xl mx-auto">

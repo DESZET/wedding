@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { 
-  Sparkles, Calendar, Users, Shield, Heart, Phone, Clock, ArrowRight, 
+import {
+  Sparkles, Calendar, Users, Shield, Heart, Phone, Clock, ArrowRight,
   ChevronDown, Check, MessageCircle, FileText, Award, TrendingUp,
   HelpCircle, Quote, Star, CheckCircle2, ChevronRight
 } from "lucide-react";
@@ -87,126 +87,6 @@ export default function PackagesPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      
-      {/* 1. Enhanced Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-secondary py-20">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black/60 z-10"></div>
-          <img 
-            src={settings["wedding-hero-bg"] || "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"}
-            alt="Premium Wedding Setup"
-            className="w-full h-full object-cover transform scale-105"
-          />
-        </div>
-        
-        <div className="relative z-20 max-w-7xl mx-auto px-4 text-center text-white">
-          <SectionWrapper id="hero-badge" delay={100} animationType="fade-in-up">
-            <div className="inline-flex items-center gap-2 bg-primary/20 backdrop-blur-md px-6 py-2.5 rounded-full mb-6 border border-primary/30">
-              <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-              <span className="font-semibold text-sm tracking-wider uppercase">
-                {settings["wedding-hero-badge"] || "Penyelenggara Pernikahan Premium"}
-              </span>
-            </div>
-          </SectionWrapper>
-          
-          <SectionWrapper id="hero-title" delay={200} animationType="fade-in-up">
-            {settings["wedding-hero-title"] ? (
-              <h1 className="text-responsive-5xl font-serif font-bold mb-6 leading-tight">
-                {settings["wedding-hero-title"]}
-              </h1>
-            ) : (
-              <h1 className="text-responsive-5xl font-serif font-bold mb-6 leading-tight">
-                Wujudkan Pernikahan Impian<br />
-                <span className="text-gradient">Sempurna & Berkesan</span>
-              </h1>
-            )}
-          </SectionWrapper>
-
-          <SectionWrapper id="hero-desc" delay={300} animationType="fade-in-up">
-            <p className="text-lg md:text-xl max-w-3xl mx-auto mb-10 opacity-90 leading-relaxed font-light">
-              {settings["wedding-hero-subtitle"] || "Nikmati perjalanan menuju hari bahagia Anda tanpa rasa khawatir. Tim wedding organizer profesional kami hadir mendampingi perencanaan menyeluruh, koordinasi vendor, hingga hari H berjalan dengan sangat sempurna."}
-            </p>
-          </SectionWrapper>
-          
-          <SectionWrapper id="hero-actions" delay={400} animationType="fade-in-up">
-            <div className="flex flex-col sm:flex-row gap-5 justify-center mb-16">
-              <button
-                onClick={() => document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-primary text-white rounded-full font-bold text-lg hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3"
-              >
-                <span>Lihat Paket Pernikahan</span>
-                <ArrowRight size={18} />
-              </button>
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(defaultMessage)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-full font-bold text-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 border border-white/20"
-              >
-                <Phone size={18} />
-                <span>Konsultasi Anggaran</span>
-              </a>
-            </div>
-          </SectionWrapper>
-
-          {/* Quick Stats */}
-          <SectionWrapper id="hero-stats" delay={500} animationType="scale-in">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-              {stats.map((stat, idx) => (
-                <div key={idx} className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10 hover:border-white/25 transition-all duration-300">
-                  <div className="flex justify-center mb-3">{stat.icon}</div>
-                  <p className="text-3xl font-bold text-white mb-1 font-serif">{stat.value}</p>
-                  <p className="text-sm text-gray-300 font-medium tracking-wide">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </SectionWrapper>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-20">
-          <ChevronDown className="w-8 h-8 text-white opacity-80" />
-        </div>
-      </section>
-
-      {/* 2. Process / Order steps */}
-      <section className="py-24 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4">
-          <SectionWrapper id="process-header" delay={100} animationType="fade-in-up">
-            <div className="text-center mb-16">
-              {settings["wedding-process-title"] ? (
-                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                  {settings["wedding-process-title"]}
-                </h2>
-              ) : (
-                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                  Langkah Mudah <span className="text-primary font-serif">Mewujudkannya</span>
-                </h2>
-              )}
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                {settings["wedding-process-desc"] || "Alur perencanaan terstruktur demi memastikan hari istimewa Anda berjalan tanpa hambatan"}
-              </p>
-            </div>
-          </SectionWrapper>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {processes.map((proc, index) => (
-              <SectionWrapper key={index} id={`proc-${index}`} delay={200 + index * 100} animationType="fade-in-up">
-                <div className="relative p-8 rounded-3xl bg-slate-50 hover:bg-slate-100/80 transition-all duration-300 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1">
-                  <span className="absolute top-6 right-8 text-6xl font-serif font-black text-primary/10 select-none">
-                    {proc.step}
-                  </span>
-                  <div className="w-14 h-14 bg-gradient-to-br from-primary to-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-6 text-white text-xl font-bold font-serif">
-                    {index + 1}
-                  </div>
-                  <h3 className="text-xl font-bold mb-3 text-slate-800">{proc.title}</h3>
-                  <p className="text-slate-600 leading-relaxed text-sm">{proc.desc}</p>
-                </div>
-              </SectionWrapper>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* 3. Packages Grid (Dynamically loaded component) */}
       <SectionWrapper id="packages-list" delay={100} animationType="fade-in-up">
@@ -219,7 +99,7 @@ export default function PackagesPage() {
       </SectionWrapper>
 
       {/* 5. Why Choose Galeria Wedding */}
-      <section className="py-24 bg-gradient-to-br from-slate-50 to-amber-50/30">
+      <section className="py-24 bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="max-w-7xl mx-auto px-4">
           <SectionWrapper id="why-wedding-header" delay={100} animationType="fade-in-up">
             <div className="text-center mb-16">
@@ -261,7 +141,7 @@ export default function PackagesPage() {
       </section>
 
       {/* 6. FAQ Section */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="max-w-4xl mx-auto px-4">
           <SectionWrapper id="faq-wedding-header" delay={100} animationType="fade-in-up">
             <div className="text-center mb-16">
@@ -277,17 +157,17 @@ export default function PackagesPage() {
           <SectionWrapper id="faq-wedding-content" delay={200} animationType="fade-in-up">
             <div className="space-y-4">
               {faqs.map((faq, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:bg-slate-50/80"
                 >
-                  <button 
+                  <button
                     onClick={() => setActiveFaq(activeFaq === index ? null : index)}
                     className="w-full p-6 text-left flex justify-between items-center gap-4 hover:text-primary transition-colors"
                   >
                     <span className="font-semibold text-lg text-slate-800 leading-snug">{faq.question}</span>
-                    <ChevronRight 
-                      className={`w-6 h-6 text-slate-400 flex-shrink-0 transition-transform duration-300 ${activeFaq === index ? 'rotate-90 text-primary' : ''}`} 
+                    <ChevronRight
+                      className={`w-6 h-6 text-slate-400 flex-shrink-0 transition-transform duration-300 ${activeFaq === index ? 'rotate-90 text-primary' : ''}`}
                     />
                   </button>
                   {activeFaq === index && (
@@ -303,7 +183,7 @@ export default function PackagesPage() {
       </section>
 
       {/* 7. Reviews Section */}
-      <section className="py-16 bg-gradient-to-br from-slate-50 to-amber-50/30">
+      <section className="py-16 bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="max-w-7xl mx-auto px-4">
           <SectionWrapper id="wedding-reviews" delay={100} animationType="fade-in-up">
             <ReviewSection
@@ -319,9 +199,9 @@ export default function PackagesPage() {
       {/* 8. Elegant Call-To-Action Banner */}
       <section className="py-20 bg-secondary text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-15">
-          <img 
-            src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" 
-            alt="Rose background" 
+          <img
+            src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+            alt="Rose background"
             className="w-full h-full object-cover"
           />
         </div>

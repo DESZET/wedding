@@ -95,6 +95,9 @@ export interface PackageItem {
   highlighted: boolean;
   features?: string[];
   longDescription?: string;
+  images?: string[];
+  discount_price?: number;
+  is_active?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -106,6 +109,9 @@ export interface CreatePackageItem {
   highlighted?: boolean;
   features?: string[];
   longDescription?: string;
+  images?: string[];
+  discount_price?: number;
+  is_active?: boolean;
 }
 
 export interface UpdatePackageItem {
@@ -115,6 +121,9 @@ export interface UpdatePackageItem {
   highlighted?: boolean;
   features?: string[];
   longDescription?: string;
+  images?: string[];
+  discount_price?: number;
+  is_active?: boolean;
 }
 
 // Venue types
