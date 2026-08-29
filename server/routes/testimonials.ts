@@ -2,10 +2,69 @@ import { RequestHandler } from "express";
 import { dbRun, dbGet, dbAll } from "../database";
 import { TestimonialItem, CreateTestimonialItem, UpdateTestimonialItem, ApiResponse, ListResponse } from "../../shared/api";
 
-// Get all testimonials
+// Get all testimonials (termasuk sync otomatis dengan Google reviews)
 export const getTestimonials: RequestHandler = async (req, res) => {
   try {
-    const items = await dbAll("SELECT * FROM testimonials ORDER BY createdAt DESC");
+    let items = await dbAll<TestimonialItem>("SELECT * FROM testimonials ORDER BY createdAt DESC");
+
+    // Otomatis cek dan gabungkan ulasan dari tabel reviews (wedding, printing, umrah)
+    try {
+      const reviewTables = [
+        { table: "wedding_reviews", label: "Wedding" },
+        { table: "printing_reviews", label: "Percetakan" },
+        { table: "umrah_reviews", label: "Umrah & Haji" },
+      ];
+
+      const existingSignatures = new Set(
+        items.map((it: any) => `${(it.name || "").trim().toLowerCase()}_${(it.text || "").trim().toLowerCase()}`)
+      );
+
+      for (const { table, label } of reviewTables) {
+        try {
+          const reviews = await dbAll<any>(`SELECT * FROM ${table} ORDER BY createdAt DESC`);
+          for (const rev of reviews) {
+            const commentText = rev.comment?.trim() || `Ulasan layanan ${label}`;
+            const sig = `${(rev.name || "").trim().toLowerCase()}_${commentText.toLowerCase()}`;
+            if (!existingSignatures.has(sig)) {
+              existingSignatures.add(sig);
+              const dateStr = rev.createdAt
+                ? new Date(rev.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                : new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
+              // Simpan ke testimonials agar permanen di Turso
+              try {
+                const insertRes = await dbRun(
+                  "INSERT INTO testimonials (name, text, rating, date) VALUES (?, ?, ?, ?)",
+                  [rev.name, commentText, rev.rating || 5, dateStr]
+                );
+                items.unshift({
+                  id: insertRes.lastID || Math.floor(Math.random() * 1000000),
+                  name: rev.name,
+                  text: commentText,
+                  rating: rev.rating || 5,
+                  date: dateStr,
+                  createdAt: rev.createdAt || new Date().toISOString()
+                } as any);
+              } catch {
+                items.unshift({
+                  id: rev.id || Math.floor(Math.random() * 1000000),
+                  name: rev.name,
+                  text: commentText,
+                  rating: rev.rating || 5,
+                  date: dateStr,
+                  createdAt: rev.createdAt || new Date().toISOString()
+                } as any);
+              }
+            }
+          }
+        } catch {
+          // Abaikan jika tabel belum ada
+        }
+      }
+    } catch (mergeErr) {
+      console.error("Error merging reviews:", mergeErr);
+    }
+
     const response: ListResponse<TestimonialItem> = {
       success: true,
       data: items,
