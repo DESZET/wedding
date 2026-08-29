@@ -480,11 +480,44 @@ export async function initDatabase(): Promise<void> {
     await seedWeddingPackages();
     await seedUmrahHajiData();
     await seedPrintingData();
+    await syncExistingReviewsToTestimonials();
 
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
+  }
+}
+
+async function syncExistingReviewsToTestimonials(): Promise<void> {
+  try {
+    const reviewTables = [
+      { table: 'wedding_reviews', label: 'Wedding' },
+      { table: 'printing_reviews', label: 'Percetakan' },
+      { table: 'umrah_reviews', label: 'Umrah & Haji' },
+    ];
+
+    for (const { table, label } of reviewTables) {
+      const reviews = await dbAll<any>(`SELECT * FROM ${table}`);
+      for (const rev of reviews) {
+        const textContent = rev.comment?.trim() || `Ulasan layanan ${label}`;
+        const existing = await dbGet(
+          "SELECT id FROM testimonials WHERE name = ? AND text = ?",
+          [rev.name, textContent]
+        );
+        if (!existing) {
+          const dateStr = rev.createdAt
+            ? new Date(rev.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+            : new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+          await dbRun(
+            "INSERT INTO testimonials (name, text, rating, date) VALUES (?, ?, ?, ?)",
+            [rev.name, textContent, rev.rating || 5, dateStr]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing existing reviews to testimonials:', err);
   }
 }
 

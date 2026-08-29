@@ -66,10 +66,23 @@ export const createReview: RequestHandler = async (req, res) => {
 
     const col = type === "printing" ? "product_id" : "package_id";
 
-    await dbRun(
+    const result = await dbRun(
       `INSERT INTO ${TABLE[type]} (${col}, name, rating, comment, avatar_url, google_id) VALUES (?, ?, ?, ?, ?, ?)`,
       [item_id, name.trim(), r, comment?.trim() || "", avatar_url || null, google_id || null]
     );
+
+    // Sync juga ke tabel testimonials agar otomatis tampil di panel admin & publik
+    try {
+      const today = new Date().toLocaleDateString("id-ID", {
+        day: "numeric", month: "long", year: "numeric"
+      });
+      await dbRun(
+        "INSERT INTO testimonials (name, text, rating, date) VALUES (?, ?, ?, ?)",
+        [name.trim(), comment?.trim() || `Ulasan layanan ${type}`, r, today]
+      );
+    } catch (syncErr) {
+      console.error("Error syncing review to testimonials:", syncErr);
+    }
 
     // Update avg rating di tabel produk/paket (jika ada kolom rating & reviews_count)
     let avgRating = 0;

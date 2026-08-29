@@ -4093,46 +4093,78 @@ const GalleryContent = ({ items, onEdit, onDelete }: any) => (
   </div>
 );
 
-const TestimonialsContent = ({ items, onEdit, onDelete }: any) => (
-  <div className="space-y-3">
-    {items.map((item: any) => (
-      <div key={item.id} className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
-        <div className="flex justify-between items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 text-xs font-bold flex-shrink-0">
-                {(item.name || 'U')[0].toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <h4 className="font-semibold text-sm text-slate-800 truncate">{item.name}</h4>
-                <p className="text-[11px] text-slate-400">{item.date}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-0.5 mt-1.5 ml-10">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-1.5 flex-shrink-0">
-            <button
-              onClick={() => onEdit(item)}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 hover:text-slate-700"
-            >
-              <Edit size={14} />
-            </button>
-            <button
-              onClick={() => onDelete(item.id)}
-              className="p-2 hover:bg-rose-50 rounded-xl transition-colors text-rose-400 hover:text-rose-600"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
+const TestimonialsContent = ({ items, onEdit, onDelete }: any) => {
+  if (!items || items.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
+        <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <MessageSquare size={32} />
         </div>
+        <h3 className="text-base font-semibold text-slate-800 mb-1">Belum Ada Testimonial</h3>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          Testimonial dan review yang dikirim pengunjung / akun Google akan muncul di sini. Anda juga bisa menambahkan testimonial baru secara manual.
+        </p>
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((item: any) => {
+        const rating = Number(item.rating) || 5;
+        return (
+          <div key={item.id} className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex justify-between items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 text-xs font-bold flex-shrink-0 shadow-sm overflow-hidden">
+                    {(item.name || 'U')[0].toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-sm text-slate-800 truncate">{item.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[11px] text-slate-400">{item.date}</p>
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={12}
+                            className={star <= rating ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {item.text && (
+                  <p className="text-xs text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100/80 mt-1 italic">
+                    "{item.text}"
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-1.5 flex-shrink-0">
+                <button
+                  onClick={() => onEdit(item)}
+                  title="Edit Testimonial"
+                  className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 hover:text-slate-700"
+                >
+                  <Edit size={14} />
+                </button>
+                <button
+                  onClick={() => onDelete(item.id)}
+                  title="Hapus Testimonial"
+                  className="p-2 hover:bg-rose-50 rounded-xl transition-colors text-rose-400 hover:text-rose-600"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const PackagesContent = ({ items, onEdit, onDelete }: any) => {
   const getFallbackImage = (name: string) => {
