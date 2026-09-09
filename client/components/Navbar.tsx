@@ -107,10 +107,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           {/* LOGO */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            {settings["site-logo"] ? (
+            {settings["site-logo"] && !logoImgError ? (
               <img
                 src={settings["site-logo"]}
                 alt={siteName}
+                onError={() => setLogoImgError(true)}
                 className="h-9 w-auto max-h-9 max-w-[120px] object-contain rounded-lg shadow-sm"
               />
             ) : (

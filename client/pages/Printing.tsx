@@ -58,6 +58,38 @@ interface OrderCalculator {
   is_urgent: boolean;
 }
 
+const getPrintingProductFallbackImg = (category_id?: number, name?: string): string => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('kaos') || n.includes('sablon') || category_id === 2 || category_id === 911) {
+    return 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('banner') || n.includes('spanduk') || category_id === 3 || category_id === 912) {
+    return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('id card') || n.includes('lanyard') || category_id === 4 || category_id === 913) {
+    return 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('kartu nama') || category_id === 5 || category_id === 914) {
+    return 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('brosur') || n.includes('flyer') || n.includes('photobook') || n.includes('album') || category_id === 6 || category_id === 915) {
+    return 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('stiker') || n.includes('label') || category_id === 7 || category_id === 916) {
+    return 'https://images.unsplash.com/photo-1572044162444-ad60f128bdea?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('kemasan') || n.includes('box') || n.includes('packaging') || category_id === 8 || category_id === 917) {
+    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('merchandise') || n.includes('souvenir') || category_id === 9 || category_id === 918) {
+    return 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (n.includes('simple')) {
+    return 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80';
+};
+
 export default function Printing() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const { settings } = useSettings();
@@ -154,7 +186,7 @@ export default function Printing() {
               material_options: ["Board 30 + Jasmine Glitter", "Art Paper 260gsm Laminasi Doff"],
               color_options: ["Gold Champagne", "Emerald Green", "Navy Blue", "Maroon Velvet"],
               finishing_options: ["Hotprint Poly Emas", "Emboss 3D", "Pita Satin"],
-              images: ["https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=1200&q=80"],
+              images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80"],
               estimated_time: "5-7 Hari Kerja",
               min_order: 100,
               features: ["Gratis Plastik OPP & Label Nama", "Gratis Denah Lokasi QR", "Gratis Video Undangan Digital"],
@@ -532,9 +564,11 @@ export default function Printing() {
               >
                 {filteredProducts.map((product, idx) => {
                   const effectivePrice = product.discount_price || product.price;
-                  const bgImage = (product.images && product.images.length > 0)
-                    ? product.images[0]
-                    : "https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=1200&q=80";
+                  const fallbackImg = getPrintingProductFallbackImg(product.category_id, product.name);
+                  const firstImg = product.images && product.images.length > 0 ? product.images[0] : "";
+                  const bgImage = (firstImg && firstImg.trim().length > 5 && !firstImg.includes("1607344645866"))
+                    ? firstImg
+                    : fallbackImg;
 
                   return (
                     <div
@@ -553,7 +587,12 @@ export default function Printing() {
                           <img
                             src={bgImage}
                             alt={product.name}
-                            className="w-full h-full object-cover brightness-[0.7] group-hover:scale-105 transition-transform duration-700 ease-out"
+                            onError={(e: any) => {
+                              if (e.currentTarget.src !== fallbackImg) {
+                                e.currentTarget.src = fallbackImg;
+                              }
+                            }}
+                            className="w-full h-full object-cover brightness-[0.75] group-hover:scale-105 transition-transform duration-700 ease-out"
                           />
 
                           {/* Gradient Overlays */}

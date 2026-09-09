@@ -11,12 +11,47 @@ import { compressImage } from "@/lib/imageCompressor";
 interface FormContextType {
   formSettings: Record<string, string>;
   updateField: (key: string, value: string) => void;
+  saveChanges: () => Promise<void>;
+  saving: boolean;
+  saved: boolean;
 }
 
 const FormSettingsContext = createContext<FormContextType>({
   formSettings: {},
   updateField: () => {},
+  saveChanges: async () => {},
+  saving: false,
+  saved: false,
 });
+
+function PanelSaveButton({ label = "Simpan Perubahan Tab Ini" }: { label?: string }) {
+  const { saveChanges, saving, saved } = useContext(FormSettingsContext);
+  return (
+    <button
+      type="button"
+      onClick={saveChanges}
+      disabled={saving}
+      className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold text-sm hover:bg-primary/90 shadow-md shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+    >
+      {saving ? (
+        <>
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <span>Menyimpan...</span>
+        </>
+      ) : saved ? (
+        <>
+          <Check className="w-4 h-4" />
+          <span>✓ Berhasil Disimpan!</span>
+        </>
+      ) : (
+        <>
+          <Save className="w-4 h-4" />
+          <span>{label}</span>
+        </>
+      )}
+    </button>
+  );
+}
 
 // ─── helpers & styling ───────────────────────────────────────────────────────
 
@@ -93,6 +128,16 @@ function ImageField({
       const data = await res.json();
       if (data.success) {
         updateField(settingKey, data.data.path);
+        // Automatically persist uploaded image so it's active immediately on site
+        try {
+          await fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify([{ key: settingKey, value: data.data.path }])
+          });
+          localStorage.setItem('settings-updated', Date.now().toString());
+          window.dispatchEvent(new CustomEvent('settingsUpdated'));
+        } catch {}
       } else {
         alert("Gagal upload gambar: " + (data.error || "Server error"));
       }
@@ -223,6 +268,10 @@ function PanelGeneral() {
             </li>
           </ul>
         </div>
+      </div>
+
+      <div className="pt-4 border-t flex justify-end">
+        <PanelSaveButton label="Simpan Identitas & Warna" />
       </div>
     </div>
   );
@@ -401,6 +450,10 @@ function PanelHero() {
           })}
         </div>
       </div>
+
+      <div className="pt-4 border-t flex justify-end">
+        <PanelSaveButton label="Simpan Gambar Hero Slider" />
+      </div>
     </div>
   );
 }
@@ -519,6 +572,13 @@ function PanelContact() {
         <Field label="Facebook URL" settingKey="facebook" placeholder="https://facebook.com/galeriawedding" />
         <Field label="YouTube URL" settingKey="youtube" placeholder="https://youtube.com/@galeriawedding" />
         <Field label="TikTok URL" settingKey="tiktok" placeholder="https://tiktok.com/@galeriawedding" />
+      </div>
+
+      <div className="pt-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+        <p className="text-xs text-slate-500">
+          Semua perubahan kontak, jam operasional, dan lokasi maps akan langsung tampil di halaman depan.
+        </p>
+        <PanelSaveButton label="Simpan Kontak & Jam Operasional" />
       </div>
     </div>
   );
@@ -842,7 +902,7 @@ export default function AppearanceSettings() {
   };
 
   return (
-    <FormSettingsContext.Provider value={{ formSettings, updateField }}>
+    <FormSettingsContext.Provider value={{ formSettings, updateField, saveChanges: handleSave, saving, saved }}>
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b">
           <div>
@@ -920,7 +980,7 @@ export default function AppearanceSettings() {
         </div>
 
         {/* Panel content */}
-        <div className="max-h-[68vh] overflow-y-auto pr-1">
+        <div className="max-h-[68vh] overflow-y-auto pr-1 space-y-4">
           {activeTab === "general" && <PanelGeneral />}
           {activeTab === "hero"    && <PanelHero />}
           {activeTab === "about"   && <PanelAbout />}
@@ -929,6 +989,34 @@ export default function AppearanceSettings() {
           {activeTab === "printing" && <PanelPrinting />}
           {activeTab === "umrah"   && <PanelUmrah />}
         </div>
+
+        {/* Sticky bottom notice & save bar when there are unsaved changes */}
+        {hasChanges && (
+          <div className="sticky bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-amber-400/40 flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 z-30 animate-fade-in">
+            <div className="flex items-center gap-2.5 text-sm font-medium text-amber-300">
+              <Sparkles className="w-4 h-4 text-amber-400 animate-pulse flex-shrink-0" />
+              <span>Ada perubahan yang belum disimpan. Klik tombol Simpan untuk menerapkan:</span>
+            </div>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={saving}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+              >
+                {saving ? "Menyimpan..." : "💾 Simpan Semua Perubahan"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </FormSettingsContext.Provider>
   );

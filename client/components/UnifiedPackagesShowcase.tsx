@@ -27,7 +27,7 @@ const FALLBACK_IMAGES = {
   wedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
   umrah: "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80",
   haji: "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80",
-  printing: "https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=800&q=80"
+  printing: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80"
 };
 
 // Parse images from any DB format: Array, JSON string '["img"]', or CSV
@@ -175,7 +175,7 @@ export default function UnifiedPackagesShowcase() {
                 "Pengerjaan Rapi & Tepat Waktu",
                 "Garansi Cetak Ulang Jika Cacat"
               ],
-              image: (rawImages && rawImages.length > 0) ? rawImages[0] : FALLBACK_IMAGES.printing,
+              image: (rawImages && rawImages.length > 0 && rawImages[0] && !rawImages[0].includes("1607344645866")) ? rawImages[0] : FALLBACK_IMAGES.printing,
               badge: prod.is_new ? "Terbaru" : (prod.is_featured ? "Favorit" : undefined),
               detailUrl: "/printing",
               whatsappMessage: `Halo Admin Galeria Printing, saya ingin memesan ${prod.name}. Mohon informasi minimal order dan estimasi waktunya.`
