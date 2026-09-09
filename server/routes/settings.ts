@@ -97,14 +97,18 @@ export const updateSetting: RequestHandler = async (req, res) => {
 // Bulk update settings
 export const updateSettings: RequestHandler = async (req, res) => {
   try {
-    const settings = req.body;
+    let settingsList: Array<{ key: string; value: any }> = [];
 
-    if (!Array.isArray(settings)) {
-      return res.status(400).json({ success: false, error: 'Settings must be an array' });
+    if (Array.isArray(req.body)) {
+      settingsList = req.body;
+    } else if (req.body && typeof req.body === 'object') {
+      settingsList = Object.entries(req.body).map(([key, value]) => ({ key, value }));
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid settings payload format' });
     }
 
     // Update each setting
-    for (const setting of settings) {
+    for (const setting of settingsList) {
       const { key, value } = setting;
       if (!key || value === undefined || value === null) continue;
       const strVal = String(value);

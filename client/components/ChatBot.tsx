@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MessageCircle, X, Send, Bot, User, Sparkles, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSettings } from "../hooks/useSettings";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,12 +17,16 @@ const QUICK_REPLIES = [
 ];
 
 export default function ChatBot() {
+  const { settings } = useSettings();
+  const siteName = settings["site-name"] || "Galeria Wedding Organizer";
+  const whatsappNum = settings["whatsapp"] || settings["phone"] || "085329077987";
+
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Halo! Saya Galeria AI 👋 Selamat datang di Galeria Wedding Organizer. Ada yang bisa saya bantu tentang paket wedding, umrah & haji, atau percetakan?",
+      content: `Halo! Saya asisten virtual ${siteName} 👋 Ada yang bisa saya bantu tentang paket wedding, umrah & haji, atau percetakan?`,
       time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -30,6 +35,21 @@ export default function ChatBot() {
   const [showPulse, setShowPulse] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update initial message if siteName loaded later
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].role === "assistant") {
+        return [
+          {
+            ...prev[0],
+            content: `Halo! Saya asisten virtual ${siteName} 👋 Ada yang bisa saya bantu tentang paket wedding, umrah & haji, atau percetakan?`,
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [siteName]);
 
   // Show immediately, no delay
   useEffect(() => {
@@ -78,7 +98,7 @@ export default function ChatBot() {
       });
 
       const data = await res.json();
-      const reply = data.reply || "Maaf, saya tidak bisa memproses pesan Anda saat ini. Silakan hubungi kami di WhatsApp 085329077987.";
+      const reply = data.reply || `Maaf, saya tidak bisa memproses pesan Anda saat ini. Silakan hubungi kami di WhatsApp ${whatsappNum}.`;
 
       setMessages((prev) => [
         ...prev,
@@ -93,7 +113,7 @@ export default function ChatBot() {
         ...prev,
         {
           role: "assistant",
-          content: "Maaf, terjadi kesalahan. Silakan hubungi kami langsung di WhatsApp 085329077987 🙏",
+          content: `Maaf, terjadi kesalahan. Silakan hubungi kami langsung di WhatsApp ${whatsappNum} 🙏`,
           time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
         },
       ]);

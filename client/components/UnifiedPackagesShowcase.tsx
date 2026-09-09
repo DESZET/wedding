@@ -294,6 +294,16 @@ export default function UnifiedPackagesShowcase() {
                         alt={pkg.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
+                        onError={(e: any) => {
+                          const fallback = pkg.type === "wedding"
+                            ? FALLBACK_IMAGES.wedding
+                            : pkg.type === "haji-umrah"
+                            ? FALLBACK_IMAGES.umrah
+                            : FALLBACK_IMAGES.printing;
+                          if (e.target.src !== fallback) {
+                            e.target.src = fallback;
+                          }
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 

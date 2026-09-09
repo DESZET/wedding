@@ -822,6 +822,7 @@ export default function AppearanceSettings() {
       if (result.success) {
         setSaved(true);
         setHasChanges(false);
+        alert("✓ Pengaturan tampilan, logo, dan teks berhasil disimpan!");
         setTimeout(() => setSaved(false), 3000);
       } else {
         alert("Gagal menyimpan perubahan: " + (result.error || "Unknown error"));
