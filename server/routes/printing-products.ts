@@ -8,12 +8,17 @@ interface PrintingProduct {
   name: string;
   description: string;
   price: number;
-  discount_price: number;
+  discount_price: number | null;
   size_options: string;
   material_options: string;
   color_options: string;
+  finishing_options?: string;
   design_template_url: string;
   images: string;
+  features?: string;
+  rating?: number;
+  reviews_count?: number;
+  featured?: boolean;
   is_custom_design: boolean;
   estimated_time: string;
   min_order: number;
@@ -21,6 +26,42 @@ interface PrintingProduct {
   createdAt: string;
   updatedAt: string;
 }
+
+const parseSafeArray = (val: any): string[] => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.map(s => String(s).trim()).filter(Boolean);
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.map(s => String(s).trim()).filter(Boolean);
+      } catch {}
+    }
+    if (trimmed.startsWith('data:')) return [trimmed];
+    return trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const formatJsonArray = (val: any): string => {
+  if (!val) return '[]';
+  if (Array.isArray(val)) return JSON.stringify(val.filter(Boolean));
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return '[]';
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return JSON.stringify(parsed.filter(Boolean));
+      return JSON.stringify([parsed]);
+    } catch {
+      if (trimmed.startsWith('data:')) return JSON.stringify([trimmed]);
+      return JSON.stringify(trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean));
+    }
+  }
+  return JSON.stringify([val]);
+};
 
 // Get all printing products
 export const getPrintingProducts: RequestHandler = async (req, res) => {
@@ -55,33 +96,35 @@ export const getPrintingProducts: RequestHandler = async (req, res) => {
     let items = await dbAll(query, params);
 
     // Transform data to match frontend expectations
-    const transformedItems = items.map(item => ({
-      id: item.id,
-      category_id: item.category_id,
-      category_name: item.category_name,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      discount_price: item.discount_price,
-      size_options: item.size_options ? item.size_options.split(',').map((s: string) => s.trim()) : [],
-      material_options: item.material_options ? item.material_options.split(',').map((m: string) => m.trim()) : [],
-      color_options: item.color_options ? item.color_options.split(',').map((c: string) => c.trim()) : [],
-      finishing_options: [], // Not stored in DB, keeping empty array
-      images: item.images ? item.images.split(',').map(img => img.trim()) : [], // Convert comma-separated images to array
-      design_template_url: item.design_template_url,
-      is_custom_design: Boolean(item.is_custom_design),
-      estimated_time: item.estimated_time,
-      min_order: item.min_order,
-      is_active: Boolean(item.is_active),
-      // Frontend-specific fields
-      features: ["Kualitas Terjamin", "Harga Kompetitif", "Pengiriman Cepat"], // Default features
-      rating: 4.5 + Math.random() * 0.5, // Random rating between 4.5-5.0
-      reviews_count: Math.floor(Math.random() * 50) + 10, // Random reviews 10-60
-      is_featured: Boolean(item.featured), // Map from DB field if exists
-      is_new: new Date(item.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // New if created within 30 days
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt
-    }));
+    const transformedItems = items.map(item => {
+      const parsedFeatures = parseSafeArray(item.features);
+      return {
+        id: item.id,
+        category_id: item.category_id,
+        category_name: item.category_name,
+        name: item.name,
+        description: item.description || '',
+        price: Number(item.price) || 0,
+        discount_price: item.discount_price ? Number(item.discount_price) : null,
+        size_options: parseSafeArray(item.size_options),
+        material_options: parseSafeArray(item.material_options),
+        color_options: parseSafeArray(item.color_options),
+        finishing_options: parseSafeArray(item.finishing_options),
+        images: parseSafeArray(item.images),
+        design_template_url: item.design_template_url || '',
+        is_custom_design: Boolean(item.is_custom_design),
+        estimated_time: item.estimated_time || '3-5 hari',
+        min_order: Number(item.min_order) || 1,
+        is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+        features: parsedFeatures.length > 0 ? parsedFeatures : ["Kualitas Terjamin", "Harga Kompetitif", "Pengiriman Cepat"],
+        rating: item.rating ? Number(item.rating) : 4.9,
+        reviews_count: item.reviews_count ? Number(item.reviews_count) : 0,
+        is_featured: Boolean(item.featured),
+        is_new: item.createdAt ? (new Date(item.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) : false,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      };
+    });
 
     const response: ListResponse<any> = {
       success: true,
@@ -99,15 +142,40 @@ export const getPrintingProducts: RequestHandler = async (req, res) => {
 export const getPrintingProduct: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params;
-    const item = await dbGet("SELECT * FROM printing_products WHERE id = ?", [id]);
+    const item = await dbGet(`
+      SELECT
+        pp.*,
+        pc.name as category_name,
+        pc.icon as category_icon
+      FROM printing_products pp
+      LEFT JOIN printing_categories pc ON pp.category_id = pc.id
+      WHERE pp.id = ?
+    `, [id]);
 
     if (!item) {
       return res.status(404).json({ success: false, error: 'Printing product not found' });
     }
 
-    const response: ApiResponse<PrintingProduct> = {
+    const parsedFeatures = parseSafeArray(item.features);
+    const transformedItem = {
+      ...item,
+      price: Number(item.price) || 0,
+      discount_price: item.discount_price ? Number(item.discount_price) : null,
+      images: parseSafeArray(item.images),
+      size_options: parseSafeArray(item.size_options),
+      material_options: parseSafeArray(item.material_options),
+      color_options: parseSafeArray(item.color_options),
+      finishing_options: parseSafeArray(item.finishing_options),
+      features: parsedFeatures.length > 0 ? parsedFeatures : ["Kualitas Terjamin", "Harga Kompetitif", "Pengiriman Cepat"],
+      rating: item.rating ? Number(item.rating) : 4.9,
+      reviews_count: item.reviews_count ? Number(item.reviews_count) : 0,
+      is_featured: Boolean(item.featured),
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+    };
+
+    const response: ApiResponse<any> = {
       success: true,
-      data: item
+      data: transformedItem
     };
     res.json(response);
   } catch (error) {
@@ -119,16 +187,16 @@ export const getPrintingProduct: RequestHandler = async (req, res) => {
 // Create printing product
 export const createPrintingProduct: RequestHandler = async (req, res) => {
   try {
-    const productData: Partial<PrintingProduct> = req.body;
+    const productData: any = req.body;
 
     // Validate required fields
-    if (!productData.name || !productData.name.trim()) {
+    if (!productData.name || !String(productData.name).trim()) {
       return res.status(400).json({ success: false, error: 'Nama produk harus diisi' });
     }
-    if (!productData.price || productData.price <= 0) {
+    if (!productData.price || Number(productData.price) <= 0) {
       return res.status(400).json({ success: false, error: 'Harga produk harus lebih dari 0' });
     }
-    if (!productData.category_id || productData.category_id === null || productData.category_id === undefined) {
+    if (!productData.category_id && productData.category_id !== 0) {
       return res.status(400).json({ success: false, error: 'Kategori produk harus dipilih' });
     }
 
@@ -139,39 +207,60 @@ export const createPrintingProduct: RequestHandler = async (req, res) => {
     }
 
     // Check for duplicate name
-    const existingProduct = await dbGet("SELECT id FROM printing_products WHERE name = ?", [productData.name.trim()]);
+    const existingProduct = await dbGet("SELECT id FROM printing_products WHERE name = ?", [String(productData.name).trim()]);
     if (existingProduct) {
       return res.status(400).json({ success: false, error: 'Nama produk sudah ada' });
     }
 
+    const imagesJson = formatJsonArray(productData.images);
+    const sizeOptionsStr = Array.isArray(productData.size_options) ? productData.size_options.join(', ') : (productData.size_options || '');
+    const materialOptionsStr = Array.isArray(productData.material_options) ? productData.material_options.join(', ') : (productData.material_options || '');
+    const colorOptionsStr = Array.isArray(productData.color_options) ? productData.color_options.join(', ') : (productData.color_options || '');
+    const finishingOptionsStr = Array.isArray(productData.finishing_options) ? productData.finishing_options.join(', ') : (productData.finishing_options || '');
+    const featuresJson = formatJsonArray(productData.features);
+
     const result = await dbRun(
       `INSERT INTO printing_products (
         category_id, name, description, price, discount_price, size_options, material_options,
-        color_options, design_template_url, images, is_custom_design, estimated_time, min_order, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        color_options, finishing_options, features, design_template_url, images, is_custom_design,
+        estimated_time, min_order, is_active, featured, rating, reviews_count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         productData.category_id,
-        productData.name.trim(),
+        String(productData.name).trim(),
         productData.description || '',
-        productData.price,
-        productData.discount_price || null,
-        productData.size_options || '',
-        productData.material_options || '',
-        productData.color_options || '',
+        Number(productData.price),
+        productData.discount_price ? Number(productData.discount_price) : null,
+        sizeOptionsStr,
+        materialOptionsStr,
+        colorOptionsStr,
+        finishingOptionsStr,
+        featuresJson,
         productData.design_template_url || '',
-        productData.images || '',
+        imagesJson,
         productData.is_custom_design ? 1 : 0,
-        productData.estimated_time || '',
-        productData.min_order || 1,
-        productData.is_active !== false ? 1 : 0
+        productData.estimated_time || '3-5 hari',
+        Number(productData.min_order) || 1,
+        productData.is_active !== false ? 1 : 0,
+        productData.featured || productData.is_featured ? 1 : 0,
+        Number(productData.rating) || 5.0,
+        Number(productData.reviews_count) || 0
       ]
     );
 
     const newItem = await dbGet("SELECT * FROM printing_products WHERE id = ?", [result.lastID]);
 
-    const response: ApiResponse<PrintingProduct> = {
+    const response: ApiResponse<any> = {
       success: true,
-      data: newItem,
+      data: {
+        ...newItem,
+        images: parseSafeArray(newItem.images),
+        size_options: parseSafeArray(newItem.size_options),
+        material_options: parseSafeArray(newItem.material_options),
+        color_options: parseSafeArray(newItem.color_options),
+        finishing_options: parseSafeArray(newItem.finishing_options),
+        features: parseSafeArray(newItem.features)
+      },
       message: 'Produk percetakan berhasil dibuat'
     };
     res.status(201).json(response);
@@ -185,7 +274,7 @@ export const createPrintingProduct: RequestHandler = async (req, res) => {
 export const updatePrintingProduct: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates: Partial<PrintingProduct> = req.body;
+    const updates: any = req.body;
 
     // Check if item exists
     const existingItem = await dbGet("SELECT * FROM printing_products WHERE id = ?", [id]);
@@ -203,40 +292,47 @@ export const updatePrintingProduct: RequestHandler = async (req, res) => {
     }
     if (updates.name !== undefined) {
       updateFields.push("name = ?");
-      values.push(updates.name);
+      values.push(String(updates.name).trim());
     }
     if (updates.description !== undefined) {
       updateFields.push("description = ?");
-      values.push(updates.description);
+      values.push(updates.description || '');
     }
     if (updates.price !== undefined) {
       updateFields.push("price = ?");
-      values.push(updates.price);
+      values.push(Number(updates.price) || 0);
     }
     if (updates.discount_price !== undefined) {
       updateFields.push("discount_price = ?");
-      values.push(updates.discount_price);
+      values.push(updates.discount_price ? Number(updates.discount_price) : null);
     }
     if (updates.size_options !== undefined) {
       updateFields.push("size_options = ?");
-      values.push(updates.size_options);
+      values.push(Array.isArray(updates.size_options) ? updates.size_options.join(', ') : (updates.size_options || ''));
     }
     if (updates.material_options !== undefined) {
       updateFields.push("material_options = ?");
-      values.push(updates.material_options);
+      values.push(Array.isArray(updates.material_options) ? updates.material_options.join(', ') : (updates.material_options || ''));
     }
     if (updates.color_options !== undefined) {
       updateFields.push("color_options = ?");
-      values.push(updates.color_options);
+      values.push(Array.isArray(updates.color_options) ? updates.color_options.join(', ') : (updates.color_options || ''));
     }
-
+    if (updates.finishing_options !== undefined) {
+      updateFields.push("finishing_options = ?");
+      values.push(Array.isArray(updates.finishing_options) ? updates.finishing_options.join(', ') : (updates.finishing_options || ''));
+    }
+    if (updates.features !== undefined) {
+      updateFields.push("features = ?");
+      values.push(formatJsonArray(updates.features));
+    }
     if (updates.design_template_url !== undefined) {
       updateFields.push("design_template_url = ?");
-      values.push(updates.design_template_url);
+      values.push(updates.design_template_url || '');
     }
     if (updates.images !== undefined) {
       updateFields.push("images = ?");
-      values.push(updates.images);
+      values.push(formatJsonArray(updates.images));
     }
     if (updates.is_custom_design !== undefined) {
       updateFields.push("is_custom_design = ?");
@@ -244,15 +340,27 @@ export const updatePrintingProduct: RequestHandler = async (req, res) => {
     }
     if (updates.estimated_time !== undefined) {
       updateFields.push("estimated_time = ?");
-      values.push(updates.estimated_time);
+      values.push(updates.estimated_time || '3-5 hari');
     }
     if (updates.min_order !== undefined) {
       updateFields.push("min_order = ?");
-      values.push(updates.min_order);
+      values.push(Number(updates.min_order) || 1);
     }
     if (updates.is_active !== undefined) {
       updateFields.push("is_active = ?");
       values.push(updates.is_active ? 1 : 0);
+    }
+    if (updates.featured !== undefined || updates.is_featured !== undefined) {
+      updateFields.push("featured = ?");
+      values.push((updates.featured || updates.is_featured) ? 1 : 0);
+    }
+    if (updates.rating !== undefined) {
+      updateFields.push("rating = ?");
+      values.push(Number(updates.rating) || 5.0);
+    }
+    if (updates.reviews_count !== undefined) {
+      updateFields.push("reviews_count = ?");
+      values.push(Number(updates.reviews_count) || 0);
     }
 
     if (updateFields.length === 0) {
@@ -267,11 +375,31 @@ export const updatePrintingProduct: RequestHandler = async (req, res) => {
       values
     );
 
-    const updatedItem = await dbGet("SELECT * FROM printing_products WHERE id = ?", [id]);
+    const updatedItem = await dbGet(`
+      SELECT
+        pp.*,
+        pc.name as category_name,
+        pc.icon as category_icon
+      FROM printing_products pp
+      LEFT JOIN printing_categories pc ON pp.category_id = pc.id
+      WHERE pp.id = ?
+    `, [id]);
 
-    const response: ApiResponse<PrintingProduct> = {
+    const response: ApiResponse<any> = {
       success: true,
-      data: updatedItem,
+      data: {
+        ...updatedItem,
+        price: Number(updatedItem.price) || 0,
+        discount_price: updatedItem.discount_price ? Number(updatedItem.discount_price) : null,
+        images: parseSafeArray(updatedItem.images),
+        size_options: parseSafeArray(updatedItem.size_options),
+        material_options: parseSafeArray(updatedItem.material_options),
+        color_options: parseSafeArray(updatedItem.color_options),
+        finishing_options: parseSafeArray(updatedItem.finishing_options),
+        features: parseSafeArray(updatedItem.features),
+        is_featured: Boolean(updatedItem.featured),
+        is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true,
+      },
       message: 'Printing product updated successfully'
     };
     res.json(response);

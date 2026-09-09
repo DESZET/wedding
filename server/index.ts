@@ -298,6 +298,12 @@ export async function createServer() {
   app.put("/api/printing-packages/:id", updatePrintingPackage);
   app.delete("/api/printing-packages/:id", deletePrintingPackage);
 
+  app.get("/api/printing/packages", getPrintingPackages);
+  app.get("/api/printing/packages/:id", getPrintingPackage);
+  app.post("/api/printing/packages", createPrintingPackage);
+  app.put("/api/printing/packages/:id", updatePrintingPackage);
+  app.delete("/api/printing/packages/:id", deletePrintingPackage);
+
   // Customers routes
   app.use("/api/customers", customersRouter);
 

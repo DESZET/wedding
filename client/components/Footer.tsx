@@ -14,13 +14,24 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {/* Company Info */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center font-bold">
-                {(settings['logo-letter'] || (settings['site-name'] || 'G').charAt(0))}
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              {settings['site-logo'] ? (
+                <img
+                  src={settings['site-logo']}
+                  alt={settings['site-name'] || 'GALERIA WEDDING'}
+                  className="h-10 w-auto max-h-10 max-w-[140px] object-contain rounded-lg"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold shadow-md">
+                  {(settings['logo-letter'] || (settings['site-name'] || 'G').charAt(0))}
+                </div>
+              )}
               <span className="text-xl font-bold">{settings['site-name'] || 'GALERIA WEDDING'}</span>
             </div>
-            <p className="text-gray-300 text-sm">
+            {settings['tagline'] && (
+              <p className="text-primary font-medium text-xs mb-2">{settings['tagline']}</p>
+            )}
+            <p className="text-gray-300 text-sm leading-relaxed">
               {settings['description'] || 'Creating unforgettable wedding experiences with elegance, professionalism, and passion for every detail.'}
             </p>
           </div>

@@ -587,7 +587,25 @@ async function migrateUmrahPackagesTable(): Promise<void> {
       await dbRun('ALTER TABLE venues ADD COLUMN image TEXT');
     }
 
-    console.log('Umrah, Haji, Wedding packages & venues table migration completed');
+    // Also migrate printing_products table
+    const printingColumns = await dbAll<{ name: string }>("PRAGMA table_info(printing_products)");
+    const printingColumnNames = printingColumns.map(col => col.name);
+    const requiredPrintingColumns = [
+      { name: 'featured', type: 'BOOLEAN DEFAULT 0' },
+      { name: 'rating', type: 'REAL DEFAULT 5.0' },
+      { name: 'reviews_count', type: 'INTEGER DEFAULT 0' },
+      { name: 'features', type: 'TEXT' },
+      { name: 'finishing_options', type: 'TEXT' }
+    ];
+
+    for (const col of requiredPrintingColumns) {
+      if (!printingColumnNames.includes(col.name)) {
+        console.log(`Adding missing column to printing_products: ${col.name}`);
+        await dbRun(`ALTER TABLE printing_products ADD COLUMN ${col.name} ${col.type}`);
+      }
+    }
+
+    console.log('Umrah, Haji, Wedding, venues & printing_products table migration completed');
   } catch (error) {
     console.error('Error migrating tables:', error);
   }

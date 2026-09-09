@@ -515,7 +515,7 @@ const Admin = () => {
             break;
           case 'printing':
             if (selectedItem?.type === 'package') {
-              endpoint = '/printing/packages';
+              endpoint = '/printing-packages';
               const packageData = {
                 name: printingPackageForm.name || '',
                 description: printingPackageForm.description || '',
@@ -544,18 +544,21 @@ const Admin = () => {
                 category_id: formData.category_id || (printingCategories[0]?.id ?? 1),
                 name: formData.name,
                 description: formData.description || '',
-                price: parseFloat(formData.price) || 0,
-                discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
+                price: parseFloat(String(formData.price)) || 0,
+                discount_price: formData.discount_price ? parseFloat(String(formData.discount_price)) : null,
                 size_options: formData.size_options || '',
                 material_options: formData.material_options || '',
                 color_options: formData.color_options || '',
                 finishing_options: formData.finishing_options || '',
+                features: formData.features || '',
+                rating: parseFloat(String(formData.rating)) || 5,
+                reviews_count: parseInt(String(formData.reviews_count)) || 0,
                 design_template_url: '',
-                images: formData.images ? parseImages(formData.images).join(', ') : '',
+                images: formData.images ? parseImages(formData.images) : [],
                 is_custom_design: false,
-                estimated_time: formData.estimated_time || '',
-                min_order: formData.min_order || 1,
-                featured: formData.is_featured || false,
+                estimated_time: formData.estimated_time || '3-5 hari',
+                min_order: parseInt(String(formData.min_order)) || 1,
+                featured: Boolean(formData.is_featured),
                 is_active: true
               };
               response = await apiRequest(endpoint, {
@@ -774,7 +777,7 @@ const Admin = () => {
             break;
           case 'printing':
             if (selectedItem?.type === 'package') {
-              endpoint = `/printing/packages/${selectedItem.id}`;
+              endpoint = `/printing-packages/${selectedItem.id}`;
               const packageData = {
                 name: printingPackageForm.name || '',
                 description: printingPackageForm.description || '',
@@ -810,11 +813,14 @@ const Admin = () => {
                 material_options: printingProductForm.material_options || '',
                 color_options: printingProductForm.color_options || '',
                 finishing_options: printingProductForm.finishing_options || '',
-                images: printingProductForm.images ? parseImages(printingProductForm.images).join(', ') : '',
+                features: printingProductForm.features || '',
+                rating: parseFloat(String(printingProductForm.rating)) || 5,
+                reviews_count: parseInt(String(printingProductForm.reviews_count)) || 0,
+                images: printingProductForm.images ? parseImages(printingProductForm.images) : [],
                 is_custom_design: false,
-                estimated_time: printingProductForm.estimated_time || '',
-                min_order: printingProductForm.min_order || 1,
-                featured: printingProductForm.is_featured || false,
+                estimated_time: printingProductForm.estimated_time || '3-5 hari',
+                min_order: parseInt(String(printingProductForm.min_order)) || 1,
+                featured: Boolean(printingProductForm.is_featured),
                 is_active: true
               };
               response = await apiRequest(endpoint, {
@@ -1021,13 +1027,22 @@ const Admin = () => {
       case 'printing':
         if (itemType === 'product') {
           setPrintingProductForm({
-            ...item,
-            min_order: parseInt(item.min_order) || 1,
+            category_id: item.category_id || (printingCategories[0]?.id ?? 1),
+            name: item.name || '',
+            description: item.description || '',
+            price: String(item.price || ''),
+            discount_price: item.discount_price ? String(item.discount_price) : '',
+            min_order: parseInt(String(item.min_order)) || 1,
+            estimated_time: item.estimated_time || '3-5 hari',
             size_options: Array.isArray(item.size_options) ? item.size_options.join(', ') : (item.size_options || ''),
             material_options: Array.isArray(item.material_options) ? item.material_options.join(', ') : (item.material_options || ''),
             color_options: Array.isArray(item.color_options) ? item.color_options.join(', ') : (item.color_options || ''),
             finishing_options: Array.isArray(item.finishing_options) ? item.finishing_options.join(', ') : (item.finishing_options || ''),
-            features: Array.isArray(item.features) ? item.features.join(', ') : (item.features || ''),
+            features: Array.isArray(item.features) ? item.features.join('\n') : (item.features || ''),
+            rating: item.rating ? Number(item.rating) : 5,
+            reviews_count: item.reviews_count ? Number(item.reviews_count) : 0,
+            is_featured: Boolean(item.is_featured || item.featured),
+            is_new: Boolean(item.is_new),
             images: parseImages(item.images).join(', ')
           });
         } else if (itemType === 'package') {
@@ -1167,7 +1182,11 @@ const Admin = () => {
           endpoint = `/stats/${id}`;
           break;
         case 'printing':
-          endpoint = `/printing/products/${id}`;
+          if (itemType === 'package') {
+            endpoint = `/printing-packages/${id}`;
+          } else {
+            endpoint = `/printing/products/${id}`;
+          }
           break;
         case 'umrah-haji':
           if (itemType === 'umrah') {
@@ -1206,7 +1225,11 @@ const Admin = () => {
             setStats(prev => prev.filter(item => item.id !== id));
             break;
           case 'printing':
-            setPrintingProducts(prev => prev.filter(item => item.id !== id));
+            if (itemType === 'package') {
+              setPrintingPackages(prev => prev.filter(item => item.id !== id));
+            } else {
+              setPrintingProducts(prev => prev.filter(item => item.id !== id));
+            }
             break;
           case 'umrah-haji':
             if (itemType === 'umrah') {

@@ -108,17 +108,35 @@ export default function Printing() {
         }
 
         if (productsRes.success && Array.isArray(productsRes.data) && productsRes.data.length > 0) {
+          const parseSafeList = (val: any): string[] => {
+            if (!val) return [];
+            if (Array.isArray(val)) return val.filter(Boolean);
+            if (typeof val === 'string') {
+              const trimmed = val.trim();
+              if (!trimmed) return [];
+              if (trimmed.startsWith('[')) {
+                try {
+                  const parsed = JSON.parse(trimmed);
+                  if (Array.isArray(parsed)) return parsed.filter(Boolean);
+                } catch {}
+              }
+              if (trimmed.startsWith('data:')) return [trimmed];
+              return trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean);
+            }
+            return [];
+          };
+
           const productsData = productsRes.data.map((p: any) => ({
             ...p,
-            size_options: p.size_options ? (typeof p.size_options === 'string' ? p.size_options.split(',') : p.size_options) : [],
-            material_options: p.material_options ? (typeof p.material_options === 'string' ? p.material_options.split(',') : p.material_options) : [],
-            color_options: p.color_options ? (typeof p.color_options === 'string' ? p.color_options.split(',') : p.color_options) : [],
-            finishing_options: p.finishing_options ? (typeof p.finishing_options === 'string' ? p.finishing_options.split(',') : p.finishing_options) : [],
-            images: p.images ? (typeof p.images === 'string' ? [p.images] : p.images) : [],
-            features: p.features ? (typeof p.features === 'string' ? JSON.parse(p.features) : p.features) : [],
-            rating: p.rating || 4.8,
-            reviews_count: p.reviews_count || 0,
-            is_featured: Boolean(p.is_featured || p.is_active),
+            size_options: parseSafeList(p.size_options),
+            material_options: parseSafeList(p.material_options),
+            color_options: parseSafeList(p.color_options),
+            finishing_options: parseSafeList(p.finishing_options),
+            images: parseSafeList(p.images),
+            features: parseSafeList(p.features).length > 0 ? parseSafeList(p.features) : ["Kualitas Terjamin", "Harga Kompetitif", "Pengiriman Cepat"],
+            rating: Number(p.rating) || 4.8,
+            reviews_count: Number(p.reviews_count) || 0,
+            is_featured: Boolean(p.is_featured || p.featured),
             is_new: Boolean(p.is_new),
           }));
           setProducts(productsData);

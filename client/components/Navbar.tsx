@@ -101,13 +101,21 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           {/* LOGO */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <motion.div
-              className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/20"
-              whileHover={{ scale: 1.1, rotate: -5 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {logoLetter}
-            </motion.div>
+            {settings["site-logo"] ? (
+              <img
+                src={settings["site-logo"]}
+                alt={siteName}
+                className="h-9 w-auto max-h-9 max-w-[120px] object-contain rounded-lg shadow-sm"
+              />
+            ) : (
+              <motion.div
+                className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary/20"
+                whileHover={{ scale: 1.1, rotate: -5 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {logoLetter}
+              </motion.div>
+            )}
             <span className="text-base font-bold tracking-tight text-foreground">{siteName}</span>
           </Link>
 

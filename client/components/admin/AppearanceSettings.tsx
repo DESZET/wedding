@@ -183,7 +183,8 @@ function PanelGeneral() {
       <div className={sectionCls}>
         <p className={headingCls}><LayoutTemplate className="w-4 h-4 text-primary" /> Identitas Website</p>
         <Field label="Nama Website / Brand" settingKey="site-name" placeholder="Galeria Wedding" />
-        <Field label="Huruf Logo" settingKey="logo-letter" placeholder="G" />
+        <ImageField label="Logo Website (Gambar / Foto Logo)" settingKey="site-logo" placeholder="Upload file logo (.png, .jpg, .svg) atau tempel URL..." />
+        <Field label="Huruf Logo (Fallback jika tanpa gambar)" settingKey="logo-letter" placeholder="G" />
         <Field label="Tagline" settingKey="tagline" placeholder="Mewujudkan Pernikahan Impian Anda" />
         <Field label="Deskripsi Singkat" settingKey="description" placeholder="Deskripsi website..." rows={2} />
         <Field label="Copyright Footer" settingKey="footer-copyright" placeholder="© 2025 Galeria Wedding. All rights reserved." />
