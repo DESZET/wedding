@@ -146,6 +146,29 @@ const uploadVideoFile = async (file: File) => {
   return response.json();
 };
 
+// ============ HELPER: Parse images from any format ============
+// Handles: Array, JSON string '["img"]', or comma-separated string
+const parseImages = (raw: any): string[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch {}
+    }
+    return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const getFirstImage = (raw: any, fallback: string): string => {
+  const imgs = parseImages(raw);
+  return imgs.length > 0 ? imgs[0] : fallback;
+};
+
 // ============ MAIN ADMIN COMPONENT ============
 const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
@@ -489,55 +512,57 @@ const Admin = () => {
             }
             break;
           case 'printing':
-            endpoint = '/printing/products';
-            // Create a copy of the form data to avoid mutating state
-            let formData = { ...printingProductForm };
-            // Set category_id based on active sub-menu
-            const getCategoryId = (subMenu: string) => {
-              switch (subMenu) {
-                case 'undangan': return 1;
-                case 'sablon-kaos': return 2;
-                case 'banner': return 3;
-                case 'id-card': return 4;
-                case 'kartu-nama': return 5;
-                case 'brosur-flyer': return 6;
-                case 'stiker-label': return 7;
-                case 'kemasan-produk': return 8;
-                case 'merchandise': return 9;
-                default: return 1;
+            if (selectedItem?.type === 'package') {
+              endpoint = '/printing/packages';
+              const packageData = {
+                name: printingPackageForm.name || '',
+                description: printingPackageForm.description || '',
+                price: parseFloat(String(printingPackageForm.price)) || 0,
+                discount_price: printingPackageForm.discount_price ? parseFloat(String(printingPackageForm.discount_price)) : null,
+                category: printingPackageForm.category || '',
+                included_items: Array.isArray(printingPackageForm.included_items)
+                  ? printingPackageForm.included_items
+                  : String(printingPackageForm.included_items || '').split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean),
+                max_products: parseInt(String(printingPackageForm.max_products)) || 0,
+                validity_days: parseInt(String(printingPackageForm.validity_days)) || 30,
+                is_active: Boolean(printingPackageForm.is_active),
+                featured: Boolean(printingPackageForm.featured)
+              };
+              response = await apiRequest(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(packageData)
+              });
+              if (response.success) {
+                setPrintingPackages(prev => [...prev, response.data]);
               }
-            };
-            formData.category_id = getCategoryId(activePrintingSubMenu);
-            // Validate required fields
-            if (!formData.name || !formData.price || !formData.category_id) {
-              alert('Nama produk, harga, dan kategori harus diisi!');
-              return;
-            }
-            // Map form fields to database fields
-            const productData = {
-              category_id: formData.category_id,
-              name: formData.name,
-              description: formData.description || '',
-              price: parseFloat(formData.price) || 0,
-              discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
-              size_options: formData.size_options || '',
-              material_options: formData.material_options || '',
-              color_options: formData.color_options || '',
-              finishing_options: formData.finishing_options || '',
-              design_template_url: '',
-              images: formData.images || '',
-              is_custom_design: false,
-              estimated_time: formData.estimated_time || '',
-              min_order: formData.min_order || 1,
-              featured: formData.is_featured || false,
-              is_active: true
-            };
-            response = await apiRequest(endpoint, {
-              method: 'POST',
-              body: JSON.stringify(productData)
-            });
-            if (response.success) {
-              setPrintingProducts(prev => [...prev, response.data]);
+            } else {
+              endpoint = '/printing/products';
+              const formData = printingProductForm;
+              const productData = {
+                category_id: formData.category_id || (printingCategories[0]?.id ?? 1),
+                name: formData.name,
+                description: formData.description || '',
+                price: parseFloat(formData.price) || 0,
+                discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
+                size_options: formData.size_options || '',
+                material_options: formData.material_options || '',
+                color_options: formData.color_options || '',
+                finishing_options: formData.finishing_options || '',
+                design_template_url: '',
+                images: formData.images ? parseImages(formData.images).join(', ') : '',
+                is_custom_design: false,
+                estimated_time: formData.estimated_time || '',
+                min_order: formData.min_order || 1,
+                featured: formData.is_featured || false,
+                is_active: true
+              };
+              response = await apiRequest(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(productData)
+              });
+              if (response.success) {
+                setPrintingProducts(prev => [...prev, response.data]);
+              }
             }
             break;
           case 'umrah-haji':
@@ -746,15 +771,59 @@ const Admin = () => {
             }
             break;
           case 'printing':
-            endpoint = `/printing/products/${selectedItem.id}`;
-            response = await apiRequest(endpoint, {
-              method: 'PUT',
-              body: JSON.stringify(printingProductForm)
-            });
-            if (response.success) {
-              setPrintingProducts(prev => prev.map(item =>
-                item.id === selectedItem.id ? response.data : item
-              ));
+            if (selectedItem?.type === 'package') {
+              endpoint = `/printing/packages/${selectedItem.id}`;
+              const packageData = {
+                name: printingPackageForm.name || '',
+                description: printingPackageForm.description || '',
+                price: parseFloat(String(printingPackageForm.price)) || 0,
+                discount_price: printingPackageForm.discount_price ? parseFloat(String(printingPackageForm.discount_price)) : null,
+                category: printingPackageForm.category || '',
+                included_items: Array.isArray(printingPackageForm.included_items)
+                  ? printingPackageForm.included_items
+                  : String(printingPackageForm.included_items || '').split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean),
+                max_products: parseInt(String(printingPackageForm.max_products)) || 0,
+                validity_days: parseInt(String(printingPackageForm.validity_days)) || 30,
+                is_active: Boolean(printingPackageForm.is_active),
+                featured: Boolean(printingPackageForm.featured)
+              };
+              response = await apiRequest(endpoint, {
+                method: 'PUT',
+                body: JSON.stringify(packageData)
+              });
+              if (response.success) {
+                setPrintingPackages(prev => prev.map(item =>
+                  item.id === selectedItem.id ? response.data : item
+                ));
+              }
+            } else {
+              endpoint = `/printing/products/${selectedItem.id}`;
+              const productData = {
+                category_id: printingProductForm.category_id || (printingCategories[0]?.id ?? 1),
+                name: printingProductForm.name,
+                description: printingProductForm.description || '',
+                price: parseFloat(String(printingProductForm.price)) || 0,
+                discount_price: printingProductForm.discount_price ? parseFloat(String(printingProductForm.discount_price)) : null,
+                size_options: printingProductForm.size_options || '',
+                material_options: printingProductForm.material_options || '',
+                color_options: printingProductForm.color_options || '',
+                finishing_options: printingProductForm.finishing_options || '',
+                images: printingProductForm.images ? parseImages(printingProductForm.images).join(', ') : '',
+                is_custom_design: false,
+                estimated_time: printingProductForm.estimated_time || '',
+                min_order: printingProductForm.min_order || 1,
+                featured: printingProductForm.is_featured || false,
+                is_active: true
+              };
+              response = await apiRequest(endpoint, {
+                method: 'PUT',
+                body: JSON.stringify(productData)
+              });
+              if (response.success) {
+                setPrintingProducts(prev => prev.map(item =>
+                  item.id === selectedItem.id ? response.data : item
+                ));
+              }
             }
             break;
           case 'umrah-haji':
@@ -926,7 +995,7 @@ const Admin = () => {
           description: item.description || '',
           longDescription: item.longDescription || '',
           features: Array.isArray(item.features) ? item.features.join('\n') : (item.features || ''),
-          images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
+          images: parseImages(item.images).join(', '),
           highlighted: Boolean(item.highlighted),
           is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
         });
@@ -957,7 +1026,20 @@ const Admin = () => {
             color_options: Array.isArray(item.color_options) ? item.color_options.join(', ') : (item.color_options || ''),
             finishing_options: Array.isArray(item.finishing_options) ? item.finishing_options.join(', ') : (item.finishing_options || ''),
             features: Array.isArray(item.features) ? item.features.join(', ') : (item.features || ''),
-            images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || '')
+            images: parseImages(item.images).join(', ')
+          });
+        } else if (itemType === 'package') {
+          setPrintingPackageForm({
+            name: item.name || '',
+            description: item.description || '',
+            price: String(item.price || ''),
+            discount_price: item.discount_price ? String(item.discount_price) : '',
+            category: item.category || '',
+            included_items: Array.isArray(item.included_items) ? item.included_items.join('\n') : (item.included_items || ''),
+            max_products: item.max_products || 0,
+            validity_days: item.validity_days || 30,
+            is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+            featured: Boolean(item.featured)
           });
         }
         break;
@@ -991,7 +1073,7 @@ const Admin = () => {
             departure_dates: Array.isArray(item.departure_dates) 
               ? item.departure_dates.map((d: any) => typeof d === 'object' ? (d.date || JSON.stringify(d)) : String(d)).join(', ') 
               : (item.departure_dates || ''),
-            images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
+            images: parseImages(item.images).join(', '),
             featured: Boolean(item.featured),
             is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
             package_type: 'umrah',
@@ -1031,7 +1113,7 @@ const Admin = () => {
             timeline: Array.isArray(item.timeline) 
               ? item.timeline.map((t: any) => typeof t === 'object' ? `${t.month || ''}: ${Array.isArray(t.activities) ? t.activities.join(', ') : ''}` : String(t)).join('\n')
               : (item.timeline || ''),
-            images: Array.isArray(item.images) ? item.images.join(', ') : (item.images || ''),
+            images: parseImages(item.images).join(', '),
             featured: Boolean(item.featured),
             is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
             rating: item.rating || 4.9,
@@ -2055,7 +2137,7 @@ const Admin = () => {
 
 
 
-          {activeMenu === 'printing' && selectedItem?.type === 'product' && (
+          {activeMenu === 'printing' && (selectedItem?.type === 'product' || !selectedItem?.type) && (
             <div className="space-y-6">
               {/* SECTION 1: KATEGORI & INFORMASI UTAMA */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
@@ -2338,6 +2420,126 @@ const Admin = () => {
                       onChange={(e) => setPrintingProductForm({ ...printingProductForm, is_new: e.target.checked })}
                     />
                     <span className="font-semibold text-slate-700">⚡ Produk Baru (New Tag)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeMenu === 'printing' && selectedItem?.type === 'package' && (
+            <div className="space-y-6">
+              {/* SECTION 1: INFORMASI UTAMA PAKET PRINTING */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-amber-700 font-bold text-sm border-b pb-2">
+                  <Printer size={18} />
+                  <span>1. Informasi Utama Paket Percetakan</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Paket *</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Paket Branding Bisnis Hemat"
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white font-medium"
+                    value={printingPackageForm.name}
+                    onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Paket</label>
+                  <textarea
+                    placeholder="Deskripsi ringkas mengenai paket ini..."
+                    className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                    rows={2}
+                    value={printingPackageForm.description}
+                    onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Harga Normal (Rp) *</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white font-semibold"
+                      value={printingPackageForm.price}
+                      onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, price: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Harga Diskon (Rp, opsional)</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingPackageForm.discount_price}
+                      onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, discount_price: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Kategori / Label Paket</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Bisnis, UMKM, Event"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingPackageForm.category}
+                      onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, category: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Masa Berlaku (Hari)</label>
+                    <input
+                      type="number"
+                      className="w-full p-2.5 border rounded-lg text-sm bg-white"
+                      value={printingPackageForm.validity_days}
+                      onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, validity_days: parseInt(e.target.value) || 30 })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: ITEM YANG TERMASUK */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm border-b pb-2">
+                  <CheckCircle size={18} />
+                  <span>2. Item / Fasilitas yang Termasuk (1 per baris)</span>
+                </div>
+                <textarea
+                  placeholder={"Contoh:\n100 Pcs Kartu Nama Premium\n50 Pcs Brosur A5 Full Color\n1 Roll Banner 60x160cm"}
+                  className="w-full p-2.5 border rounded-lg text-xs bg-white font-mono"
+                  rows={4}
+                  value={printingPackageForm.included_items}
+                  onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, included_items: e.target.value })}
+                />
+              </div>
+
+              {/* SECTION 3: STATUS & FEATURED */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-slate-800 font-bold text-sm border-b pb-2">
+                  <CheckCircle size={18} />
+                  <span>3. Status Paket</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={printingPackageForm.featured}
+                      onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, featured: e.target.checked })}
+                    />
+                    <span className="font-semibold text-slate-700">★ Paket Unggulan (Featured)</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white border cursor-pointer hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      checked={printingPackageForm.is_active}
+                      onChange={(e) => setPrintingPackageForm({ ...printingPackageForm, is_active: e.target.checked })}
+                    />
+                    <span className="font-semibold text-slate-700">✓ Status Aktif</span>
                   </label>
                 </div>
               </div>
@@ -3615,9 +3817,7 @@ const DashboardContent = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {weddingPackages.map((item: any) => {
-              const bannerImg = (item.images && Array.isArray(item.images) && item.images.length > 0)
-                ? item.images[0]
-                : (typeof item.images === 'string' && item.images.trim() ? item.images.split(',')[0].trim() : getWeddingFallbackImg(item.name));
+              const bannerImg = getFirstImage(item.images, getWeddingFallbackImg(item.name));
               
               const featuresList = Array.isArray(item.features)
                 ? item.features
@@ -3758,11 +3958,7 @@ const DashboardContent = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {printingProducts.slice(0, 6).map((product: any) => {
-              const img = (product.images && Array.isArray(product.images) && product.images.length > 0)
-                ? product.images[0]
-                : (typeof product.images === 'string' && product.images.trim()
-                    ? product.images.split(',')[0].trim()
-                    : getPrintingFallbackImg(product.category_id));
+              const img = getFirstImage(product.images, getPrintingFallbackImg(product.category_id));
               
               const hasDiscount = product.discount_price && Number(product.discount_price) > 0 && Number(product.discount_price) < Number(product.price);
               const categoryLabel = product.category_name || (product.category_id === 1 ? 'Undangan' : product.category_id === 2 ? 'Sablon Kaos' : product.category_id === 3 ? 'Banner' : 'Percetakan');
@@ -3958,11 +4154,9 @@ const DashboardContent = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredReligious.slice(0, 6).map((pkg: any) => {
               const isHaji = pkg._type === 'haji' || pkg.package_type === 'haji';
-              const img = (pkg.images && Array.isArray(pkg.images) && pkg.images.length > 0)
-                ? pkg.images[0]
-                : (typeof pkg.images === 'string' && pkg.images.trim()
-                    ? pkg.images.split(',')[0].trim()
-                    : (isHaji ? 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80' : 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80'));
+              const FALLBACK_HAJI = 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80';
+              const FALLBACK_UMRAH = 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80';
+              const img = getFirstImage(pkg.images, isHaji ? FALLBACK_HAJI : FALLBACK_UMRAH);
               
               const hasDiscount = pkg.discount_price && Number(pkg.discount_price) > 0 && Number(pkg.discount_price) < Number(pkg.price);
 
@@ -4245,9 +4439,7 @@ const PackagesContent = ({ items, onEdit, onDelete }: any) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {items.map((item: any) => {
-          const bannerImg = (item.images && Array.isArray(item.images) && item.images.length > 0)
-            ? item.images[0]
-            : (typeof item.images === 'string' && item.images.trim() ? item.images.split(',')[0].trim() : getFallbackImage(item.name));
+          const bannerImg = getFirstImage(item.images, getFallbackImage(item.name));
           
           const featuresList = Array.isArray(item.features)
             ? item.features
@@ -4634,7 +4826,7 @@ const UmrahHajiAdminContent = ({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {umrahPackages.map((pkg: any) => {
-                const img = Array.isArray(pkg.images) && pkg.images.length > 0 ? pkg.images[0] : (typeof pkg.images === 'string' && pkg.images ? pkg.images.split(',')[0].trim() : 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80');
+                const img = getFirstImage(pkg.images, 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80');
                 const hasDiscount = pkg.discount_price && Number(pkg.discount_price) > 0 && Number(pkg.discount_price) < Number(pkg.price);
 
                 return (
@@ -4768,7 +4960,7 @@ const UmrahHajiAdminContent = ({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {hajiPackages.map((pkg: any) => {
-                const img = Array.isArray(pkg.images) && pkg.images.length > 0 ? pkg.images[0] : (typeof pkg.images === 'string' && pkg.images ? pkg.images.split(',')[0].trim() : 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=600&q=80');
+                const img = getFirstImage(pkg.images, 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=600&q=80');
                 const hasDiscount = pkg.discount_price && Number(pkg.discount_price) > 0 && Number(pkg.discount_price) < Number(pkg.price);
                 const acc = pkg.accommodation_details || {};
 
@@ -5111,11 +5303,7 @@ const PrintingAdminContent = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProducts.map((product: any) => {
-            const img = (product.images && Array.isArray(product.images) && product.images.length > 0)
-              ? product.images[0]
-              : (typeof product.images === 'string' && product.images.trim()
-                  ? product.images.split(',')[0].trim()
-                  : getFallbackProductImage(product.category_id));
+            const img = getFirstImage(product.images, getFallbackProductImage(product.category_id));
             
             const hasDiscount = product.discount_price && Number(product.discount_price) > 0 && Number(product.discount_price) < Number(product.price);
             const categoryLabel = product.category_name || getCategoryName(product.category_id);

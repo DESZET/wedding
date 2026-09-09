@@ -30,6 +30,23 @@ const FALLBACK_IMAGES = {
   printing: "https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=800&q=80"
 };
 
+// Parse images from any DB format: Array, JSON string '["img"]', or CSV
+const parseImagesField = (raw: any): string[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch {}
+    }
+    return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
 export default function UnifiedPackagesShowcase() {
   const [activeCategory, setActiveCategory] = useState<CategoryType>("all");
   const [packages, setPackages] = useState<UnifiedPackage[]>([]);
@@ -57,13 +74,8 @@ export default function UnifiedPackagesShowcase() {
         const weddingRes = await fetch("/api/packages").then(res => res.json()).catch(() => null);
         if (weddingRes && weddingRes.success && Array.isArray(weddingRes.data)) {
           weddingRes.data.slice(0, 3).forEach((pkg: any) => {
-            const rawFeatures = Array.isArray(pkg.features)
-              ? pkg.features
-              : (typeof pkg.features === "string" ? JSON.parse(pkg.features || "[]") : []);
-            
-            const rawImages = Array.isArray(pkg.images)
-              ? pkg.images
-              : (typeof pkg.images === "string" ? JSON.parse(pkg.images || "[]") : []);
+            const rawFeatures = parseImagesField(pkg.features);
+            const rawImages = parseImagesField(pkg.images);
 
             unifiedList.push({
               id: `wedding-${pkg.id}`,
@@ -86,13 +98,8 @@ export default function UnifiedPackagesShowcase() {
         const hajiRes = await fetch("/api/haji-packages").then(res => res.json()).catch(() => null);
         if (hajiRes && hajiRes.success && Array.isArray(hajiRes.data)) {
           hajiRes.data.slice(0, 2).forEach((pkg: any) => {
-            const rawFeatures = Array.isArray(pkg.included_features)
-              ? pkg.included_features
-              : (typeof pkg.included_features === "string" ? JSON.parse(pkg.included_features || "[]") : []);
-            
-            const rawImages = Array.isArray(pkg.images)
-              ? pkg.images
-              : (typeof pkg.images === "string" ? JSON.parse(pkg.images || "[]") : []);
+            const rawFeatures = parseImagesField(pkg.included_features);
+            const rawImages = parseImagesField(pkg.images);
 
             unifiedList.push({
               id: `haji-${pkg.id}`,
@@ -115,13 +122,8 @@ export default function UnifiedPackagesShowcase() {
         const umrahRes = await fetch("/api/umrah-packages").then(res => res.json()).catch(() => null);
         if (umrahRes && umrahRes.success && Array.isArray(umrahRes.data)) {
           umrahRes.data.filter((p: any) => p.package_type !== "haji").slice(0, 2).forEach((pkg: any) => {
-            const rawFeatures = Array.isArray(pkg.included_features)
-              ? pkg.included_features
-              : (typeof pkg.included_features === "string" ? JSON.parse(pkg.included_features || "[]") : []);
-            
-            const rawImages = Array.isArray(pkg.images)
-              ? pkg.images
-              : (typeof pkg.images === "string" ? JSON.parse(pkg.images || "[]") : []);
+            const rawFeatures = parseImagesField(pkg.included_features);
+            const rawImages = parseImagesField(pkg.images);
 
             unifiedList.push({
               id: `umrah-${pkg.id}`,
@@ -144,13 +146,8 @@ export default function UnifiedPackagesShowcase() {
         const printingRes = await fetch("/api/printing/products").then(res => res.json()).catch(() => null);
         if (printingRes && printingRes.success && Array.isArray(printingRes.data)) {
           printingRes.data.slice(0, 3).forEach((prod: any) => {
-            const rawFeatures = Array.isArray(prod.features)
-              ? prod.features
-              : (typeof prod.features === "string" ? JSON.parse(prod.features || "[]") : []);
-            
-            const rawImages = Array.isArray(prod.images)
-              ? prod.images
-              : (typeof prod.images === "string" ? JSON.parse(prod.images || "[]") : []);
+            const rawFeatures = parseImagesField(prod.features);
+            const rawImages = parseImagesField(prod.images);
 
             unifiedList.push({
               id: `printing-${prod.id}`,
