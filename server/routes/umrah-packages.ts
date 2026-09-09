@@ -64,12 +64,12 @@ function safeJsonParse<T>(val: any, fallback: T): T {
   const trimmed = val.trim();
   if (!trimmed) return fallback;
 
-  // Try standard JSON parse
   try {
     return JSON.parse(trimmed) as T;
   } catch {
     // If fallback is an array and the string is comma/newline separated, convert to string array
     if (Array.isArray(fallback)) {
+      if (trimmed.startsWith('data:')) return [trimmed] as unknown as T;
       const items = trimmed
         .split(/[\n,]/)
         .map(s => s.trim())

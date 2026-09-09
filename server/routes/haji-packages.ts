@@ -44,6 +44,7 @@ function safeJsonParse<T>(val: any, fallback: T): T {
     return JSON.parse(trimmed) as T;
   } catch {
     if (Array.isArray(fallback)) {
+      if (trimmed.startsWith('data:')) return [trimmed] as unknown as T;
       const items = trimmed
         .split(/[\n,]/)
         .map(s => s.trim())

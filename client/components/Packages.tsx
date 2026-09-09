@@ -16,6 +16,37 @@ const PACKAGE_IMAGES = [
   "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1400&q=80"
 ];
 
+// Parse images from any DB format
+const parseImages = (raw: any): string[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch {}
+    }
+    if (trimmed.startsWith('data:')) return [trimmed];
+    return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const getWeddingFallbackImage = (name: string, index = 0) => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('diamond') || n.includes('royal') || n.includes('luxury')) {
+    return 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=80';
+  } else if (n.includes('platinum') || n.includes('gold')) {
+    return 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1400&q=80';
+  } else if (n.includes('silver')) {
+    return 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1400&q=80';
+  }
+  return PACKAGE_IMAGES[index % PACKAGE_IMAGES.length];
+};
+
 // Fallback sample data if API returns empty
 const SAMPLE_PACKAGES: PackageItem[] = [
   {
@@ -217,7 +248,8 @@ export default function Packages() {
             style={{ scrollBehavior: "smooth" }}
           >
             {packages.map((pkg, idx) => {
-              const bgImage = PACKAGE_IMAGES[idx % PACKAGE_IMAGES.length];
+              const imgs = parseImages(pkg.images);
+              const bgImage = (imgs && imgs.length > 0) ? imgs[0] : getWeddingFallbackImage(pkg.name, idx);
 
               return (
                 <div

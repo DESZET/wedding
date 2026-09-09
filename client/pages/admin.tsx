@@ -147,18 +147,20 @@ const uploadVideoFile = async (file: File) => {
 };
 
 // ============ HELPER: Parse images from any format ============
-// Handles: Array, JSON string '["img"]', or comma-separated string
+// Handles: Array, JSON string '["img"]', single data URL, or comma-separated string
 const parseImages = (raw: any): string[] => {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw.filter(Boolean);
   if (typeof raw === 'string') {
     const trimmed = raw.trim();
+    if (!trimmed) return [];
     if (trimmed.startsWith('[')) {
       try {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) return parsed.filter(Boolean);
       } catch {}
     }
+    if (trimmed.startsWith('data:')) return [trimmed];
     return trimmed.split(',').map(s => s.trim()).filter(Boolean);
   }
   return [];
@@ -471,7 +473,7 @@ const Admin = () => {
               highlighted: Boolean(packageForm.highlighted),
               is_active: Boolean(packageForm.is_active),
               features: packageForm.features ? packageForm.features.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : [],
-              images: packageForm.images ? packageForm.images.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : []
+              images: packageForm.images ? parseImages(packageForm.images) : []
             };
             response = await apiRequest(endpoint, {
               method: 'POST',
@@ -625,7 +627,7 @@ const Admin = () => {
                 itinerary: parseItineraryLines(umrahPackageForm.itinerary),
                 important_notes: stringToArray(umrahPackageForm.important_notes),
                 departure_dates: stringToArray(umrahPackageForm.departure_dates),
-                images: stringToArray(umrahPackageForm.images),
+                images: parseImages(umrahPackageForm.images),
                 payment_plans: stringToArray(umrahPackageForm.payment_plans),
                 tags: stringToArray(umrahPackageForm.tags),
               };
@@ -657,7 +659,7 @@ const Admin = () => {
                 excluded_features: stringToArray(hajiPackageForm.excluded_features),
                 requirements: stringToArray(hajiPackageForm.requirements),
                 timeline: stringToArray(hajiPackageForm.timeline),
-                images: stringToArray(hajiPackageForm.images),
+                images: parseImages(hajiPackageForm.images),
                 accommodation_details: {
                   mekah: {
                     hotel: hajiPackageForm.accommodation_mekah_hotel || '',
@@ -722,7 +724,7 @@ const Admin = () => {
               highlighted: Boolean(packageForm.highlighted),
               is_active: Boolean(packageForm.is_active),
               features: packageForm.features ? packageForm.features.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : [],
-              images: packageForm.images ? packageForm.images.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : []
+              images: packageForm.images ? parseImages(packageForm.images) : []
             };
             response = await apiRequest(endpoint, {
               method: 'PUT',
@@ -884,7 +886,7 @@ const Admin = () => {
                 itinerary: parseItineraryLinesEdit(umrahPackageForm.itinerary),
                 important_notes: stringToArrayEdit(umrahPackageForm.important_notes),
                 departure_dates: stringToArrayEdit(umrahPackageForm.departure_dates),
-                images: stringToArrayEdit(umrahPackageForm.images),
+                images: parseImages(umrahPackageForm.images),
                 payment_plans: stringToArrayEdit(umrahPackageForm.payment_plans),
                 tags: stringToArrayEdit(umrahPackageForm.tags),
               };
@@ -918,7 +920,7 @@ const Admin = () => {
                 excluded_features: stringToArrayEdit(hajiPackageForm.excluded_features),
                 requirements: stringToArrayEdit(hajiPackageForm.requirements),
                 timeline: stringToArrayEdit(hajiPackageForm.timeline),
-                images: stringToArrayEdit(hajiPackageForm.images),
+                images: parseImages(hajiPackageForm.images),
                 accommodation_details: {
                   mekah: {
                     hotel: hajiPackageForm.accommodation_mekah_hotel || '',
@@ -1786,11 +1788,11 @@ const Admin = () => {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
                           const newPath = uploadResponse.data.path;
-                          const existing = packageForm.images ? packageForm.images.trim() : '';
-                          const updated = existing ? `${existing}, ${newPath}` : newPath;
-                          setPackageForm({ ...packageForm, images: updated });
+                          const currentImgs = parseImages(packageForm.images);
+                          const updated = [...currentImgs, newPath];
+                          setPackageForm({ ...packageForm, images: JSON.stringify(updated) });
                         } else {
-                          alert('Gagal upload gambar');
+                          alert('Gagal upload gambar: ' + (uploadResponse.error || 'Server error'));
                         }
                       } catch (error) {
                         console.error('Upload error:', error);
@@ -1808,22 +1810,16 @@ const Admin = () => {
                   onChange={(e) => setPackageForm({ ...packageForm, images: e.target.value })}
                 />
 
-                {Boolean(packageForm.images) && (
+                {parseImages(packageForm.images).length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {(Array.isArray(packageForm.images)
-                      ? packageForm.images
-                      : (typeof packageForm.images === 'string' ? packageForm.images.split(',') : [])
-                    ).map((img: string, idx: number) => typeof img === 'string' && img.trim() && (
+                    {parseImages(packageForm.images).map((img: string, idx: number) => (
                       <div key={idx} className="relative">
-                        <img src={img.trim()} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
+                        <img src={img} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
                         <button
                           type="button"
                           onClick={() => {
-                            const arr = Array.isArray(packageForm.images)
-                              ? packageForm.images
-                              : (typeof packageForm.images === 'string' ? packageForm.images.split(',') : []);
-                            const imgs = arr.map((s: string) => s.trim()).filter((_: any, i: number) => i !== idx);
-                            setPackageForm({ ...packageForm, images: imgs.join(', ') });
+                            const imgs = parseImages(packageForm.images).filter((_: any, i: number) => i !== idx);
+                            setPackageForm({ ...packageForm, images: JSON.stringify(imgs) });
                           }}
                           className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
                         >×</button>
@@ -2350,9 +2346,9 @@ const Admin = () => {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
                           const newPath = uploadResponse.data.path;
-                          const existing = printingProductForm.images ? printingProductForm.images.trim() : '';
-                          const updated = existing ? `${existing}, ${newPath}` : newPath;
-                          setPrintingProductForm({ ...printingProductForm, images: updated });
+                          const currentImgs = parseImages(printingProductForm.images);
+                          const updated = [...currentImgs, newPath];
+                          setPrintingProductForm({ ...printingProductForm, images: JSON.stringify(updated) });
                         } else {
                           alert('Gagal upload gambar');
                         }
@@ -2372,22 +2368,16 @@ const Admin = () => {
                   onChange={(e) => setPrintingProductForm({ ...printingProductForm, images: e.target.value })}
                 />
 
-                {Boolean(printingProductForm.images) && (
+                {parseImages(printingProductForm.images).length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {(Array.isArray(printingProductForm.images)
-                      ? printingProductForm.images
-                      : (typeof printingProductForm.images === 'string' ? printingProductForm.images.split(',') : [])
-                    ).map((img: string, idx: number) => typeof img === 'string' && img.trim() && (
+                    {parseImages(printingProductForm.images).map((img: string, idx: number) => (
                       <div key={idx} className="relative">
-                        <img src={img.trim()} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
+                        <img src={img} alt={`Preview ${idx + 1}`} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
                         <button
                           type="button"
                           onClick={() => {
-                            const arr = Array.isArray(printingProductForm.images)
-                              ? printingProductForm.images
-                              : (typeof printingProductForm.images === 'string' ? printingProductForm.images.split(',') : []);
-                            const imgs = arr.map((s: string) => s.trim()).filter((_: any, i: number) => i !== idx);
-                            setPrintingProductForm({ ...printingProductForm, images: imgs.join(', ') });
+                            const imgs = parseImages(printingProductForm.images).filter((_: any, i: number) => i !== idx);
+                            setPrintingProductForm({ ...printingProductForm, images: JSON.stringify(imgs) });
                           }}
                           className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
                         >×</button>
@@ -2870,9 +2860,9 @@ const Admin = () => {
                           const uploadResponse = await uploadFile(file);
                           if (uploadResponse.success) {
                             const newPath = uploadResponse.data.path;
-                            const existing = umrahPackageForm.images ? umrahPackageForm.images.trim() : '';
-                            const updated = existing ? `${existing}, ${newPath}` : newPath;
-                            setUmrahPackageForm({ ...umrahPackageForm, images: updated });
+                            const currentImgs = parseImages(umrahPackageForm.images);
+                            const updated = [...currentImgs, newPath];
+                            setUmrahPackageForm({ ...umrahPackageForm, images: JSON.stringify(updated) });
                           } else {
                             alert('Gagal upload gambar: ' + (uploadResponse.error || 'Unknown error'));
                           }
@@ -2896,12 +2886,12 @@ const Admin = () => {
                   />
                 </div>
 
-                {umrahPackageForm.images && (
+                {parseImages(umrahPackageForm.images).length > 0 && (
                   <div className="flex flex-wrap gap-2.5 pt-2">
-                    {umrahPackageForm.images.split(',').map((img, idx) => img.trim() && (
+                    {parseImages(umrahPackageForm.images).map((img, idx) => (
                       <div key={idx} className="relative group">
                         <img
-                          src={img.trim()}
+                          src={img}
                           alt={`Preview ${idx + 1}`}
                           className="w-20 h-20 object-cover rounded-xl border border-slate-300 shadow-sm"
                           onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=400&q=80'; }}
@@ -2909,8 +2899,8 @@ const Admin = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const imgs = umrahPackageForm.images.split(',').map(s => s.trim()).filter((_, i) => i !== idx);
-                            setUmrahPackageForm({ ...umrahPackageForm, images: imgs.join(', ') });
+                            const imgs = parseImages(umrahPackageForm.images).filter((_, i) => i !== idx);
+                            setUmrahPackageForm({ ...umrahPackageForm, images: JSON.stringify(imgs) });
                           }}
                           className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-rose-700 transition-colors"
                           title="Hapus foto"
@@ -3269,9 +3259,9 @@ const Admin = () => {
                           const uploadResponse = await uploadFile(file);
                           if (uploadResponse.success) {
                             const newPath = uploadResponse.data.path;
-                            const existing = hajiPackageForm.images ? hajiPackageForm.images.trim() : '';
-                            const updated = existing ? `${existing}, ${newPath}` : newPath;
-                            setHajiPackageForm({ ...hajiPackageForm, images: updated });
+                            const currentImgs = parseImages(hajiPackageForm.images);
+                            const updated = [...currentImgs, newPath];
+                            setHajiPackageForm({ ...hajiPackageForm, images: JSON.stringify(updated) });
                           } else {
                             alert('Gagal upload gambar: ' + (uploadResponse.error || 'Unknown error'));
                           }
@@ -3295,12 +3285,12 @@ const Admin = () => {
                   />
                 </div>
 
-                {hajiPackageForm.images && (
+                {parseImages(hajiPackageForm.images).length > 0 && (
                   <div className="flex flex-wrap gap-2.5 pt-2">
-                    {hajiPackageForm.images.split(',').map((img, idx) => img.trim() && (
+                    {parseImages(hajiPackageForm.images).map((img, idx) => (
                       <div key={idx} className="relative group">
                         <img
-                          src={img.trim()}
+                          src={img}
                           alt={`Preview ${idx + 1}`}
                           className="w-20 h-20 object-cover rounded-xl border border-slate-300 shadow-sm"
                           onError={(e: any) => { e.target.src = 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=400&q=80'; }}
@@ -3308,8 +3298,8 @@ const Admin = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const imgs = hajiPackageForm.images.split(',').map(s => s.trim()).filter((_, i) => i !== idx);
-                            setHajiPackageForm({ ...hajiPackageForm, images: imgs.join(', ') });
+                            const imgs = parseImages(hajiPackageForm.images).filter((_, i) => i !== idx);
+                            setHajiPackageForm({ ...hajiPackageForm, images: JSON.stringify(imgs) });
                           }}
                           className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-rose-700 transition-colors"
                           title="Hapus foto"

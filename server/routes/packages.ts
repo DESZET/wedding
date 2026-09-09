@@ -8,10 +8,16 @@ const parseSafeJson = (str: any, fallback: any = []) => {
   try {
     return JSON.parse(str);
   } catch {
-    if (typeof str === 'string' && str.includes(',')) {
-      return str.split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (typeof str === 'string') {
+      const trimmed = str.trim();
+      if (!trimmed) return fallback;
+      if (trimmed.startsWith('data:')) return [trimmed];
+      if (trimmed.includes(',')) {
+        return trimmed.split(',').map((s: string) => s.trim()).filter(Boolean);
+      }
+      return [trimmed];
     }
-    return [str];
+    return fallback;
   }
 };
 
@@ -79,6 +85,7 @@ const formatJsonField = (val: any): string => {
       if (Array.isArray(parsed)) return JSON.stringify(parsed);
       return JSON.stringify([parsed]);
     } catch {
+      if (trimmed.startsWith('data:')) return JSON.stringify([trimmed]);
       return JSON.stringify(trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean));
     }
   }

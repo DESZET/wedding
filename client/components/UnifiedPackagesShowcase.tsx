@@ -36,15 +36,27 @@ const parseImagesField = (raw: any): string[] => {
   if (Array.isArray(raw)) return raw.filter(Boolean);
   if (typeof raw === 'string') {
     const trimmed = raw.trim();
+    if (!trimmed) return [];
     if (trimmed.startsWith('[')) {
       try {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) return parsed.filter(Boolean);
       } catch {}
     }
+    if (trimmed.startsWith('data:')) return [trimmed];
     return trimmed.split(',').map(s => s.trim()).filter(Boolean);
   }
   return [];
+};
+
+const getWeddingFallbackImage = (name: string) => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('diamond') || n.includes('royal') || n.includes('luxury')) {
+    return 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80';
+  } else if (n.includes('platinum') || n.includes('gold')) {
+    return 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80';
 };
 
 export default function UnifiedPackagesShowcase() {
@@ -86,7 +98,7 @@ export default function UnifiedPackagesShowcase() {
               discountPrice: pkg.discount_price || undefined,
               description: pkg.description || "Layanan paket pernikahan premium terlengkap dan profesional.",
               features: rawFeatures.slice(0, 4),
-              image: (rawImages && rawImages.length > 0) ? rawImages[0] : FALLBACK_IMAGES.wedding,
+              image: (rawImages && rawImages.length > 0) ? rawImages[0] : getWeddingFallbackImage(pkg.name),
               badge: pkg.highlighted ? "Terpopuler" : undefined,
               detailUrl: "/packages",
               whatsappMessage: `Halo Admin Galeria Wedding, saya tertarik berkonsultasi mengenai ${pkg.name}. Bisakah diberikan informasi lebih lengkap?`
