@@ -42,15 +42,15 @@ export const getVenue: RequestHandler = async (req, res) => {
 // Create venue
 export const createVenue: RequestHandler = async (req, res) => {
   try {
-    const { title, category, price, capacity, description }: CreateVenueItem = req.body;
+    const { title, category, price, capacity, description, image } = req.body;
 
     if (!title || !category || !price) {
       return res.status(400).json({ success: false, error: 'Title, category, and price are required' });
     }
 
     const result = await dbRun(
-      "INSERT INTO venues (title, category, price, capacity, description) VALUES (?, ?, ?, ?, ?)",
-      [title, category, price, capacity, description]
+      "INSERT INTO venues (title, category, price, capacity, description, image) VALUES (?, ?, ?, ?, ?, ?)",
+      [title, category, price, capacity ? (parseInt(String(capacity)) || null) : null, description || '', image || '']
     );
 
     const newItem = await dbGet("SELECT * FROM venues WHERE id = ?", [result.lastID]);
@@ -71,7 +71,7 @@ export const createVenue: RequestHandler = async (req, res) => {
 export const updateVenue: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates: UpdateVenueItem = req.body;
+    const updates = req.body;
 
     // Check if item exists
     const existingItem = await dbGet("SELECT * FROM venues WHERE id = ?", [id]);
@@ -80,8 +80,8 @@ export const updateVenue: RequestHandler = async (req, res) => {
     }
 
     // Build update query dynamically
-    const updateFields = [];
-    const values = [];
+    const updateFields: string[] = [];
+    const values: any[] = [];
 
     if (updates.title !== undefined) {
       updateFields.push("title = ?");
@@ -97,11 +97,15 @@ export const updateVenue: RequestHandler = async (req, res) => {
     }
     if (updates.capacity !== undefined) {
       updateFields.push("capacity = ?");
-      values.push(updates.capacity);
+      values.push(updates.capacity ? (parseInt(String(updates.capacity)) || null) : null);
     }
     if (updates.description !== undefined) {
       updateFields.push("description = ?");
       values.push(updates.description);
+    }
+    if (updates.image !== undefined) {
+      updateFields.push("image = ?");
+      values.push(updates.image);
     }
 
     if (updateFields.length === 0) {

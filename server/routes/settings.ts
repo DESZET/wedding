@@ -52,9 +52,10 @@ export const updateSetting: RequestHandler = async (req, res) => {
     const { key } = req.params;
     const { value } = req.body;
 
-    if (!value) {
+    if (value === undefined || value === null) {
       return res.status(400).json({ success: false, error: 'Value is required' });
     }
+    const strVal = String(value);
 
     // Check if setting exists
     const existingItem = await dbGet("SELECT * FROM settings WHERE key = ?", [key]);
@@ -62,7 +63,7 @@ export const updateSetting: RequestHandler = async (req, res) => {
       // Create new setting
       const result = await dbRun(
         "INSERT INTO settings (key, value) VALUES (?, ?)",
-        [key, value]
+        [key, strVal]
       );
 
       const newItem = await dbGet("SELECT * FROM settings WHERE id = ?", [result.lastID]);
@@ -76,7 +77,7 @@ export const updateSetting: RequestHandler = async (req, res) => {
       // Update existing setting
       await dbRun(
         "UPDATE settings SET value = ?, updatedAt = CURRENT_TIMESTAMP WHERE key = ?",
-        [value, key]
+        [strVal, key]
       );
 
       const updatedItem = await dbGet("SELECT * FROM settings WHERE key = ?", [key]);
@@ -105,13 +106,14 @@ export const updateSettings: RequestHandler = async (req, res) => {
     // Update each setting
     for (const setting of settings) {
       const { key, value } = setting;
-      if (!key || !value) continue;
+      if (!key || value === undefined || value === null) continue;
+      const strVal = String(value);
 
       const existingItem = await dbGet("SELECT * FROM settings WHERE key = ?", [key]);
       if (!existingItem) {
-        await dbRun("INSERT INTO settings (key, value) VALUES (?, ?)", [key, value]);
+        await dbRun("INSERT INTO settings (key, value) VALUES (?, ?)", [key, strVal]);
       } else {
-        await dbRun("UPDATE settings SET value = ?, updatedAt = CURRENT_TIMESTAMP WHERE key = ?", [value, key]);
+        await dbRun("UPDATE settings SET value = ?, updatedAt = CURRENT_TIMESTAMP WHERE key = ?", [strVal, key]);
       }
     }
 

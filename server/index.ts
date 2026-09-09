@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { handleDemo } from "./routes/demo";
 import { getGallery, getGalleryItem, createGalleryItem, updateGalleryItem, deleteGalleryItem } from "./routes/gallery";
 import { getTestimonials, getTestimonial, createTestimonial, updateTestimonial, deleteTestimonial } from "./routes/testimonials";
@@ -31,20 +32,36 @@ import { ensureDb, initDatabase } from "./database";
 
 const isServerless = Boolean(process.env.VERCEL);
 
+const uploadDir = path.resolve(process.cwd(), "public/uploads");
+if (!fs.existsSync(uploadDir)) {
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  } catch (err) {
+    console.error("[server] Failed to create uploads directory:", err);
+  }
+}
+
 // Configure multer for file uploads
 const storage = isServerless
   ? multer.memoryStorage()
   : multer.diskStorage({
       destination: (_req, _file, cb) => {
-        cb(null, "public/uploads/");
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
       },
       filename: (_req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+        const cleanExt = path.extname(file.originalname) || ".jpg";
+        cb(null, (file.fieldname || "file") + "-" + uniqueSuffix + cleanExt);
       },
     });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
 
 export async function createServer() {
   const app = express();
@@ -55,6 +72,7 @@ export async function createServer() {
   app.use(express.urlencoded({ extended: true }));
 
   // Serve static files from public directory
+  app.use('/uploads', express.static(uploadDir));
   app.use('/uploads', express.static('public/uploads'));
 
   // Fast health check — must not wait for DB (avoids 60s Vercel timeout on cold start).
@@ -110,43 +128,59 @@ export async function createServer() {
   app.put("/api/gallery/:id", updateGalleryItem);
   app.delete("/api/gallery/:id", deleteGalleryItem);
 
-  // File upload route for gallery
-  app.post("/api/upload", upload.single("image"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: "No file uploaded" });
-    }
-    if (isServerless) {
-      return res.status(503).json({
-        success: false,
-        error: "Upload baru belum tersedia di production. Gunakan gambar yang sudah ada atau hubungi admin.",
+  // File upload route for gallery and general images
+  app.post("/api/upload", (req, res) => {
+    upload.any()(req, res, (err) => {
+      if (err) {
+        console.error("[Upload Error]", err);
+        return res.status(400).json({ success: false, error: err.message || "Gagal mengupload file" });
+      }
+      const files = req.files as Express.Multer.File[] | undefined;
+      const file = (files && files.length > 0) ? files[0] : (req as any).file;
+      if (!file) {
+        return res.status(400).json({ success: false, error: "Tidak ada file yang diunggah" });
+      }
+      if (isServerless) {
+        return res.status(503).json({
+          success: false,
+          error: "Upload baru belum tersedia di production serverless. Gunakan URL gambar atau hubungi admin.",
+        });
+      }
+      res.json({
+        success: true,
+        data: {
+          filename: file.filename,
+          path: `/uploads/${file.filename}`,
+        },
       });
-    }
-    res.json({
-      success: true,
-      data: {
-        filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`,
-      },
     });
   });
 
   // File upload route for videos
-  app.post("/api/upload-video", upload.single("video"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: "No video file uploaded" });
-    }
-    if (isServerless) {
-      return res.status(503).json({
-        success: false,
-        error: "Upload video belum tersedia di production. Hubungi admin.",
+  app.post("/api/upload-video", (req, res) => {
+    upload.any()(req, res, (err) => {
+      if (err) {
+        console.error("[Upload Video Error]", err);
+        return res.status(400).json({ success: false, error: err.message || "Gagal mengupload video" });
+      }
+      const files = req.files as Express.Multer.File[] | undefined;
+      const file = (files && files.length > 0) ? files[0] : (req as any).file;
+      if (!file) {
+        return res.status(400).json({ success: false, error: "Tidak ada file video yang diunggah" });
+      }
+      if (isServerless) {
+        return res.status(503).json({
+          success: false,
+          error: "Upload video belum tersedia di production serverless. Hubungi admin.",
+        });
+      }
+      res.json({
+        success: true,
+        data: {
+          filename: file.filename,
+          path: `/uploads/${file.filename}`,
+        },
       });
-    }
-    res.json({
-      success: true,
-      data: {
-        filename: req.file.filename,
-        path: `/uploads/${req.file.filename}`,
-      },
     });
   });
 

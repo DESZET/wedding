@@ -68,6 +68,23 @@ export const getPackage: RequestHandler = async (req, res) => {
   }
 };
 
+const formatJsonField = (val: any): string => {
+  if (!val) return '[]';
+  if (Array.isArray(val)) return JSON.stringify(val);
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return '[]';
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return JSON.stringify(parsed);
+      return JSON.stringify([parsed]);
+    } catch {
+      return JSON.stringify(trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean));
+    }
+  }
+  return JSON.stringify(val);
+};
+
 // Create package
 export const createPackage: RequestHandler = async (req, res) => {
   try {
@@ -77,12 +94,12 @@ export const createPackage: RequestHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Name and price are required' });
     }
 
-    const featuresJson = features ? JSON.stringify(features) : null;
-    const imagesJson = images ? JSON.stringify(images) : null;
+    const featuresJson = formatJsonField(features);
+    const imagesJson = formatJsonField(images);
 
     const result = await dbRun(
       "INSERT INTO packages (name, price, discount_price, description, highlighted, longDescription, features, images, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [name, price, discount_price || null, description || '', highlighted ? 1 : 0, longDescription || '', featuresJson, imagesJson, is_active !== undefined ? (is_active ? 1 : 0) : 1]
+      [name, parseFloat(String(price)) || 0, discount_price ? parseFloat(String(discount_price)) : null, description || '', highlighted ? 1 : 0, longDescription || '', featuresJson, imagesJson, is_active !== undefined ? (is_active ? 1 : 0) : 1]
     );
 
     const newItem = await dbGet("SELECT * FROM packages WHERE id = ?", [result.lastID]);
@@ -128,11 +145,11 @@ export const updatePackage: RequestHandler = async (req, res) => {
     }
     if (updates.price !== undefined) {
       updateFields.push("price = ?");
-      values.push(updates.price);
+      values.push(parseFloat(String(updates.price)) || 0);
     }
     if (updates.discount_price !== undefined) {
       updateFields.push("discount_price = ?");
-      values.push(updates.discount_price);
+      values.push(updates.discount_price ? parseFloat(String(updates.discount_price)) : null);
     }
     if (updates.description !== undefined) {
       updateFields.push("description = ?");
@@ -148,11 +165,11 @@ export const updatePackage: RequestHandler = async (req, res) => {
     }
     if (updates.features !== undefined) {
       updateFields.push("features = ?");
-      values.push(JSON.stringify(updates.features));
+      values.push(formatJsonField(updates.features));
     }
     if (updates.images !== undefined) {
       updateFields.push("images = ?");
-      values.push(JSON.stringify(updates.images));
+      values.push(formatJsonField(updates.images));
     }
     if (updates.is_active !== undefined) {
       updateFields.push("is_active = ?");

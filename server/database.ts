@@ -579,7 +579,15 @@ async function migrateUmrahPackagesTable(): Promise<void> {
       }
     }
 
-    console.log('Umrah, Haji & Wedding packages table migration completed');
+    // Also migrate venues table
+    const venueColumns = await dbAll<{ name: string }>("PRAGMA table_info(venues)");
+    const venueColumnNames = venueColumns.map(col => col.name);
+    if (!venueColumnNames.includes('image')) {
+      console.log('Adding missing column to venues: image');
+      await dbRun('ALTER TABLE venues ADD COLUMN image TEXT');
+    }
+
+    console.log('Umrah, Haji, Wedding packages & venues table migration completed');
   } catch (error) {
     console.error('Error migrating tables:', error);
   }

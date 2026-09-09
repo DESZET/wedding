@@ -902,10 +902,19 @@ const Admin = () => {
 
     switch (type) {
       case 'gallery':
-        setGalleryForm(item);
+        setGalleryForm({
+          title: item.title || '',
+          category: item.category || '',
+          image: item.image || ''
+        });
         break;
       case 'testimonials':
-        setTestimonialForm(item);
+        setTestimonialForm({
+          name: item.name || '',
+          rating: Number(item.rating) || 5,
+          text: item.text || '',
+          date: item.date || ''
+        });
         break;
       case 'packages':
         setPackageForm({
@@ -921,7 +930,14 @@ const Admin = () => {
         });
         break;
       case 'venues':
-        setVenueForm(item);
+        setVenueForm({
+          title: item.title || '',
+          category: item.category || '',
+          price: String(item.price || ''),
+          capacity: item.capacity ? String(item.capacity) : '',
+          description: item.description || '',
+          image: item.image || ''
+        });
         break;
       case 'videos':
         setVideoForm(item);
@@ -1495,32 +1511,55 @@ const Admin = () => {
                   <option value="Lainnya">Lainnya</option>
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Gambar</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="w-full p-3 border rounded-lg"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      try {
-                        const uploadResponse = await uploadFile(file);
-                        if (uploadResponse.success) {
-                          setGalleryForm({ ...galleryForm, image: uploadResponse.data.path });
-                        } else {
-                          alert('Gagal upload gambar');
+              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <label className="block text-sm font-semibold text-slate-700">Gambar Galeri *</label>
+                
+                {/* File Upload Option */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Unggah dari Komputer/HP</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full p-2.5 border rounded-lg bg-white text-sm"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        try {
+                          const uploadResponse = await uploadFile(file);
+                          if (uploadResponse.success) {
+                            setGalleryForm(prev => ({ ...prev, image: uploadResponse.data.path }));
+                          } else {
+                            alert('Gagal upload: ' + (uploadResponse.error || 'Server error'));
+                          }
+                        } catch (error) {
+                          console.error('Upload error:', error);
+                          alert('Terjadi kesalahan saat upload gambar');
                         }
-                      } catch (error) {
-                        console.error('Upload error:', error);
-                        alert('Terjadi kesalahan saat upload gambar');
                       }
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
+
+                {/* Direct URL input option */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Atau Masukkan URL Gambar Langsung</label>
+                  <input
+                    type="text"
+                    placeholder="https://... atau /uploads/..."
+                    className="w-full p-2.5 border rounded-lg bg-white text-sm font-mono"
+                    value={galleryForm.image}
+                    onChange={(e) => setGalleryForm(prev => ({ ...prev, image: e.target.value }))}
+                  />
+                </div>
+
                 {galleryForm.image && (
-                  <div className="mt-2">
-                    <img src={galleryForm.image} alt="Preview" className="w-32 h-32 object-cover rounded" />
+                  <div className="mt-2 relative w-fit">
+                    <img src={galleryForm.image} alt="Preview" className="w-32 h-32 object-cover rounded-lg border shadow-sm" />
+                    <button
+                      type="button"
+                      onClick={() => setGalleryForm(prev => ({ ...prev, image: '' }))}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-red-600"
+                    >×</button>
                   </div>
                 )}
               </div>
@@ -1853,32 +1892,55 @@ const Admin = () => {
                 value={venueForm.description}
                 onChange={(e) => setVenueForm({ ...venueForm, description: e.target.value })}
               />
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Gambar Venue (opsional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="w-full p-3 border rounded-lg"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      try {
-                        const uploadResponse = await uploadFile(file);
-                        if (uploadResponse.success) {
-                          setVenueForm({ ...venueForm, image: uploadResponse.data.path });
-                        } else {
-                          alert('Gagal upload gambar');
+              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <label className="block text-sm font-semibold text-slate-700">Gambar Venue (Opsional)</label>
+                
+                {/* File Upload Option */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Unggah dari Komputer/HP</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full p-2.5 border rounded-lg bg-white text-sm"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        try {
+                          const uploadResponse = await uploadFile(file);
+                          if (uploadResponse.success) {
+                            setVenueForm(prev => ({ ...prev, image: uploadResponse.data.path }));
+                          } else {
+                            alert('Gagal upload: ' + (uploadResponse.error || 'Server error'));
+                          }
+                        } catch (error) {
+                          console.error('Upload error:', error);
+                          alert('Terjadi kesalahan saat upload gambar');
                         }
-                      } catch (error) {
-                        console.error('Upload error:', error);
-                        alert('Terjadi kesalahan saat upload gambar');
                       }
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
+
+                {/* Direct URL input option */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Atau Masukkan URL Gambar Langsung</label>
+                  <input
+                    type="text"
+                    placeholder="https://... atau /uploads/..."
+                    className="w-full p-2.5 border rounded-lg bg-white text-sm font-mono"
+                    value={venueForm.image}
+                    onChange={(e) => setVenueForm(prev => ({ ...prev, image: e.target.value }))}
+                  />
+                </div>
+
                 {venueForm.image && (
-                  <div className="mt-2">
-                    <img src={venueForm.image} alt="Venue Preview" className="w-32 h-32 object-cover rounded" />
+                  <div className="mt-2 relative w-fit">
+                    <img src={venueForm.image} alt="Venue Preview" className="w-32 h-32 object-cover rounded-lg border shadow-sm" />
+                    <button
+                      type="button"
+                      onClick={() => setVenueForm(prev => ({ ...prev, image: '' }))}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-red-600"
+                    >×</button>
                   </div>
                 )}
               </div>
