@@ -40,6 +40,12 @@ export default function Navbar() {
 
   const siteName = settings["site-name"] || "GALERIA WEDDING";
   const logoLetter = settings["logo-letter"] || siteName.charAt(0);
+  const [logoImgError, setLogoImgError] = useState(false);
+
+  // Reset logo error if setting changes
+  useEffect(() => {
+    setLogoImgError(false);
+  }, [settings["site-logo"]]);
 
   const closeMobile = () => setIsMobileMenuOpen(false);
 
@@ -254,7 +260,21 @@ export default function Navbar() {
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/10">
-                <span className="font-bold text-foreground text-base">{siteName}</span>
+                <div className="flex items-center gap-2">
+                  {settings["site-logo"] && !logoImgError ? (
+                    <img
+                      src={settings["site-logo"]}
+                      alt={siteName}
+                      onError={() => setLogoImgError(true)}
+                      className="h-8 w-auto max-h-8 max-w-[100px] object-contain rounded-md"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-xs shadow">
+                      {logoLetter}
+                    </div>
+                  )}
+                  <span className="font-bold text-foreground text-base truncate max-w-[160px]">{siteName}</span>
+                </div>
                 <button onClick={closeMobile}
                   className="w-9 h-9 rounded-full bg-foreground/5 hover:bg-foreground/10 flex items-center justify-center transition-colors"
                   aria-label="Close menu"
