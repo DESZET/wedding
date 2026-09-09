@@ -146,7 +146,7 @@ const uploadVideoFile = async (file: File) => {
 
 // ============ MAIN ADMIN COMPONENT ============
 const Admin = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   const [activeMenu, setActiveMenu] = useState<MenuItem>('dashboard');
   const [actionMode, setActionMode] = useState<ActionMode>('view');
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -3189,10 +3189,10 @@ const Admin = () => {
   ];
 
   const mobileNavItems = [
-    { id: 'dashboard', label: 'Home', icon: <Home size={20} /> },
-    { id: 'gallery', label: 'Gallery', icon: <Image size={20} /> },
-    { id: 'packages', label: 'Wedding', icon: <Package size={20} /> },
-    { id: 'printing', label: 'Cetak', icon: <Printer size={20} /> },
+    { id: 'dashboard', label: 'Home', icon: <Home size={18} /> },
+    { id: 'packages', label: 'Wedding', icon: <Package size={18} /> },
+    { id: 'umrah-haji', label: 'Umrah/Haji', icon: <Globe size={18} /> },
+    { id: 'printing', label: 'Cetak', icon: <Printer size={18} /> },
   ];
 
   return (
@@ -4583,36 +4583,38 @@ const UmrahHajiAdminContent = ({
 
   return (
     <div className="space-y-5">
-      {/* Sub-menu Tabs */}
-      <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl w-fit">
-        {subMenuTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveSubMenu(tab.id as any)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeSubMenu === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </button>
-        ))}
+      {/* Sub-menu Tabs (Responsive Scrollable Track) */}
+      <div className="w-full overflow-x-auto scrollbar-none py-1">
+        <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl min-w-max">
+          {subMenuTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubMenu(tab.id as any)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${activeSubMenu === tab.id
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+                }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeSubMenu === 'umrah' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
             <div>
               <h4 className="text-base font-bold text-slate-800">Daftar Paket Umrah ({umrahPackages.length})</h4>
               <p className="text-xs text-slate-500">Kelola paket perjalanan ibadah umrah reguler, plus, dan vip</p>
             </div>
             <button
               onClick={onAddUmrah}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all self-start sm:self-auto whitespace-nowrap"
             >
               <Plus size={16} />
-              Tambah Paket Umrah
+              <span>Tambah Paket Umrah</span>
             </button>
           </div>
 
@@ -4736,17 +4738,17 @@ const UmrahHajiAdminContent = ({
 
       {activeSubMenu === 'haji' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-50/50 p-4 rounded-xl border border-purple-100">
             <div>
               <h4 className="text-base font-bold text-slate-800">Daftar Paket Haji ({hajiPackages.length})</h4>
               <p className="text-xs text-slate-500">Kelola paket Haji Plus, Furoda Mujamalah, dan Khusus</p>
             </div>
             <button
               onClick={onAddHaji}
-              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all self-start sm:self-auto whitespace-nowrap"
             >
               <Plus size={16} />
-              Tambah Paket Haji
+              <span>Tambah Paket Haji</span>
             </button>
           </div>
 
@@ -5048,22 +5050,24 @@ const PrintingAdminContent = ({
 
   return (
     <div className="space-y-5">
-      {/* Category Tabs */}
-      <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl overflow-x-auto admin-scrollbar">
-        {subMenuTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onSubMenuChange(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              activeSubMenu === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </button>
-        ))}
+      {/* Category Tabs (Responsive Scrollable Track) */}
+      <div className="w-full overflow-x-auto scrollbar-none py-1">
+        <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl min-w-max">
+          {subMenuTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onSubMenuChange(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+                activeSubMenu === tab.id
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Top Header Card */}

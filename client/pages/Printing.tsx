@@ -426,36 +426,38 @@ export default function Printing() {
 
           <div className="max-w-6xl mx-auto relative z-10">
 
-            {/* Quick Product Navigation Tabs */}
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 py-1 px-2">
-              {filteredProducts.map((product, idx) => (
-                <button
-                  key={product.id || idx}
-                  onClick={() => {
-                    setCurrentProductIndex(idx);
-                    if (productCarouselRef.current) {
-                      const cardWidth = productCarouselRef.current.offsetWidth;
-                      productCarouselRef.current.scrollTo({
-                        left: idx * cardWidth,
-                        behavior: 'smooth'
-                      });
-                    }
-                  }}
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${currentProductIndex === idx
-                    ? "bg-gradient-to-r from-primary to-amber-500 text-white shadow-lg shadow-primary/20 scale-105"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
-                    }`}
-                >
-                  <span>{product.name}</span>
-                  {product.is_featured && <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">UNGGULAN</span>}
-                </button>
-              ))}
+            {/* Quick Product Navigation Tabs (Responsive Horizontal Scroll Track, No Clipping) */}
+            <div className="w-full overflow-x-auto scrollbar-none py-2 px-1 mb-6 sm:mb-8">
+              <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-3 min-w-max mx-auto px-2">
+                {filteredProducts.map((product, idx) => (
+                  <button
+                    key={product.id || idx}
+                    onClick={() => {
+                      setCurrentProductIndex(idx);
+                      if (productCarouselRef.current) {
+                        const cardWidth = productCarouselRef.current.offsetWidth;
+                        productCarouselRef.current.scrollTo({
+                          left: idx * cardWidth,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }}
+                    className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${currentProductIndex === idx
+                      ? "bg-gradient-to-r from-primary to-amber-500 text-white shadow-lg shadow-primary/20 scale-105"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                      }`}
+                  >
+                    <span>{product.name}</span>
+                    {product.is_featured && <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">UNGGULAN</span>}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Mobile-First Big Showcase Box Carousel */}
             <div className="relative">
 
-              {/* Arrow Controls */}
+              {/* Arrow Controls (Hidden on mobile to avoid overlapping content, visible on tablet/desktop) */}
               {filteredProducts.length > 1 && (
                 <>
                   <button
@@ -468,7 +470,7 @@ export default function Printing() {
                       }
                     }}
                     disabled={currentProductIndex === 0}
-                    className={`absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentProductIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                    className={`hidden sm:flex absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl items-center justify-center transition-all ${currentProductIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
                       }`}
                     aria-label="Produk Sebelumnya"
                   >
@@ -485,7 +487,7 @@ export default function Printing() {
                       }
                     }}
                     disabled={currentProductIndex === filteredProducts.length - 1}
-                    className={`absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentProductIndex === filteredProducts.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                    className={`hidden sm:flex absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl items-center justify-center transition-all ${currentProductIndex === filteredProducts.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
                       }`}
                     aria-label="Produk Selanjutnya"
                   >
@@ -647,25 +649,61 @@ export default function Printing() {
 
             </div>
 
-            {/* Dots Pagination */}
-            <div className="flex items-center justify-center gap-2 mt-6">
-              {filteredProducts.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setCurrentProductIndex(idx);
-                    if (productCarouselRef.current) {
-                      const cardWidth = productCarouselRef.current.offsetWidth;
-                      productCarouselRef.current.scrollTo({ left: idx * cardWidth, behavior: 'smooth' });
-                    }
-                  }}
-                  className={`h-2.5 rounded-full transition-all duration-300 ${currentProductIndex === idx
-                    ? "w-8 bg-primary"
-                    : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                    }`}
-                  aria-label={`Slide ${idx + 1}`}
-                />
-              ))}
+            {/* Dots Pagination & Mobile Controls */}
+            <div className="flex items-center justify-between sm:justify-center gap-3 mt-6 px-1">
+              <button
+                onClick={() => {
+                  const newIdx = Math.max(0, currentProductIndex - 1);
+                  setCurrentProductIndex(newIdx);
+                  if (productCarouselRef.current) {
+                    const cardWidth = productCarouselRef.current.offsetWidth;
+                    productCarouselRef.current.scrollTo({ left: newIdx * cardWidth, behavior: 'smooth' });
+                  }
+                }}
+                disabled={currentProductIndex === 0}
+                className="flex sm:hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+                aria-label="Produk Sebelumnya"
+              >
+                <ArrowRight className="w-4 h-4 text-primary rotate-180" />
+                <span>Sebelumnya</span>
+              </button>
+
+              <div className="flex items-center justify-center gap-1.5 overflow-x-auto max-w-[150px] px-1 py-1">
+                {filteredProducts.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setCurrentProductIndex(idx);
+                      if (productCarouselRef.current) {
+                        const cardWidth = productCarouselRef.current.offsetWidth;
+                        productCarouselRef.current.scrollTo({ left: idx * cardWidth, behavior: 'smooth' });
+                      }
+                    }}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${currentProductIndex === idx
+                      ? "w-8 bg-primary"
+                      : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                      }`}
+                    aria-label={`Slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  const newIdx = Math.min(filteredProducts.length - 1, currentProductIndex + 1);
+                  setCurrentProductIndex(newIdx);
+                  if (productCarouselRef.current) {
+                    const cardWidth = productCarouselRef.current.offsetWidth;
+                    productCarouselRef.current.scrollTo({ left: newIdx * cardWidth, behavior: 'smooth' });
+                  }
+                }}
+                disabled={currentProductIndex === filteredProducts.length - 1}
+                className="flex sm:hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+                aria-label="Produk Selanjutnya"
+              >
+                <span>Selanjutnya</span>
+                <ArrowRight className="w-4 h-4 text-primary" />
+              </button>
             </div>
 
             <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">

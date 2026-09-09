@@ -162,33 +162,35 @@ export default function Packages() {
           </p>
         </div>
 
-        {/* Quick Navigation Tabs (Silver / Gold / Platinum / etc) */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 py-1 px-2">
-          {packages.map((pkg, idx) => (
-            <button
-              key={pkg.id || idx}
-              onClick={() => scrollToIndex(idx)}
-              className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${currentIndex === idx
-                  ? "bg-gradient-to-r from-primary to-amber-500 text-white shadow-lg shadow-primary/20 scale-105"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
-                }`}
-            >
-              <span>{pkg.name.replace(/Paket\s+/i, '')}</span>
-              {pkg.highlighted && <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">POPULER</span>}
-            </button>
-          ))}
+        {/* Quick Navigation Tabs (Silver / Gold / Platinum / etc) - Responsive Horizontal Scroll Track */}
+        <div className="w-full overflow-x-auto scrollbar-none py-2 px-1 mb-6 sm:mb-8">
+          <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-3 min-w-max mx-auto px-2">
+            {packages.map((pkg, idx) => (
+              <button
+                key={pkg.id || idx}
+                onClick={() => scrollToIndex(idx)}
+                className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${currentIndex === idx
+                    ? "bg-gradient-to-r from-primary to-amber-500 text-white shadow-lg shadow-primary/20 scale-105"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                  }`}
+              >
+                <span>{pkg.name.replace(/Paket\s+/i, '')}</span>
+                {pkg.highlighted && <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">POPULER</span>}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Mobile-First Big Showcase Box Carousel */}
         <div className="relative">
 
-          {/* Left / Right Floating Arrow Controls */}
+          {/* Left / Right Floating Arrow Controls (Hidden on mobile to prevent overlapping content, visible on tablet/desktop) */}
           {packages.length > 1 && (
             <>
               <button
                 onClick={() => scrollToIndex(currentIndex - 1)}
                 disabled={currentIndex === 0}
-                className={`absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                className={`hidden sm:flex absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl items-center justify-center transition-all ${currentIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
                   }`}
                 aria-label="Paket Sebelumnya"
               >
@@ -198,7 +200,7 @@ export default function Packages() {
               <button
                 onClick={() => scrollToIndex(currentIndex + 1)}
                 disabled={currentIndex === packages.length - 1}
-                className={`absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentIndex === packages.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                className={`hidden sm:flex absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl items-center justify-center transition-all ${currentIndex === packages.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
                   }`}
                 aria-label="Paket Selanjutnya"
               >
@@ -329,19 +331,41 @@ export default function Packages() {
 
         </div>
 
-        {/* Dots Pagination Indicator */}
-        <div className="flex items-center justify-center gap-2 mt-6">
-          {packages.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => scrollToIndex(idx)}
-              className={`h-2.5 rounded-full transition-all duration-300 ${currentIndex === idx
-                  ? "w-8 bg-primary"
-                  : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                }`}
-              aria-label={`Slide ${idx + 1}`}
-            />
-          ))}
+        {/* Dots Pagination Indicator & Mobile Controls */}
+        <div className="flex items-center justify-between sm:justify-center gap-3 mt-6 px-1">
+          <button
+            onClick={() => scrollToIndex(currentIndex - 1)}
+            disabled={currentIndex === 0}
+            className="flex sm:hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+            aria-label="Paket Sebelumnya"
+          >
+            <ChevronLeft className="w-4 h-4 text-primary" />
+            <span>Sebelumnya</span>
+          </button>
+
+          <div className="flex items-center justify-center gap-1.5 overflow-x-auto max-w-[150px] px-1 py-1">
+            {packages.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => scrollToIndex(idx)}
+                className={`h-2.5 rounded-full transition-all duration-300 ${currentIndex === idx
+                    ? "w-8 bg-primary"
+                    : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                  }`}
+                aria-label={`Slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => scrollToIndex(currentIndex + 1)}
+            disabled={currentIndex === packages.length - 1}
+            className="flex sm:hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+            aria-label="Paket Selanjutnya"
+          >
+            <span>Selanjutnya</span>
+            <ChevronRight className="w-4 h-4 text-primary" />
+          </button>
         </div>
 
         {/* Helpful Swipe Hint for Mobile */}

@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
+import UnifiedPackagesShowcase from "@/components/UnifiedPackagesShowcase";
 import Footer from "@/components/Footer";
 import SectionWrapper from "@/components/SectionWrapper";
 import { useSettings } from "@/hooks/useSettings";
@@ -52,6 +53,11 @@ export default function Index() {
       {/* 2. About Section (Siapa itu Galeria Wedding) */}
       <SectionWrapper id="about" delay={150} threshold={0.1} animationType="slide-in-left" className="z-section-20">
         <About />
+      </SectionWrapper>
+
+      {/* 3. Unified Packages Showcase (Wedding, Haji/Umrah, & Percetakan) */}
+      <SectionWrapper id="home-packages" delay={200} threshold={0.1} animationType="fade-in-up" className="z-section-30">
+        <UnifiedPackagesShowcase />
       </SectionWrapper>
 
       {/* 4. Elegant Contact & Location Section (Info Kontak Utama) */}

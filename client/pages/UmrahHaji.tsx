@@ -1189,33 +1189,35 @@ export default function ModernUmrahHaji() {
 
           <div className="max-w-6xl mx-auto relative z-10">
 
-            {/* Sub-Tabs / Pills for quick package selection */}
-            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto scrollbar-none py-1 px-2">
-              {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((pkg: any, idx: number) => (
-                <button
-                  key={pkg.id || idx}
-                  onClick={() => scrollPackageToIndex(idx)}
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 ${currentPackageIndex === idx
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 scale-105"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
-                    }`}
-                >
-                  <span>{pkg.name}</span>
-                  {pkg.featured && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">UNGGULAN</span>}
-                </button>
-              ))}
+            {/* Sub-Tabs / Pills for quick package selection (responsive horizontal scroll, no clipping) */}
+            <div className="w-full overflow-x-auto scrollbar-none py-2 px-1 mb-6 sm:mb-8">
+              <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-3 min-w-max mx-auto px-2">
+                {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((pkg: any, idx: number) => (
+                  <button
+                    key={pkg.id || idx}
+                    onClick={() => scrollPackageToIndex(idx)}
+                    className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${currentPackageIndex === idx
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 scale-105"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                      }`}
+                  >
+                    <span>{pkg.name}</span>
+                    {pkg.featured && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">UNGGULAN</span>}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Mobile-First Big Showcase Box Carousel */}
             <div className="relative">
 
-              {/* Arrow Controls */}
+              {/* Arrow Controls (Hidden on mobile to avoid overlapping content, visible on tablet/desktop) */}
               {(activeTab === 'umrah' ? umrahPackages : hajiPackages).length > 1 && (
                 <>
                   <button
                     onClick={() => scrollPackageToIndex(currentPackageIndex - 1)}
                     disabled={currentPackageIndex === 0}
-                    className={`absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentPackageIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                    className={`hidden sm:flex absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl items-center justify-center transition-all ${currentPackageIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
                       }`}
                     aria-label="Paket Sebelumnya"
                   >
@@ -1225,7 +1227,7 @@ export default function ModernUmrahHaji() {
                   <button
                     onClick={() => scrollPackageToIndex(currentPackageIndex + 1)}
                     disabled={currentPackageIndex === (activeTab === 'umrah' ? umrahPackages : hajiPackages).length - 1}
-                    className={`absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl flex items-center justify-center transition-all ${currentPackageIndex === (activeTab === 'umrah' ? umrahPackages : hajiPackages).length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
+                    className={`hidden sm:flex absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xl items-center justify-center transition-all ${currentPackageIndex === (activeTab === 'umrah' ? umrahPackages : hajiPackages).length - 1 ? "opacity-30 cursor-not-allowed" : "hover:scale-110 active:scale-95"
                       }`}
                     aria-label="Paket Selanjutnya"
                   >
@@ -1372,19 +1374,41 @@ export default function ModernUmrahHaji() {
 
             </div>
 
-            {/* Dots Pagination */}
-            <div className="flex items-center justify-center gap-2 mt-6">
-              {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((_: any, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => scrollPackageToIndex(idx)}
-                  className={`h-2.5 rounded-full transition-all duration-300 ${currentPackageIndex === idx
-                      ? "w-8 bg-emerald-500"
-                      : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                    }`}
-                  aria-label={`Slide ${idx + 1}`}
-                />
-              ))}
+            {/* Dots Pagination & Mobile Controls */}
+            <div className="flex items-center justify-between sm:justify-center gap-3 mt-6 px-1">
+              <button
+                onClick={() => scrollPackageToIndex(currentPackageIndex - 1)}
+                disabled={currentPackageIndex === 0}
+                className="flex sm:hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+                aria-label="Paket Sebelumnya"
+              >
+                <ChevronRight className="w-4 h-4 text-emerald-600 rotate-180" />
+                <span>Sebelumnya</span>
+              </button>
+
+              <div className="flex items-center justify-center gap-1.5 overflow-x-auto max-w-[150px] px-1 py-1">
+                {(activeTab === 'umrah' ? umrahPackages : hajiPackages).map((_: any, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => scrollPackageToIndex(idx)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${currentPackageIndex === idx
+                        ? "w-8 bg-emerald-500"
+                        : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                      }`}
+                    aria-label={`Slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollPackageToIndex(currentPackageIndex + 1)}
+                disabled={currentPackageIndex === (activeTab === 'umrah' ? umrahPackages : hajiPackages).length - 1}
+                className="flex sm:hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+                aria-label="Paket Selanjutnya"
+              >
+                <span>Selanjutnya</span>
+                <ChevronRight className="w-4 h-4 text-emerald-600" />
+              </button>
             </div>
 
             <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
