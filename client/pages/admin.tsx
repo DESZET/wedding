@@ -78,6 +78,7 @@ import {
   ListResponse
 } from "../../shared/api";
 import { useSettings } from "../hooks/useSettings.tsx";
+import { compressImage } from "@/lib/imageCompressor";
 import AppearanceSettings from "../components/admin/AppearanceSettings";
 
 // ============ TYPE DEFINITIONS ============
@@ -125,8 +126,9 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 };
 
 const uploadFile = async (file: File) => {
+  const processed = await compressImage(file);
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', processed);
   const response = await fetch(`${API_BASE}/upload`, {
     method: 'POST',
     body: formData,

@@ -4,6 +4,7 @@ import {
   Save, Sparkles, Check, Trash2, RotateCcw
 } from "lucide-react";
 import { useSettings } from "../../hooks/useSettings";
+import { compressImage } from "@/lib/imageCompressor";
 
 // ─── Local Form State Context ───────────────────────────────────────────────
 
@@ -85,8 +86,9 @@ function ImageField({
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
+      const processedFile = await compressImage(file);
       const fd = new FormData();
-      fd.append("image", file);
+      fd.append("image", processedFile);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (data.success) {
@@ -275,8 +277,9 @@ function PanelHero() {
   const handleSlotUpload = async (index: number, file: File) => {
     setUploadingIndex(index);
     try {
+      const processedFile = await compressImage(file);
       const fd = new FormData();
-      fd.append("image", file);
+      fd.append("image", processedFile);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (data.success) {

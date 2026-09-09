@@ -140,10 +140,21 @@ export async function createServer() {
       if (!file) {
         return res.status(400).json({ success: false, error: "Tidak ada file yang diunggah" });
       }
-      if (isServerless) {
-        return res.status(503).json({
-          success: false,
-          error: "Upload baru belum tersedia di production serverless. Gunakan URL gambar atau hubungi admin.",
+      if (isServerless || !file.filename) {
+        // In serverless environment (e.g. Vercel), return Base64 Data URL so it persists seamlessly in DB without ephemeral disk writes
+        const mime = file.mimetype || "image/jpeg";
+        const base64 = file.buffer ? file.buffer.toString("base64") : "";
+        if (!base64) {
+          return res.status(400).json({ success: false, error: "File data kosong" });
+        }
+        const dataUrl = `data:${mime};base64,${base64}`;
+        return res.json({
+          success: true,
+          data: {
+            filename: file.originalname || "image.jpg",
+            path: dataUrl,
+            url: dataUrl,
+          },
         });
       }
       res.json({
