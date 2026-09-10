@@ -1291,16 +1291,16 @@ export default function ModernUmrahHaji() {
                           <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 z-10 space-y-4">
 
                             {/* Price & Duration */}
-                            <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1.5 sm:gap-2">
                               <div>
-                                <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold block mb-1">
+                                <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold block mb-0.5">
                                   Investasi Ibadah
                                 </span>
-                                <div className="text-3xl sm:text-5xl font-serif font-extrabold text-amber-400 tracking-tight">
+                                <div className="text-2xl sm:text-4xl md:text-5xl font-serif font-extrabold text-amber-400 tracking-tight leading-tight">
                                   {formatPrice(effectivePrice)}
                                 </div>
                               </div>
-                              <span className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs sm:text-sm text-emerald-300 font-semibold">
+                              <span className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs sm:text-sm text-emerald-300 font-semibold whitespace-nowrap">
                                 ⏱️ {pkg.duration || (activeTab === 'umrah' ? '9' : '25')} Hari Program
                               </span>
                             </div>

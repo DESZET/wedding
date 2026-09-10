@@ -158,9 +158,15 @@ export async function initDatabase(): Promise<void> {
     throw e;
   }
 
-  // Turso: never run hundreds of DDL/seed round-trips on serverless cold start.
+  // Turso: skip CREATE TABLE and seeding (heavy), but still run ALTER TABLE migrations
+  // so newly added columns (is_active, accommodation_details, etc.) are available.
   if (useTurso()) {
-    console.log('Turso: skipping schema migration and seeding (use migrate-to-turso locally)');
+    console.log('Turso: skipping CREATE TABLE and seeding, but running column migrations...');
+    try {
+      await migrateUmrahPackagesTable();
+    } catch (e) {
+      console.error('Turso migration error (non-fatal):', e);
+    }
     return;
   }
 
@@ -522,11 +528,24 @@ async function syncExistingReviewsToTestimonials(): Promise<void> {
 }
 
 async function migrateUmrahPackagesTable(): Promise<void> {
-  try {
-    const columns = await dbAll<{ name: string }>("PRAGMA table_info(umrah_packages)");
-    const columnNames = columns.map(col => col.name);
+  // Helper: try ALTER TABLE and ignore "duplicate column" errors
+  async function addColumnIfMissing(table: string, colName: string, colType: string) {
+    try {
+      await dbRun(`ALTER TABLE ${table} ADD COLUMN ${colName} ${colType}`);
+      console.log(`Added missing column to ${table}: ${colName}`);
+    } catch (e: any) {
+      const msg = String(e?.message || e).toLowerCase();
+      if (msg.includes('duplicate column') || msg.includes('already exists')) {
+        // Column already exists — OK
+      } else {
+        console.warn(`Could not add column ${colName} to ${table}:`, e?.message || e);
+      }
+    }
+  }
 
-    const requiredColumns = [
+  try {
+    // umrah_packages required columns
+    const umrahColumns = [
       { name: 'package_type', type: 'TEXT DEFAULT "umrah"' },
       { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
       { name: 'discount_price', type: 'REAL' },
@@ -540,72 +559,45 @@ async function migrateUmrahPackagesTable(): Promise<void> {
       { name: 'medical_facility', type: 'INTEGER DEFAULT 0' },
       { name: 'accommodation_details', type: 'TEXT' },
     ];
-
-    for (const col of requiredColumns) {
-      if (!columnNames.includes(col.name)) {
-        console.log(`Adding missing column to umrah_packages: ${col.name}`);
-        await dbRun(`ALTER TABLE umrah_packages ADD COLUMN ${col.name} ${col.type}`);
-      }
+    for (const col of umrahColumns) {
+      await addColumnIfMissing('umrah_packages', col.name, col.type);
     }
 
-    // Also migrate haji_packages
-    const hajiColumns = await dbAll<{ name: string }>("PRAGMA table_info(haji_packages)");
-    const hajiColumnNames = hajiColumns.map(col => col.name);
-    const requiredHajiColumns = [
-      { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
-      { name: 'discount_price', type: 'REAL' }
-    ];
-
-    for (const col of requiredHajiColumns) {
-      if (!hajiColumnNames.includes(col.name)) {
-        console.log(`Adding missing column to haji_packages: ${col.name}`);
-        await dbRun(`ALTER TABLE haji_packages ADD COLUMN ${col.name} ${col.type}`);
-      }
-    }
-
-    // Also migrate packages (wedding packages)
-    const pkgColumns = await dbAll<{ name: string }>("PRAGMA table_info(packages)");
-    const pkgColumnNames = pkgColumns.map(col => col.name);
-    const requiredPkgColumns = [
+    // haji_packages required columns
+    const hajiColumns = [
       { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
       { name: 'discount_price', type: 'REAL' },
-      { name: 'images', type: 'TEXT' }
     ];
-
-    for (const col of requiredPkgColumns) {
-      if (!pkgColumnNames.includes(col.name)) {
-        console.log(`Adding missing column to packages: ${col.name}`);
-        await dbRun(`ALTER TABLE packages ADD COLUMN ${col.name} ${col.type}`);
-      }
+    for (const col of hajiColumns) {
+      await addColumnIfMissing('haji_packages', col.name, col.type);
     }
 
-    // Also migrate venues table
-    const venueColumns = await dbAll<{ name: string }>("PRAGMA table_info(venues)");
-    const venueColumnNames = venueColumns.map(col => col.name);
-    if (!venueColumnNames.includes('image')) {
-      console.log('Adding missing column to venues: image');
-      await dbRun('ALTER TABLE venues ADD COLUMN image TEXT');
+    // packages (wedding) required columns
+    const pkgColumns = [
+      { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
+      { name: 'discount_price', type: 'REAL' },
+      { name: 'images', type: 'TEXT' },
+    ];
+    for (const col of pkgColumns) {
+      await addColumnIfMissing('packages', col.name, col.type);
     }
 
-    // Also migrate printing_products table
-    const printingColumns = await dbAll<{ name: string }>("PRAGMA table_info(printing_products)");
-    const printingColumnNames = printingColumns.map(col => col.name);
-    const requiredPrintingColumns = [
+    // venues required columns
+    await addColumnIfMissing('venues', 'image', 'TEXT');
+
+    // printing_products required columns
+    const printingColumns = [
       { name: 'featured', type: 'BOOLEAN DEFAULT 0' },
       { name: 'rating', type: 'REAL DEFAULT 5.0' },
       { name: 'reviews_count', type: 'INTEGER DEFAULT 0' },
       { name: 'features', type: 'TEXT' },
-      { name: 'finishing_options', type: 'TEXT' }
+      { name: 'finishing_options', type: 'TEXT' },
     ];
-
-    for (const col of requiredPrintingColumns) {
-      if (!printingColumnNames.includes(col.name)) {
-        console.log(`Adding missing column to printing_products: ${col.name}`);
-        await dbRun(`ALTER TABLE printing_products ADD COLUMN ${col.name} ${col.type}`);
-      }
+    for (const col of printingColumns) {
+      await addColumnIfMissing('printing_products', col.name, col.type);
     }
 
-    console.log('Umrah, Haji, Wedding, venues & printing_products table migration completed');
+    console.log('Table column migration completed.');
   } catch (error) {
     console.error('Error migrating tables:', error);
   }
