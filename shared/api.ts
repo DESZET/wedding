@@ -98,6 +98,9 @@ export interface PackageItem {
   images?: string[];
   discount_price?: number;
   is_active?: boolean;
+  vendor_breakdown?: any;
+  bonuses?: any;
+  payment_steps?: any;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -112,6 +115,9 @@ export interface CreatePackageItem {
   images?: string[];
   discount_price?: number;
   is_active?: boolean;
+  vendor_breakdown?: any;
+  bonuses?: any;
+  payment_steps?: any;
 }
 
 export interface UpdatePackageItem {
@@ -124,6 +130,9 @@ export interface UpdatePackageItem {
   images?: string[];
   discount_price?: number;
   is_active?: boolean;
+  vendor_breakdown?: any;
+  bonuses?: any;
+  payment_steps?: any;
 }
 
 // Venue types

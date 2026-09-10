@@ -132,7 +132,9 @@ export async function dbGet<T = any>(sql: string, params: any[] = []): Promise<T
   const database = db ?? await ensureDb();
   if (useTurso()) {
     const res = await tursoExecute(database, sql, params);
-    return rowToObject(res.rows[0]) as T;
+    if (!res.rows || res.rows.length === 0 || !res.rows[0]) return undefined;
+    const obj = rowToObject(res.rows[0]) as T;
+    return Object.keys(obj as any).length === 0 ? undefined : obj;
   } else {
     return database.prepare(sql).get(params) as T;
   }
@@ -253,6 +255,14 @@ export async function initDatabase(): Promise<void> {
       estimated_time TEXT,
       min_order INTEGER DEFAULT 1,
       is_active BOOLEAN DEFAULT TRUE,
+      featured BOOLEAN DEFAULT FALSE,
+      rating REAL DEFAULT 5.0,
+      reviews_count INTEGER DEFAULT 0,
+      features TEXT,
+      finishing_options TEXT,
+      custom_materials TEXT,
+      custom_finishings TEXT,
+      custom_process_steps TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (category_id) REFERENCES printing_categories (id)
@@ -278,10 +288,16 @@ export async function initDatabase(): Promise<void> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       price REAL NOT NULL,
+      discount_price REAL,
       description TEXT,
       highlighted BOOLEAN DEFAULT FALSE,
+      is_active BOOLEAN DEFAULT TRUE,
+      images TEXT,
       features TEXT,
       longDescription TEXT,
+      vendor_breakdown TEXT,
+      bonuses TEXT,
+      payment_steps TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
@@ -577,6 +593,9 @@ async function migrateUmrahPackagesTable(): Promise<void> {
       { name: 'is_active', type: 'BOOLEAN DEFAULT 1' },
       { name: 'discount_price', type: 'REAL' },
       { name: 'images', type: 'TEXT' },
+      { name: 'vendor_breakdown', type: 'TEXT' },
+      { name: 'bonuses', type: 'TEXT' },
+      { name: 'payment_steps', type: 'TEXT' },
     ];
     for (const col of pkgColumns) {
       await addColumnIfMissing('packages', col.name, col.type);
@@ -592,6 +611,9 @@ async function migrateUmrahPackagesTable(): Promise<void> {
       { name: 'reviews_count', type: 'INTEGER DEFAULT 0' },
       { name: 'features', type: 'TEXT' },
       { name: 'finishing_options', type: 'TEXT' },
+      { name: 'custom_materials', type: 'TEXT' },
+      { name: 'custom_finishings', type: 'TEXT' },
+      { name: 'custom_process_steps', type: 'TEXT' },
     ];
     for (const col of printingColumns) {
       await addColumnIfMissing('printing_products', col.name, col.type);

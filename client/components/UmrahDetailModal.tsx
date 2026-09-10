@@ -101,6 +101,49 @@ export default function UmrahDetailModal({ pkg, isOpen, onClose, type }: UmrahDe
     "Handling Bandara Soetta & Bandara Arab Saudi"
   ];
 
+  const defaultRequirements = [
+    "Paspor asli (masa berlaku min. 8 bulan)",
+    "Nama di paspor minimal 2 kata",
+    "Fotokopi KTP & Kartu Keluarga (KK)",
+    "Buku Nikah / Akta Lahir",
+    "Pasfoto 4x6 latar putih (2 lembar)",
+    "Bukti / Kartu vaksin meningitis"
+  ];
+
+  const defaultPaymentTerms = [
+    "DP Booking Seat: Rp 5.000.000 / jamaah",
+    "Penyerahan Dokumen: H-30 keberangkatan",
+    "Pelunasan Biaya: H-20 keberangkatan",
+    "Manasik Haji/Umrah: H-14 keberangkatan"
+  ];
+
+  const parseList = (raw: any): string[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.map(s => String(s).trim()).filter(Boolean);
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.map(s => String(s).trim()).filter(Boolean);
+      } catch {}
+      return trimmed.split('\n').map(s => s.trim().replace(/^[•\-\*]\s*/, '')).filter(Boolean);
+    }
+    return [];
+  };
+
+  const parsedIncluded = parseList(pkg.included_features);
+  const allInIncludes = parsedIncluded.length > 0 ? parsedIncluded : defaultAllInIncludes;
+
+  const parsedMerchandise = parseList(pkg.free_merchandise || pkg.excluded_features);
+  const freeMerchandise = parsedMerchandise.length > 0 ? parsedMerchandise : defaultFreeMerchandise;
+
+  const parsedRequirements = parseList(pkg.requirements || pkg.important_notes);
+  const requirementsList = parsedRequirements.length > 0 ? parsedRequirements : defaultRequirements;
+
+  const parsedPaymentTerms = parseList(pkg.payment_terms || pkg.payment_plans);
+  const paymentTermsList = parsedPaymentTerms.length > 0 ? parsedPaymentTerms : defaultPaymentTerms;
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 md:p-8 animate-fade-in">
       <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col animate-scale-in text-slate-800">
@@ -247,7 +290,7 @@ export default function UmrahDetailModal({ pkg, isOpen, onClose, type }: UmrahDe
                     <span>Ibadah Khusyuk & Nyaman</span>
                   </div>
                   <h3 className="text-lg sm:text-2xl font-serif font-bold text-slate-900 mb-3 leading-snug">
-                    Menyempurnakan Panggilan ke Baitullah Bersama {pkg.name}
+                    {pkg.overview_headline || `Menyempurnakan Panggilan ke Baitullah Bersama ${pkg.name}`}
                   </h3>
                   <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-light">
                     {pkg.description || "Rasakan kenyamanan ibadah umrah dengan standar pelayanan premium. Dibimbing langsung oleh ustadz dan mutawwif berpengalaman sesuai Al-Qur'an dan Sunnah, serta menginap di hotel pilihan yang dekat dengan Masjidil Haram dan Masjid Nabawi untuk memudahkan shalat 5 waktu berjamaah."}
@@ -386,7 +429,7 @@ export default function UmrahDetailModal({ pkg, isOpen, onClose, type }: UmrahDe
                     <span>Perlengkapan Ibadah Gratis</span>
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {defaultFreeMerchandise.map((item, idx) => (
+                    {freeMerchandise.map((item, idx) => (
                       <div key={idx} className="p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center gap-2 text-xs">
                         <Check className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
                         <span>{item}</span>
@@ -398,7 +441,7 @@ export default function UmrahDetailModal({ pkg, isOpen, onClose, type }: UmrahDe
                 <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
                   <h4 className="font-bold text-emerald-800 text-sm mb-3">Fasilitas Sudah Termasuk (All-In):</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
-                    {defaultAllInIncludes.map((inc, i) => (
+                    {allInIncludes.map((inc, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
                         <span>{inc}</span>
@@ -419,12 +462,9 @@ export default function UmrahDetailModal({ pkg, isOpen, onClose, type }: UmrahDe
                       <span>Persyaratan Dokumen:</span>
                     </h4>
                     <ul className="space-y-1.5 text-xs text-slate-600">
-                      <li>• Paspor asli (masa berlaku min. 8 bulan)</li>
-                      <li>• Nama di paspor minimal 2 kata</li>
-                      <li>• Fotokopi KTP & Kartu Keluarga (KK)</li>
-                      <li>• Buku Nikah / Akta Lahir</li>
-                      <li>• Pasfoto 4x6 latar putih (2 lembar)</li>
-                      <li>• Bukti / Kartu vaksin meningitis</li>
+                      {requirementsList.map((req, idx) => (
+                        <li key={idx}>• {req}</li>
+                      ))}
                     </ul>
                   </div>
 
@@ -434,10 +474,9 @@ export default function UmrahDetailModal({ pkg, isOpen, onClose, type }: UmrahDe
                       <span>Alur Pembayaran & Booking:</span>
                     </h4>
                     <ul className="space-y-1.5 text-xs text-slate-600">
-                      <li>• <strong>DP Booking Seat:</strong> Rp 5.000.000 / jamaah</li>
-                      <li>• <strong>Penyerahan Dokumen:</strong> H-30 keberangkatan</li>
-                      <li>• <strong>Pelunasan Biaya:</strong> H-20 keberangkatan</li>
-                      <li>• <strong>Manasik Haji/Umrah:</strong> H-14 keberangkatan</li>
+                      {paymentTermsList.map((term, idx) => (
+                        <li key={idx}>• {term}</li>
+                      ))}
                     </ul>
                   </div>
                 </div>

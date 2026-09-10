@@ -84,7 +84,18 @@ export default function WeddingDetailModal({ pkg, isOpen, onClose }: WeddingDeta
 
   const packageImages = getPackageImages();
 
-  const vendorBreakdown = [
+  const getVendorIcon = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes("rias") || t.includes("mua") || t.includes("busana")) return <Scissors className="w-5 h-5 text-amber-500" />;
+    if (t.includes("dekor") || t.includes("pelaminan") || t.includes("hall")) return <Palette className="w-5 h-5 text-amber-500" />;
+    if (t.includes("katering") || t.includes("makan") || t.includes("prasmanan")) return <Utensils className="w-5 h-5 text-amber-500" />;
+    if (t.includes("foto") || t.includes("video") || t.includes("dokumentasi")) return <Camera className="w-5 h-5 text-amber-500" />;
+    if (t.includes("mc") || t.includes("musik") || t.includes("sound") || t.includes("akustik")) return <Music className="w-5 h-5 text-amber-500" />;
+    if (t.includes("wo") || t.includes("organizer") || t.includes("kru")) return <Users className="w-5 h-5 text-amber-500" />;
+    return <Sparkles className="w-5 h-5 text-amber-500" />;
+  };
+
+  const defaultVendorBreakdown = [
     {
       icon: <Scissors className="w-5 h-5 text-amber-500" />,
       title: "Tata Rias & Busana Pengantin (MUA)",
@@ -156,7 +167,7 @@ export default function WeddingDetailModal({ pkg, isOpen, onClose }: WeddingDeta
     }
   ];
 
-  const bonuses = [
+  const defaultBonuses = [
     { title: "Undangan Digital Website", desc: "Website interaktif dengan fitur RSVP, galeri foto, cerita cinta, dan hitung mundur." },
     { title: "2 Buku Tamu Hardcover", desc: "Buku tamu eksklusif cetak nama pengantin + spidol emas / perak." },
     { title: "50 Porsi Sarapan Akad", desc: "Hidangan sarapan / coffee break akad nikah untuk keluarga inti." },
@@ -164,11 +175,132 @@ export default function WeddingDetailModal({ pkg, isOpen, onClose }: WeddingDeta
     { title: "Voucher Diskon Souvenir 20%", desc: "Voucher potongan harga cetak souvenir / goodie bag di Galeria Printing." }
   ];
 
-  const paymentSteps = [
+  const defaultPaymentSteps = [
     { step: "01", title: "Booking Fee (30%)", desc: "Mengamankan tanggal acara dan pengikatan vendor utama." },
     { step: "02", title: "Termin Kedua (40%)", desc: "Setelah finalisasi konsep dekorasi, menu katering, dan fitting busana (H-30)." },
     { step: "03", title: "Pelunasan (30%)", desc: "Pelunasan dilakukan setelah Technical Meeting bersama seluruh vendor (H-14)." }
   ];
+
+  const getCustomVendorBreakdown = () => {
+    if (!pkg.vendor_breakdown) return null;
+    let raw = pkg.vendor_breakdown;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
+      } catch {
+        const lines = trimmed.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          return lines.map((line: string) => {
+            const parts = line.split("|").map((s: string) => s.trim());
+            const title = parts[0] || "Layanan Vendor";
+            const badge = parts[1] || "Included";
+            const items = parts[2] ? parts[2].split(";").map((s: string) => s.trim()).filter(Boolean) : [];
+            return {
+              icon: getVendorIcon(title),
+              title,
+              badge,
+              items: items.length > 0 ? items : [title]
+            };
+          });
+        }
+      }
+    }
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((v: any) => ({
+        icon: getVendorIcon(v.title || ""),
+        title: v.title || "Layanan Vendor",
+        badge: v.badge || "Included",
+        items: Array.isArray(v.items) 
+          ? v.items 
+          : (typeof v.items === "string" ? v.items.split(";").map((s: string) => s.trim()).filter(Boolean) : [v.title || "Included"])
+      }));
+    }
+    return null;
+  };
+
+  const getCustomBonuses = () => {
+    if (!pkg.bonuses) return null;
+    let raw = pkg.bonuses;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
+      } catch {
+        const lines = trimmed.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          return lines.map((line: string) => {
+            const [title, ...descParts] = line.split("|").map((s: string) => s.trim());
+            return {
+              title: title || "Bonus",
+              desc: descParts.join(" | ") || ""
+            };
+          });
+        }
+      }
+    }
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((b: any) => ({
+        title: b.title || b.name || "Bonus",
+        desc: b.desc || b.description || ""
+      }));
+    }
+    return null;
+  };
+
+  const getCustomPaymentSteps = () => {
+    if (!pkg.payment_steps) return null;
+    let raw = pkg.payment_steps;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
+      } catch {
+        const lines = trimmed.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          return lines.map((line: string, idx: number) => {
+            const parts = line.split("|").map((s: string) => s.trim());
+            if (parts.length >= 3) {
+              return {
+                step: parts[0] || `0${idx + 1}`,
+                title: parts[1] || "",
+                desc: parts.slice(2).join(" | ")
+              };
+            } else if (parts.length === 2) {
+              return {
+                step: `0${idx + 1}`,
+                title: parts[0],
+                desc: parts[1]
+              };
+            }
+            return {
+              step: `0${idx + 1}`,
+              title: line,
+              desc: ""
+            };
+          });
+        }
+      }
+    }
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((s: any, idx: number) => ({
+        step: s.step || `0${idx + 1}`,
+        title: s.title || "",
+        desc: s.desc || s.description || ""
+      }));
+    }
+    return null;
+  };
+
+  const vendorBreakdown = getCustomVendorBreakdown() || defaultVendorBreakdown;
+  const bonuses = getCustomBonuses() || defaultBonuses;
+  const paymentSteps = getCustomPaymentSteps() || defaultPaymentSteps;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 md:p-8 animate-fade-in">

@@ -58,6 +58,7 @@ import {
   Percent,
   Sparkles,
   Monitor,
+  Gift,
 } from "lucide-react";
 import {
   GalleryItem,
@@ -212,7 +213,10 @@ const Admin = () => {
     reviews_count: 0,
     is_featured: false,
     is_new: false,
-    category_id: 1
+    category_id: 1,
+    custom_materials: '',
+    custom_finishings: '',
+    custom_process_steps: ''
   });
   const [printingPackageForm, setPrintingPackageForm] = useState({
     name: '',
@@ -249,6 +253,9 @@ const Admin = () => {
     features: string;
     images: string;
     is_active: boolean;
+    vendor_breakdown: string;
+    bonuses: string;
+    payment_steps: string;
   }>({
     name: '',
     price: '',
@@ -258,7 +265,10 @@ const Admin = () => {
     longDescription: '',
     features: '',
     images: '',
-    is_active: true
+    is_active: true,
+    vendor_breakdown: '',
+    bonuses: '',
+    payment_steps: ''
   });
   const [venueForm, setVenueForm] = useState<{ title: string; category: string; price: string; capacity: string; description: string; image: string }>({ title: '', category: '', price: '', capacity: '', description: '', image: '' });
   const [videoForm, setVideoForm] = useState<CreateVideoItem>({ title: '', description: '', videoPath: '', thumbnail: '' });
@@ -473,7 +483,10 @@ const Admin = () => {
               highlighted: Boolean(packageForm.highlighted),
               is_active: Boolean(packageForm.is_active),
               features: packageForm.features ? packageForm.features.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : [],
-              images: packageForm.images ? parseImages(packageForm.images) : []
+              images: packageForm.images ? parseImages(packageForm.images) : [],
+              vendor_breakdown: packageForm.vendor_breakdown || '',
+              bonuses: packageForm.bonuses || '',
+              payment_steps: packageForm.payment_steps || ''
             };
             response = await apiRequest(endpoint, {
               method: 'POST',
@@ -559,7 +572,10 @@ const Admin = () => {
                 estimated_time: formData.estimated_time || '3-5 hari',
                 min_order: parseInt(String(formData.min_order)) || 1,
                 featured: Boolean(formData.is_featured),
-                is_active: true
+                is_active: true,
+                custom_materials: formData.custom_materials || '',
+                custom_finishings: formData.custom_finishings || '',
+                custom_process_steps: formData.custom_process_steps || ''
               };
               response = await apiRequest(endpoint, {
                 method: 'POST',
@@ -727,7 +743,10 @@ const Admin = () => {
               highlighted: Boolean(packageForm.highlighted),
               is_active: Boolean(packageForm.is_active),
               features: packageForm.features ? packageForm.features.split(/[\n,]/).map((f: string) => f.trim()).filter(Boolean) : [],
-              images: packageForm.images ? parseImages(packageForm.images) : []
+              images: packageForm.images ? parseImages(packageForm.images) : [],
+              vendor_breakdown: packageForm.vendor_breakdown || '',
+              bonuses: packageForm.bonuses || '',
+              payment_steps: packageForm.payment_steps || ''
             };
             response = await apiRequest(endpoint, {
               method: 'PUT',
@@ -821,7 +840,10 @@ const Admin = () => {
                 estimated_time: printingProductForm.estimated_time || '3-5 hari',
                 min_order: parseInt(String(printingProductForm.min_order)) || 1,
                 featured: Boolean(printingProductForm.is_featured),
-                is_active: true
+                is_active: true,
+                custom_materials: printingProductForm.custom_materials || '',
+                custom_finishings: printingProductForm.custom_finishings || '',
+                custom_process_steps: printingProductForm.custom_process_steps || ''
               };
               response = await apiRequest(endpoint, {
                 method: 'PUT',
@@ -1005,7 +1027,16 @@ const Admin = () => {
           features: Array.isArray(item.features) ? item.features.join('\n') : (item.features || ''),
           images: parseImages(item.images).join(', '),
           highlighted: Boolean(item.highlighted),
-          is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
+          is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+          vendor_breakdown: Array.isArray(item.vendor_breakdown)
+            ? item.vendor_breakdown.map((v: any) => `${v.title || ''} | ${v.badge || ''} | ${Array.isArray(v.items) ? v.items.join('; ') : (v.items || '')}`).join('\n')
+            : (item.vendor_breakdown || ''),
+          bonuses: Array.isArray(item.bonuses)
+            ? item.bonuses.map((b: any) => `${b.title || b.name || ''} | ${b.desc || b.description || ''}`).join('\n')
+            : (item.bonuses || ''),
+          payment_steps: Array.isArray(item.payment_steps)
+            ? item.payment_steps.map((p: any) => `${p.step || ''} | ${p.title || ''} | ${p.desc || p.description || ''}`).join('\n')
+            : (item.payment_steps || '')
         });
         break;
       case 'venues':
@@ -1043,7 +1074,16 @@ const Admin = () => {
             reviews_count: item.reviews_count ? Number(item.reviews_count) : 0,
             is_featured: Boolean(item.is_featured || item.featured),
             is_new: Boolean(item.is_new),
-            images: parseImages(item.images).join(', ')
+            images: parseImages(item.images).join(', '),
+            custom_materials: Array.isArray(item.custom_materials)
+              ? item.custom_materials.map((m: any) => `${m.name || m.title || ''} | ${m.desc || m.description || ''}`).join('\n')
+              : (item.custom_materials || ''),
+            custom_finishings: Array.isArray(item.custom_finishings)
+              ? item.custom_finishings.map((f: any) => `${f.name || f.title || ''} | ${f.desc || f.description || ''}`).join('\n')
+              : (item.custom_finishings || ''),
+            custom_process_steps: Array.isArray(item.custom_process_steps)
+              ? item.custom_process_steps.map((s: any) => `${s.step || ''} | ${s.title || ''} | ${s.desc || s.description || ''}`).join('\n')
+              : (item.custom_process_steps || '')
           });
         } else if (itemType === 'package') {
           setPrintingPackageForm({
@@ -1300,7 +1340,10 @@ const Admin = () => {
       longDescription: '',
       features: '',
       images: '',
-      is_active: true
+      is_active: true,
+      vendor_breakdown: '',
+      bonuses: '',
+      payment_steps: ''
     });
     setVenueForm({ title: '', category: '', price: '', capacity: '', description: '', image: '' });
     setVideoForm({ title: '', description: '', videoPath: '', thumbnail: '' });
@@ -1322,7 +1365,10 @@ const Admin = () => {
       reviews_count: 0,
       is_featured: false,
       is_new: false,
-      category_id: 1
+      category_id: 1,
+      custom_materials: '',
+      custom_finishings: '',
+      custom_process_steps: ''
     });
     setUmrahPackageForm({
       name: '',
@@ -1877,6 +1923,69 @@ const Admin = () => {
                     <span className="font-bold text-emerald-900">Status Aktif di Halaman Web</span>
                   </label>
                 </div>
+              </div>
+
+              {/* SECTION 5: BREAKDOWN VENDOR & FASILITAS */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+                    <Sparkles size={18} />
+                    <span>5. Fasilitas & Breakdown Vendor (Tab Selengkapnya)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">1 baris per vendor: Judul | Badge | Item 1; Item 2; Item 3</span>
+                </div>
+                <textarea
+                  placeholder={"Tata Rias & Busana Pengantin (MUA) | MUA Berpengalaman | Rias & Gaun Pengantin Akad + Resepsi; Rias & Busana 2 Pasang Ibu; Busana 2 Pasang Bapak; Retouch standby MUA\nDekorasi Pelaminan & Hall | Custom Floral Theme | Pelaminan Mewah Modern 8-12m; Rangkaian Fresh Flowers; Karpet Jalan Rose Petal; Photobooth 3D\nKatering & Prasmanan Premium | Test Food 6 Orang | Menu Utama Lengkap; Aneka Food Stall; Free Flow Minuman Segar; Peralatan Katering Mewah\nDokumentasi Foto & Video Cinematic | Full Day Coverage | 2 Fotografer + 2 Videografer; Album Magnetic Exclusive; 1 Menit Teaser IG + 5 Menit Cinematic Film\nMaster of Ceremony (MC) & Hiburan Musik | Sound 5000W+ | MC Profesional Bilingual; Band Akustik + Penyanyi; Sound System Konser\nTim Wedding Organizer (WO) | Full Kru & HT | 6-10 Kru WO Berseragam & HT; Rundown & Technical Meeting; Pendamping Khusus Pengantin"}
+                  className="w-full p-3 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                  rows={6}
+                  value={packageForm.vendor_breakdown}
+                  onChange={(e) => setPackageForm({ ...packageForm, vendor_breakdown: e.target.value })}
+                />
+                <p className="text-[11px] text-slate-500 italic">
+                  * Format: <strong>Kategori Vendor | Badge / Tag | Daftar Item (dipisahkan titik koma ;)</strong>. Jika dikosongkan, modal akan menampilkan fasilitas default.
+                </p>
+              </div>
+
+              {/* SECTION 6: BONUS PAKET PERNIKAHAN */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
+                    <Gift size={18} />
+                    <span>6. Bonus Gratis Paket (Tab Bonus Gratis)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">1 baris per bonus: Nama Bonus | Deskripsi</span>
+                </div>
+                <textarea
+                  placeholder={"Undangan Digital Website | Website interaktif dengan fitur RSVP, galeri foto, cerita cinta, dan hitung mundur.\n2 Buku Tamu Hardcover | Buku tamu eksklusif cetak nama pengantin + spidol emas / perak.\n50 Porsi Sarapan Akad | Hidangan sarapan / coffee break akad nikah untuk keluarga inti.\nHand Bouquet Fresh Flower | Buket bunga mawar segar impor untuk prosesi lempar bunga.\nVoucher Diskon Souvenir 20% | Voucher potongan harga cetak souvenir / goodie bag di Galeria Printing."}
+                  className="w-full p-3 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                  rows={4}
+                  value={packageForm.bonuses}
+                  onChange={(e) => setPackageForm({ ...packageForm, bonuses: e.target.value })}
+                />
+                <p className="text-[11px] text-slate-500 italic">
+                  * Format: <strong>Nama Bonus | Deskripsi</strong>. 1 bonus per baris. Jika dikosongkan, modal akan menampilkan bonus default.
+                </p>
+              </div>
+
+              {/* SECTION 7: SKEMA & ALUR PEMBAYARAN */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
+                    <CreditCard size={18} />
+                    <span>7. Skema & Alur Pembayaran (Tab Alur Pembayaran)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">1 baris per termin: Step | Judul | Keterangan</span>
+                </div>
+                <textarea
+                  placeholder={"01 | Booking Fee (30%) | Mengamankan tanggal acara dan pengikatan vendor utama.\n02 | Termin Kedua (40%) | Setelah finalisasi konsep dekorasi, menu katering, dan fitting busana (H-30).\n03 | Pelunasan (30%) | Pelunasan dilakukan setelah Technical Meeting bersama seluruh vendor (H-14)."}
+                  className="w-full p-3 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                  rows={3}
+                  value={packageForm.payment_steps}
+                  onChange={(e) => setPackageForm({ ...packageForm, payment_steps: e.target.value })}
+                />
+                <p className="text-[11px] text-slate-500 italic">
+                  * Format: <strong>Nomor Step | Judul Tahap (Persentase) | Deskripsi</strong>. 1 termin per baris. Jika dikosongkan, modal akan menampilkan skema default.
+                </p>
               </div>
             </div>
           )}
@@ -2435,6 +2544,70 @@ const Admin = () => {
                     <span className="font-semibold text-slate-700">⚡ Produk Baru (New Tag)</span>
                   </label>
                 </div>
+              </div>
+
+              {/* SECTION 6: BAHAN & FINISHING KUSTOM */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
+                    <Palette size={18} />
+                    <span>6. Detail Bahan & Finishing Kustom (Tab Bahan & Finishing di Modal)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Format: Nama | Deskripsi (1 per baris)</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Daftar Bahan & Karakteristik (Tab Bahan & Finishing)
+                  </label>
+                  <textarea
+                    placeholder={"Art Paper 260 / 310 gsm | Tebal, licin, warna cetak sangat tajam dan mengkilap. Cocok untuk cover undangan & brosur.\nKertas Jasmine (Glitter Mewah) | Permukaan bertekstur butiran glitter mutiara yang berkilau mewah dan elegan.\nAkrilik Bening (Acrylic 2-3mm) | Bahan akrilik transparan tebal dengan cetak UV ink tahan air dan anti pudar.\nLinen & Concorde Jepang | Tekstur serat alami klasik dengan sentuhan vintage eksklusif."}
+                    className="w-full p-2.5 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                    rows={4}
+                    value={printingProductForm.custom_materials}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, custom_materials: e.target.value })}
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1 italic">
+                    * Format: <strong>Nama Bahan | Deskripsi Bahan</strong> (1 per baris). Biarkan kosong untuk menggunakan daftar default.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Daftar Pilihan Finishing & Sentuhan Akhir (Tab Bahan & Finishing)
+                  </label>
+                  <textarea
+                    placeholder={"Hotprint Poly Emas / Silver Foil | Tinta emas/perak mengkilap emboss untuk nama pengantin atau logo.\nLaminasi Doff (Matte) / Glossy | Lapisan plastik pelindung anti gores dan tahan percikan air.\nEmboss & Deboss (Timbul/Tenggelam) | Efek tekstur 3D timbul pada inisial nama atau motif ornamen.\nPita Satin & Segel Lilin (Wax Seal) | Hiasan pita elegan dan stempel lilin vintage siap pakai."}
+                    className="w-full p-2.5 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                    rows={4}
+                    value={printingProductForm.custom_finishings}
+                    onChange={(e) => setPrintingProductForm({ ...printingProductForm, custom_finishings: e.target.value })}
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1 italic">
+                    * Format: <strong>Nama Finishing | Deskripsi Finishing</strong> (1 per baris). Biarkan kosong untuk menggunakan daftar default.
+                  </p>
+                </div>
+              </div>
+
+              {/* SECTION 7: ALUR PEMESANAN KUSTOM */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+                    <Clock size={18} />
+                    <span>7. Alur Pemesanan & Produksi (Tab Alur Pemesanan di Modal)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">Format: Nomor | Judul Tahap | Deskripsi (1 per baris)</span>
+                </div>
+                <textarea
+                  placeholder={"01 | Konsultasi & Kirim Materi | Kirimkan teks acara / data atau file desain siap cetak (PDF / AI / PSD).\n02 | Digital Proofing & Revisi | Tim desainer kami membuatkan layout preview digital dan revisi hingga disetujui.\n03 | Cetak & Finishing Presisi | Proses produksi menggunakan mesin cetak digital offset resolusi tinggi terbaru.\n04 | Quality Check & Pengiriman | Pengecekan kualitas teliti, packing bubble wrap berlapis, dan kirim ke alamat Anda."}
+                  className="w-full p-3 border rounded-lg text-xs font-mono bg-white leading-relaxed"
+                  rows={4}
+                  value={printingProductForm.custom_process_steps}
+                  onChange={(e) => setPrintingProductForm({ ...printingProductForm, custom_process_steps: e.target.value })}
+                />
+                <p className="text-[11px] text-slate-500 italic">
+                  * Format: <strong>Nomor Step | Judul Tahapan | Deskripsi Tahapan</strong> (1 per baris). Biarkan kosong untuk menggunakan alur default.
+                </p>
               </div>
             </div>
           )}

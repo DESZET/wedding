@@ -23,9 +23,33 @@ interface PrintingProduct {
   estimated_time: string;
   min_order: number;
   is_active: boolean;
+  custom_materials?: any;
+  custom_finishings?: any;
+  custom_process_steps?: any;
   createdAt: string;
   updatedAt: string;
 }
+
+const parseContentField = (val: any): any => {
+  if (!val) return val;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        return trimmed;
+      }
+    }
+  }
+  return val;
+};
+
+const formatContentField = (val: any): string => {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
 
 const parseSafeArray = (val: any): string[] => {
   if (!val) return [];
@@ -121,6 +145,9 @@ export const getPrintingProducts: RequestHandler = async (req, res) => {
         reviews_count: item.reviews_count ? Number(item.reviews_count) : 0,
         is_featured: Boolean(item.featured),
         is_new: item.createdAt ? (new Date(item.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) : false,
+        custom_materials: parseContentField(item.custom_materials),
+        custom_finishings: parseContentField(item.custom_finishings),
+        custom_process_steps: parseContentField(item.custom_process_steps),
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
@@ -171,6 +198,9 @@ export const getPrintingProduct: RequestHandler = async (req, res) => {
       reviews_count: item.reviews_count ? Number(item.reviews_count) : 0,
       is_featured: Boolean(item.featured),
       is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+      custom_materials: parseContentField(item.custom_materials),
+      custom_finishings: parseContentField(item.custom_finishings),
+      custom_process_steps: parseContentField(item.custom_process_steps),
     };
 
     const response: ApiResponse<any> = {
@@ -223,8 +253,9 @@ export const createPrintingProduct: RequestHandler = async (req, res) => {
       `INSERT INTO printing_products (
         category_id, name, description, price, discount_price, size_options, material_options,
         color_options, finishing_options, features, design_template_url, images, is_custom_design,
-        estimated_time, min_order, is_active, featured, rating, reviews_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        estimated_time, min_order, is_active, featured, rating, reviews_count,
+        custom_materials, custom_finishings, custom_process_steps
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         productData.category_id,
         String(productData.name).trim(),
@@ -244,7 +275,10 @@ export const createPrintingProduct: RequestHandler = async (req, res) => {
         productData.is_active !== false ? 1 : 0,
         productData.featured || productData.is_featured ? 1 : 0,
         Number(productData.rating) || 5.0,
-        Number(productData.reviews_count) || 0
+        Number(productData.reviews_count) || 0,
+        formatContentField(productData.custom_materials),
+        formatContentField(productData.custom_finishings),
+        formatContentField(productData.custom_process_steps)
       ]
     );
 
@@ -259,7 +293,10 @@ export const createPrintingProduct: RequestHandler = async (req, res) => {
         material_options: parseSafeArray(newItem.material_options),
         color_options: parseSafeArray(newItem.color_options),
         finishing_options: parseSafeArray(newItem.finishing_options),
-        features: parseSafeArray(newItem.features)
+        features: parseSafeArray(newItem.features),
+        custom_materials: parseContentField(newItem.custom_materials),
+        custom_finishings: parseContentField(newItem.custom_finishings),
+        custom_process_steps: parseContentField(newItem.custom_process_steps),
       },
       message: 'Produk percetakan berhasil dibuat'
     };
@@ -362,6 +399,18 @@ export const updatePrintingProduct: RequestHandler = async (req, res) => {
       updateFields.push("reviews_count = ?");
       values.push(Number(updates.reviews_count) || 0);
     }
+    if (updates.custom_materials !== undefined) {
+      updateFields.push("custom_materials = ?");
+      values.push(formatContentField(updates.custom_materials));
+    }
+    if (updates.custom_finishings !== undefined) {
+      updateFields.push("custom_finishings = ?");
+      values.push(formatContentField(updates.custom_finishings));
+    }
+    if (updates.custom_process_steps !== undefined) {
+      updateFields.push("custom_process_steps = ?");
+      values.push(formatContentField(updates.custom_process_steps));
+    }
 
     if (updateFields.length === 0) {
       return res.status(400).json({ success: false, error: 'No fields to update' });
@@ -399,6 +448,9 @@ export const updatePrintingProduct: RequestHandler = async (req, res) => {
         features: parseSafeArray(updatedItem.features),
         is_featured: Boolean(updatedItem.featured),
         is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true,
+        custom_materials: parseContentField(updatedItem.custom_materials),
+        custom_finishings: parseContentField(updatedItem.custom_finishings),
+        custom_process_steps: parseContentField(updatedItem.custom_process_steps),
       },
       message: 'Printing product updated successfully'
     };

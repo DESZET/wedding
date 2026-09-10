@@ -71,6 +71,118 @@ export default function PrintingDetailModal({ product, isOpen, onClose }: Printi
     { step: "04", title: "Quality Check & Pengiriman", desc: "Pengecekan kualitas teliti, packing bubble wrap berlapis, dan kirim ke alamat Anda." }
   ];
 
+  const getCustomMaterials = () => {
+    if (!product.custom_materials) return null;
+    let raw = product.custom_materials;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
+      } catch {
+        const lines = trimmed.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          return lines.map((line: string) => {
+            const [name, ...descParts] = line.split("|").map((s: string) => s.trim());
+            return {
+              name: name || "Bahan",
+              desc: descParts.join(" | ") || ""
+            };
+          });
+        }
+      }
+    }
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((m: any) => ({
+        name: m.name || m.title || "Bahan",
+        desc: m.desc || m.description || ""
+      }));
+    }
+    return null;
+  };
+
+  const getCustomFinishings = () => {
+    if (!product.custom_finishings) return null;
+    let raw = product.custom_finishings;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
+      } catch {
+        const lines = trimmed.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          return lines.map((line: string) => {
+            const [name, ...descParts] = line.split("|").map((s: string) => s.trim());
+            return {
+              name: name || "Finishing",
+              desc: descParts.join(" | ") || ""
+            };
+          });
+        }
+      }
+    }
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((f: any) => ({
+        name: f.name || f.title || "Finishing",
+        desc: f.desc || f.description || ""
+      }));
+    }
+    return null;
+  };
+
+  const getCustomSteps = () => {
+    if (!product.custom_process_steps) return null;
+    let raw = product.custom_process_steps;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
+      } catch {
+        const lines = trimmed.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          return lines.map((line: string, idx: number) => {
+            const parts = line.split("|").map((s: string) => s.trim());
+            if (parts.length >= 3) {
+              return {
+                step: parts[0] || `0${idx + 1}`,
+                title: parts[1] || "",
+                desc: parts.slice(2).join(" | ")
+              };
+            } else if (parts.length === 2) {
+              return {
+                step: `0${idx + 1}`,
+                title: parts[0],
+                desc: parts[1]
+              };
+            }
+            return {
+              step: `0${idx + 1}`,
+              title: line,
+              desc: ""
+            };
+          });
+        }
+      }
+    }
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((s: any, idx: number) => ({
+        step: s.step || `0${idx + 1}`,
+        title: s.title || "",
+        desc: s.desc || s.description || ""
+      }));
+    }
+    return null;
+  };
+
+  const materials = getCustomMaterials() || defaultMaterials;
+  const finishings = getCustomFinishings() || defaultFinishings;
+  const steps = getCustomSteps() || defaultSteps;
+
   const productImage = (product.images && product.images.length > 0) 
     ? product.images[0] 
     : "https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=1200&q=80";
@@ -274,7 +386,7 @@ export default function PrintingDetailModal({ product, isOpen, onClose }: Printi
                     1. Pilihan Bahan Material Kertas & Akrilik
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {defaultMaterials.map((mat, idx) => (
+                    {materials.map((mat, idx) => (
                       <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                         <h5 className="font-bold text-slate-900 text-sm mb-0.5">{mat.name}</h5>
                         <p className="text-xs text-slate-600 leading-relaxed">{mat.desc}</p>
@@ -288,7 +400,7 @@ export default function PrintingDetailModal({ product, isOpen, onClose }: Printi
                     2. Pilihan Sentuhan Akhir (Finishing)
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {defaultFinishings.map((fin, idx) => (
+                    {finishings.map((fin, idx) => (
                       <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                         <h5 className="font-bold text-slate-900 text-sm mb-0.5">{fin.name}</h5>
                         <p className="text-xs text-slate-600 leading-relaxed">{fin.desc}</p>
@@ -357,7 +469,7 @@ export default function PrintingDetailModal({ product, isOpen, onClose }: Printi
             {activeTab === "process" && (
               <div className="space-y-4 animate-fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {defaultSteps.map((step, idx) => (
+                  {steps.map((step, idx) => (
                     <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative overflow-hidden">
                       <span className="absolute -top-2 -right-2 text-4xl font-serif font-black text-slate-200 select-none">
                         {step.step}

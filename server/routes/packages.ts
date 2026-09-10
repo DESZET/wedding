@@ -21,6 +21,27 @@ const parseSafeJson = (str: any, fallback: any = []) => {
   }
 };
 
+const parseContentField = (val: any): any => {
+  if (!val) return val;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        return trimmed;
+      }
+    }
+  }
+  return val;
+};
+
+const formatContentField = (val: any): string => {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
+
 // Get all packages
 export const getPackages: RequestHandler = async (req, res) => {
   try {
@@ -31,7 +52,10 @@ export const getPackages: RequestHandler = async (req, res) => {
       ...item,
       features: parseSafeJson(item.features),
       images: parseSafeJson(item.images),
-      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+      vendor_breakdown: parseContentField(item.vendor_breakdown),
+      bonuses: parseContentField(item.bonuses),
+      payment_steps: parseContentField(item.payment_steps)
     }));
     
     const response: ListResponse<PackageItem> = {
@@ -60,7 +84,10 @@ export const getPackage: RequestHandler = async (req, res) => {
       ...item,
       features: parseSafeJson(item.features),
       images: parseSafeJson(item.images),
-      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true
+      is_active: item.is_active !== undefined ? Boolean(item.is_active) : true,
+      vendor_breakdown: parseContentField(item.vendor_breakdown),
+      bonuses: parseContentField(item.bonuses),
+      payment_steps: parseContentField(item.payment_steps)
     };
 
     const response: ApiResponse<PackageItem> = {
@@ -95,7 +122,7 @@ const formatJsonField = (val: any): string => {
 // Create package
 export const createPackage: RequestHandler = async (req, res) => {
   try {
-    const { name, price, discount_price, description, highlighted, longDescription, features, images, is_active }: CreatePackageItem = req.body;
+    const { name, price, discount_price, description, highlighted, longDescription, features, images, is_active, vendor_breakdown, bonuses, payment_steps }: CreatePackageItem = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ success: false, error: 'Name and price are required' });
@@ -103,10 +130,13 @@ export const createPackage: RequestHandler = async (req, res) => {
 
     const featuresJson = formatJsonField(features);
     const imagesJson = formatJsonField(images);
+    const vendorBreakdownVal = formatContentField(vendor_breakdown);
+    const bonusesVal = formatContentField(bonuses);
+    const paymentStepsVal = formatContentField(payment_steps);
 
     const result = await dbRun(
-      "INSERT INTO packages (name, price, discount_price, description, highlighted, longDescription, features, images, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [name, parseFloat(String(price)) || 0, discount_price ? parseFloat(String(discount_price)) : null, description || '', highlighted ? 1 : 0, longDescription || '', featuresJson, imagesJson, is_active !== undefined ? (is_active ? 1 : 0) : 1]
+      "INSERT INTO packages (name, price, discount_price, description, highlighted, longDescription, features, images, is_active, vendor_breakdown, bonuses, payment_steps) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [name, parseFloat(String(price)) || 0, discount_price ? parseFloat(String(discount_price)) : null, description || '', highlighted ? 1 : 0, longDescription || '', featuresJson, imagesJson, is_active !== undefined ? (is_active ? 1 : 0) : 1, vendorBreakdownVal, bonusesVal, paymentStepsVal]
     );
 
     const newItem = await dbGet("SELECT * FROM packages WHERE id = ?", [result.lastID]);
@@ -115,7 +145,10 @@ export const createPackage: RequestHandler = async (req, res) => {
       ...newItem,
       features: parseSafeJson(newItem.features),
       images: parseSafeJson(newItem.images),
-      is_active: newItem.is_active !== undefined ? Boolean(newItem.is_active) : true
+      is_active: newItem.is_active !== undefined ? Boolean(newItem.is_active) : true,
+      vendor_breakdown: parseContentField(newItem.vendor_breakdown),
+      bonuses: parseContentField(newItem.bonuses),
+      payment_steps: parseContentField(newItem.payment_steps)
     };
 
     const response: ApiResponse<PackageItem> = {
@@ -182,6 +215,18 @@ export const updatePackage: RequestHandler = async (req, res) => {
       updateFields.push("is_active = ?");
       values.push(updates.is_active ? 1 : 0);
     }
+    if (updates.vendor_breakdown !== undefined) {
+      updateFields.push("vendor_breakdown = ?");
+      values.push(formatContentField(updates.vendor_breakdown));
+    }
+    if (updates.bonuses !== undefined) {
+      updateFields.push("bonuses = ?");
+      values.push(formatContentField(updates.bonuses));
+    }
+    if (updates.payment_steps !== undefined) {
+      updateFields.push("payment_steps = ?");
+      values.push(formatContentField(updates.payment_steps));
+    }
 
     if (updateFields.length === 0) {
       return res.status(400).json({ success: false, error: 'No fields to update' });
@@ -201,7 +246,10 @@ export const updatePackage: RequestHandler = async (req, res) => {
       ...updatedItem,
       features: parseSafeJson(updatedItem.features),
       images: parseSafeJson(updatedItem.images),
-      is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true
+      is_active: updatedItem.is_active !== undefined ? Boolean(updatedItem.is_active) : true,
+      vendor_breakdown: parseContentField(updatedItem.vendor_breakdown),
+      bonuses: parseContentField(updatedItem.bonuses),
+      payment_steps: parseContentField(updatedItem.payment_steps)
     };
 
     const response: ApiResponse<PackageItem> = {
