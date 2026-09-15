@@ -62,7 +62,37 @@ const storage = isServerless
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit for images
+});
+
+// Separate multer instance for videos with larger size limit
+const videoStorage = isServerless
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const cleanExt = path.extname(file.originalname) || ".mp4";
+        cb(null, "video-" + uniqueSuffix + cleanExt);
+      },
+    });
+
+const uploadVideo = multer({
+  storage: videoStorage,
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // 2GB limit for videos
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/mpeg', 'video/x-matroska'];
+    if (allowed.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Hanya file video yang diizinkan (mp4, webm, mov, avi, dll)'));
+    }
+  }
 });
 
 export async function createServer() {
@@ -171,9 +201,13 @@ export async function createServer() {
 
   // File upload route for videos
   app.post("/api/upload-video", (req, res) => {
-    upload.any()(req, res, (err) => {
+    uploadVideo.any()(req, res, (err) => {
       if (err) {
         console.error("[Upload Video Error]", err);
+        // MulterError for file size
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ success: false, error: "File video terlalu besar. Maksimum 2GB." });
+        }
         return res.status(400).json({ success: false, error: err.message || "Gagal mengupload video" });
       }
       const files = req.files as Express.Multer.File[] | undefined;
@@ -184,7 +218,7 @@ export async function createServer() {
       if (isServerless) {
         return res.status(503).json({
           success: false,
-          error: "Upload video belum tersedia di production serverless. Hubungi admin.",
+          error: "Upload video belum tersedia di production serverless. Gunakan URL YouTube/Vimeo.",
         });
       }
       res.json({
@@ -192,6 +226,7 @@ export async function createServer() {
         data: {
           filename: file.filename,
           path: `/uploads/${file.filename}`,
+          size: file.size,
         },
       });
     });

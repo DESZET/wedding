@@ -137,14 +137,32 @@ const uploadFile = async (file: File) => {
   return response.json();
 };
 
-const uploadVideoFile = async (file: File) => {
-  const formData = new FormData();
-  formData.append('video', file);
-  const response = await fetch(`${API_BASE}/upload-video`, {
-    method: 'POST',
-    body: formData,
+const uploadVideoFile = async (
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('video', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/upload-video`);
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+    }
+    xhr.onload = () => {
+      try {
+        resolve(JSON.parse(xhr.responseText));
+      } catch {
+        reject(new Error('Invalid response dari server'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error saat upload video'));
+    xhr.send(formData);
   });
-  return response.json();
 };
 
 // ============ HELPER: Parse images from any format ============
@@ -272,6 +290,9 @@ const Admin = () => {
   });
   const [venueForm, setVenueForm] = useState<{ title: string; category: string; price: string; capacity: string; description: string; image: string }>({ title: '', category: '', price: '', capacity: '', description: '', image: '' });
   const [videoForm, setVideoForm] = useState<CreateVideoItem>({ title: '', description: '', videoPath: '', thumbnail: '' });
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+  const [weddingShowUploading, setWeddingShowUploading] = useState(false);
   const [statsForm, setStatsForm] = useState<{ label: string; value: string; image: string }>({ label: '', value: '', image: '' });
 
   // Filter states
@@ -2006,48 +2027,123 @@ const Admin = () => {
                 value={videoForm.description}
                 onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
               />
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Video</label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="w-full p-3 border rounded-lg"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      try {
-                        const uploadResponse = await uploadVideoFile(file);
-                        if (uploadResponse.success) {
-                          setVideoForm({ ...videoForm, videoPath: uploadResponse.data.path });
-                        } else {
-                          alert('Gagal upload video');
+
+              {/* Video Source */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-slate-700">Sumber Video</label>
+
+                {/* Tab: URL atau Upload */}
+                <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setVideoForm({ ...videoForm, videoPath: '' })}
+                    className={`flex-1 py-2 text-xs font-semibold transition-colors ${!videoForm.videoPath?.startsWith('/uploads') ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    🔗 URL YouTube/Eksternal
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 py-2 text-xs font-semibold transition-colors ${videoForm.videoPath?.startsWith('/uploads') ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    📁 Upload File Video
+                  </button>
+                </div>
+
+                {/* URL input */}
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    placeholder="https://www.youtube.com/watch?v=... atau URL video lain"
+                    className="w-full p-3 border rounded-lg text-sm"
+                    value={videoForm.videoPath?.startsWith('/uploads') ? '' : (videoForm.videoPath || '')}
+                    onChange={(e) => setVideoForm({ ...videoForm, videoPath: e.target.value })}
+                  />
+                  <p className="text-xs text-slate-400">Paste URL YouTube, Vimeo, atau link video langsung</p>
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-xs text-slate-400 font-medium">ATAU</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+
+                {/* File Upload */}
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-msvideo,video/mpeg"
+                    className="w-full p-3 border rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={videoUploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      // Warn if > 500MB
+                      if (file.size > 500 * 1024 * 1024) {
+                        if (!confirm(`File ini berukuran ${(file.size / 1024 / 1024).toFixed(0)}MB. Upload mungkin memakan waktu lama. Lanjutkan?`)) {
+                          e.target.value = '';
+                          return;
                         }
-                      } catch (error) {
-                        console.error('Upload error:', error);
-                        alert('Terjadi kesalahan saat upload video');
                       }
-                    }
-                  }}
-                />
-                {videoForm.videoPath && (
-                  <div className="mt-2">
-                    <video src={videoForm.videoPath} controls className="w-32 h-32 object-cover rounded" />
-                  </div>
-                )}
+                      setVideoUploading(true);
+                      setVideoUploadProgress(0);
+                      try {
+                        const uploadResponse = await uploadVideoFile(file, (pct) => setVideoUploadProgress(pct));
+                        if (uploadResponse.success) {
+                          setVideoForm(prev => ({ ...prev, videoPath: uploadResponse.data.path }));
+                        } else {
+                          alert('Gagal upload video: ' + (uploadResponse.error || 'Unknown error'));
+                        }
+                      } catch (error: any) {
+                        console.error('Upload error:', error);
+                        alert('Terjadi kesalahan saat upload video: ' + error.message);
+                      } finally {
+                        setVideoUploading(false);
+                        setVideoUploadProgress(0);
+                      }
+                    }}
+                  />
+                  {/* Progress bar */}
+                  {videoUploading && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-slate-500">
+                        <span>Mengupload video...</span>
+                        <span>{videoUploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-violet-500 h-2.5 rounded-full transition-all duration-300"
+                          style={{ width: `${videoUploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400">Jangan tutup halaman ini hingga upload selesai</p>
+                    </div>
+                  )}
+                  {/* Video preview */}
+                  {videoForm.videoPath?.startsWith('/uploads') && !videoUploading && (
+                    <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                      <span className="text-green-600 text-sm">✓</span>
+                      <span className="text-green-700 text-xs font-medium">Video berhasil diupload</span>
+                      <span className="text-slate-400 text-xs truncate">{videoForm.videoPath}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Thumbnail */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Thumbnail (opsional)</label>
+                <label className="block text-sm font-semibold text-slate-700">Upload Thumbnail (opsional)</label>
                 <input
                   type="file"
                   accept="image/*"
-                  className="w-full p-3 border rounded-lg"
+                  className="w-full p-3 border rounded-lg text-sm"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       try {
                         const uploadResponse = await uploadFile(file);
                         if (uploadResponse.success) {
-                          setVideoForm({ ...videoForm, thumbnail: uploadResponse.data.path });
+                          setVideoForm(prev => ({ ...prev, thumbnail: uploadResponse.data.path }));
                         } else {
                           alert('Gagal upload thumbnail');
                         }
@@ -2059,8 +2155,13 @@ const Admin = () => {
                   }}
                 />
                 {videoForm.thumbnail && (
-                  <div className="mt-2">
-                    <img src={videoForm.thumbnail} alt="Thumbnail Preview" className="w-32 h-32 object-cover rounded" />
+                  <div className="mt-2 relative w-32 h-20 rounded-lg overflow-hidden border border-slate-200">
+                    <img src={videoForm.thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setVideoForm(prev => ({ ...prev, thumbnail: '' }))}
+                      className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-black/80"
+                    >×</button>
                   </div>
                 )}
               </div>
@@ -2222,43 +2323,69 @@ const Admin = () => {
 
           {activeMenu === 'wedding-show' && (
             <>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Upload Video</label>
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-slate-700">Upload Video Wedding Show</label>
+                <p className="text-xs text-slate-400">Format yang didukung: MP4, WebM, MOV, AVI. Maksimum 2GB.</p>
                 <input
                   type="file"
-                  accept="video/*"
-                  className="w-full p-3 border rounded-lg"
+                  accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-msvideo,video/mpeg"
+                  className="w-full p-3 border rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={weddingShowUploading}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      try {
-                        const uploadResponse = await uploadVideoFile(file);
-                        if (uploadResponse.success) {
-                          // For wedding show, we create the item immediately after upload
-                          const createResponse = await apiRequest('/wedding-show-videos', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              videoPath: uploadResponse.data.path,
-                              thumbnail: ''
-                            })
-                          });
-                          if (createResponse.success) {
-                            setWeddingShowVideos(prev => [...prev, createResponse.data]);
-                            alert('Video berhasil ditambahkan!');
-                            setActionMode('view');
-                          } else {
-                            alert('Gagal menyimpan video');
-                          }
-                        } else {
-                          alert('Gagal upload video');
-                        }
-                      } catch (error) {
-                        console.error('Upload error:', error);
-                        alert('Terjadi kesalahan saat upload video');
+                    if (!file) return;
+                    if (file.size > 500 * 1024 * 1024) {
+                      if (!confirm(`File ini berukuran ${(file.size / 1024 / 1024).toFixed(0)}MB. Upload mungkin memakan waktu lama. Lanjutkan?`)) {
+                        e.target.value = '';
+                        return;
                       }
+                    }
+                    setWeddingShowUploading(true);
+                    setVideoUploadProgress(0);
+                    try {
+                      const uploadResponse = await uploadVideoFile(file, (pct) => setVideoUploadProgress(pct));
+                      if (uploadResponse.success) {
+                        const createResponse = await apiRequest('/wedding-show-videos', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            videoPath: uploadResponse.data.path,
+                            thumbnail: ''
+                          })
+                        });
+                        if (createResponse.success) {
+                          setWeddingShowVideos(prev => [...prev, createResponse.data]);
+                          alert('Video berhasil ditambahkan!');
+                          setActionMode('view');
+                        } else {
+                          alert('Gagal menyimpan video: ' + (createResponse.error || ''));
+                        }
+                      } else {
+                        alert('Gagal upload video: ' + (uploadResponse.error || 'Unknown error'));
+                      }
+                    } catch (error: any) {
+                      console.error('Upload error:', error);
+                      alert('Terjadi kesalahan saat upload video: ' + error.message);
+                    } finally {
+                      setWeddingShowUploading(false);
+                      setVideoUploadProgress(0);
                     }
                   }}
                 />
+                {weddingShowUploading && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>Mengupload video wedding show...</span>
+                      <span>{videoUploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-violet-500 h-2.5 rounded-full transition-all duration-300"
+                        style={{ width: `${videoUploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-400">Jangan tutup halaman ini hingga upload selesai</p>
+                  </div>
+                )}
               </div>
             </>
           )}
