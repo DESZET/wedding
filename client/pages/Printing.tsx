@@ -15,6 +15,7 @@ import SectionWrapper from "@/components/SectionWrapper";
 import Footer from "@/components/Footer";
 import ReviewSection from "@/components/ReviewSection";
 import PrintingDetailModal from "@/components/PrintingDetailModal";
+import { useApiCache } from "@/hooks/useApiCache";
 
 interface PrintingProduct {
   id: number;
@@ -117,7 +118,6 @@ export default function Printing() {
   const [designPreview, setDesignPreview] = useState<string | null>(null);
   const [activeDesignTab, setActiveDesignTab] = useState<'upload' | 'template'>('upload');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
   const productCarouselRef = useRef<HTMLDivElement>(null);
 
@@ -125,151 +125,72 @@ export default function Printing() {
   const whatsappNumber = settings["printing-whatsapp"] ? settings["printing-whatsapp"].replace(/\D/g, "") : (settings["whatsapp"] ? settings["whatsapp"].replace(/\D/g, "") : "6285329077987");
   const adminName = "Admin Percetakan Galeria Wedding";
 
-  // Load data dari database
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const [categoriesRes, productsRes] = await Promise.all([
-          fetch('/api/printing/categories').then(res => res.json()),
-          fetch('/api/printing/products').then(res => res.json())
-        ]);
+  // ── Cache-first data fetching ──
+  const { data: categoriesData, loading: catLoading } = useApiCache<PrintingCategory[]>("/printing/categories");
+  const { data: rawProductsData, loading: prodLoading } = useApiCache<any[]>("/printing/products");
+  const isLoading = catLoading || prodLoading;
 
-        if (categoriesRes.success) {
-          setCategories(categoriesRes.data);
-        }
-
-        if (productsRes.success && Array.isArray(productsRes.data) && productsRes.data.length > 0) {
-          const parseSafeList = (val: any): string[] => {
-            if (!val) return [];
-            if (Array.isArray(val)) return val.filter(Boolean);
-            if (typeof val === 'string') {
-              const trimmed = val.trim();
-              if (!trimmed) return [];
-              if (trimmed.startsWith('[')) {
-                try {
-                  const parsed = JSON.parse(trimmed);
-                  if (Array.isArray(parsed)) return parsed.filter(Boolean);
-                } catch {}
-              }
-              if (trimmed.startsWith('data:')) return [trimmed];
-              return trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean);
-            }
-            return [];
-          };
-
-          const productsData = productsRes.data.map((p: any) => ({
-            ...p,
-            size_options: parseSafeList(p.size_options),
-            material_options: parseSafeList(p.material_options),
-            color_options: parseSafeList(p.color_options),
-            finishing_options: parseSafeList(p.finishing_options),
-            images: parseSafeList(p.images),
-            features: parseSafeList(p.features).length > 0 ? parseSafeList(p.features) : ["Kualitas Terjamin", "Harga Kompetitif", "Pengiriman Cepat"],
-            rating: Number(p.rating) || 4.8,
-            reviews_count: Number(p.reviews_count) || 0,
-            is_featured: Boolean(p.is_featured || p.featured),
-            is_new: Boolean(p.is_new),
-          }));
-          setProducts(productsData);
-          setFilteredProducts(productsData);
-        } else {
-          // Fallback sample printing products with high quality visuals
-          const samplePrintingProducts: PrintingProduct[] = [
-            {
-              id: 1,
-              name: "Undangan Hardcover Floral Gold Foil",
-              description: "Undangan pernikahan hardcover tebal dengan sentuhan hotprint foil emas berkilau dan pita satin mewah.",
-              price: 15000,
-              discount_price: 12500,
-              size_options: ["15 x 20 cm", "A5 Lipat 2"],
-              material_options: ["Board 30 + Jasmine Glitter", "Art Paper 260gsm Laminasi Doff"],
-              color_options: ["Gold Champagne", "Emerald Green", "Navy Blue", "Maroon Velvet"],
-              finishing_options: ["Hotprint Poly Emas", "Emboss 3D", "Pita Satin"],
-              images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80"],
-              estimated_time: "5-7 Hari Kerja",
-              min_order: 100,
-              features: ["Gratis Plastik OPP & Label Nama", "Gratis Denah Lokasi QR", "Gratis Video Undangan Digital"],
-              rating: 5.0,
-              reviews_count: 240,
-              is_featured: true,
-              is_new: false,
-              category_name: "Undangan Pernikahan"
-            },
-            {
-              id: 2,
-              name: "Undangan Akrilik Transparan Eksklusif (UV Print)",
-              description: "Kemewahan undangan akrilik bening 2mm dengan cetak tinta UV timbul anti air dan amplop beludru premium.",
-              price: 35000,
-              discount_price: 29000,
-              size_options: ["15 x 21 cm", "12 x 18 cm"],
-              material_options: ["Akrilik Bening 2mm", "Akrilik Frosted Doff 2mm"],
-              color_options: ["White Ink", "Gold Ink", "Full Color UV"],
-              finishing_options: ["Wax Seal Stempel Lilin", "Amplop Beludru / Velvet"],
-              images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80"],
-              estimated_time: "7-10 Hari Kerja",
-              min_order: 50,
-              features: ["Tahan Air & Anti Pudar", "Box / Amplop Beludru Eksklusif", "Wax Seal Asli"],
-              rating: 5.0,
-              reviews_count: 180,
-              is_featured: true,
-              is_new: true,
-              category_name: "Undangan Akrilik"
-            },
-            {
-              id: 3,
-              name: "Souvenir Custom & Goodie Bag Pernikahan",
-              description: "Pilihan pouch kulit sintetis, tumbler custom grafir nama, dan tote bag kanvas elegan untuk cinderamata tamu.",
-              price: 18000,
-              discount_price: 15000,
-              size_options: ["20 x 12 cm", "Standard Pouch"],
-              material_options: ["Kulit Sintetis Premium", "Kanvas Tebal", "Stainless 500ml"],
-              color_options: ["Havana Brown", "Black Onyx", "Sage Green", "Dusty Pink"],
-              finishing_options: ["Emboss Nama Pengantin", "Sablon 1 Warna", "Packaging Box Mika"],
-              images: ["https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=80"],
-              estimated_time: "7-14 Hari Kerja",
-              min_order: 100,
-              features: ["Gratis Kemasan Mika & Thank You Card", "Bisa Custom Logo & Tanggal", "Awet & Bermanfaat"],
-              rating: 4.9,
-              reviews_count: 160,
-              is_featured: false,
-              is_new: false,
-              category_name: "Souvenir & Goodie Bag"
-            },
-            {
-              id: 4,
-              name: "Wedding Photobook Magazine (Album Kenangan)",
-              description: "Cetak album foto kenangan wedding & prewedding gaya majalah luxury dengan kertas tebal anti air.",
-              price: 450000,
-              discount_price: 380000,
-              size_options: ["20 x 30 cm (A4 Landscape)", "30 x 30 cm Square"],
-              material_options: ["Luster Photo Paper 260gsm", "Silk Matte Paper"],
-              color_options: ["Full Color HD Print"],
-              finishing_options: ["Hardcover Box Kulit", "Laminasi Anti Gores"],
-              images: ["https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80"],
-              estimated_time: "3-5 Hari Kerja",
-              min_order: 1,
-              features: ["Isi 40 Halaman Full Color", "Hardcover Tebal Tahan Puluhan Tahun", "Gratis Box Eksklusif"],
-              rating: 5.0,
-              reviews_count: 95,
-              is_featured: true,
-              is_new: false,
-              category_name: "Photobook & Album"
-            }
-          ];
-          setProducts(samplePrintingProducts);
-          setFilteredProducts(samplePrintingProducts);
-        }
-      } catch (error) {
-        console.error('Error loading printing data:', error);
-      } finally {
-        setIsLoading(false);
+  const parseSafeList = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (!trimmed) return [];
+      if (trimmed.startsWith('[')) {
+        try { const p = JSON.parse(trimmed); if (Array.isArray(p)) return p.filter(Boolean); } catch {}
       }
-    };
+      if (trimmed.startsWith('data:')) return [trimmed];
+      return trimmed.split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean);
+    }
+    return [];
+  };
 
-    loadData();
+  const SAMPLE_PRINTING: PrintingProduct[] = [
+    {
+      id: 1, name: "Undangan Hardcover Floral Gold Foil",
+      description: "Undangan pernikahan hardcover tebal dengan sentuhan hotprint foil emas berkilau dan pita satin mewah.",
+      price: 15000, discount_price: 12500,
+      size_options: ["15 x 20 cm", "A5 Lipat 2"],
+      material_options: ["Board 30 + Jasmine Glitter", "Art Paper 260gsm Laminasi Doff"],
+      color_options: ["Gold Champagne", "Emerald Green"], finishing_options: ["Hotprint Poly Emas"],
+      images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80"],
+      estimated_time: "5-7 Hari Kerja", min_order: 100,
+      features: ["Gratis Plastik OPP & Label Nama", "Gratis Denah Lokasi QR"],
+      rating: 5.0, reviews_count: 240, is_featured: true, is_new: false, category_name: "Undangan Pernikahan"
+    },
+  ];
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    if (categoriesData) setCategories(categoriesData);
+  }, [categoriesData]);
+
+  useEffect(() => {
+    if (rawProductsData && rawProductsData.length > 0) {
+      const productsData: PrintingProduct[] = rawProductsData.map((p: any) => ({
+        ...p,
+        size_options: parseSafeList(p.size_options),
+        material_options: parseSafeList(p.material_options),
+        color_options: parseSafeList(p.color_options),
+        finishing_options: parseSafeList(p.finishing_options),
+        images: parseSafeList(p.images),
+        features: parseSafeList(p.features).length > 0 ? parseSafeList(p.features) : ["Kualitas Terjamin", "Harga Kompetitif", "Pengiriman Cepat"],
+        rating: Number(p.rating) || 4.8,
+        reviews_count: Number(p.reviews_count) || 0,
+        is_featured: Boolean(p.is_featured || p.featured),
+        is_new: Boolean(p.is_new),
+      }));
+      setProducts(productsData);
+      setFilteredProducts(productsData);
+    } else if (!prodLoading) {
+      setProducts(SAMPLE_PRINTING);
+      setFilteredProducts(SAMPLE_PRINTING);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawProductsData, prodLoading]);
 
   // Filter dan sort produk
   useEffect(() => {

@@ -2,6 +2,7 @@
 import { Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VideoItem } from '@shared/api';
+import { useApiCache } from '../hooks/useApiCache';
 
 // Convert YouTube / Vimeo watch URL to embed URL
 const getEmbedUrl = (url: string): string | null => {
@@ -15,25 +16,8 @@ const getEmbedUrl = (url: string): string | null => {
 
 export default function VideoShowcase() {
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const response = await fetch('/api/videos');
-        const data = await response.json();
-        if (data.success) {
-          setVideos(data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching videos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchVideos();
-  }, []);
+  const { data, loading } = useApiCache<VideoItem[]>("/videos");
+  const videos: VideoItem[] = data ?? [];
 
   return (
     <section

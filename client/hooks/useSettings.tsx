@@ -94,6 +94,17 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Load settings from API
   const loadSettings = async () => {
+    // Show cached settings instantly if available
+    try {
+      const cached = sessionStorage.getItem('galeria_settings');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setSettings(parsed);
+        applySettingsToCSS(parsed);
+        setLoading(false); // show cached immediately
+      }
+    } catch {}
+
     try {
       const response = await apiRequest('/settings');
       if (response.success) {
@@ -103,6 +114,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         });
         setSettings(settingsObj);
         applySettingsToCSS(settingsObj);
+        try { sessionStorage.setItem('galeria_settings', JSON.stringify(settingsObj)); } catch {}
       }
     } catch (error) {
       console.error('Error loading settings:', error);

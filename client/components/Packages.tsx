@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { PackageItem } from "../../shared/api";
 import { useSettings } from "../hooks/useSettings";
+import { useApiCache } from "../hooks/useApiCache";
 import WeddingDetailModal from "./WeddingDetailModal";
 
 // Fallback high-resolution photos for packages
@@ -99,34 +100,13 @@ const SAMPLE_PACKAGES: PackageItem[] = [
 ];
 
 export default function Packages() {
-  const [packages, setPackages] = useState<PackageItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: apiData, loading } = useApiCache<PackageItem[]>("/packages");
+  const packages: PackageItem[] = (apiData && apiData.length > 0) ? apiData : SAMPLE_PACKAGES;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<PackageItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { settings } = useSettings();
-
-  useEffect(() => {
-    const fetchPackages = async () => {
-      try {
-        const response = await fetch('/api/packages');
-        const data = await response.json();
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setPackages(data.data);
-        } else {
-          setPackages(SAMPLE_PACKAGES);
-        }
-      } catch (error) {
-        console.error('Error fetching packages:', error);
-        setPackages(SAMPLE_PACKAGES);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPackages();
-  }, []);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {

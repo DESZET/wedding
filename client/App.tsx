@@ -22,6 +22,11 @@ import Admin from "./pages/admin";
 import LoginPage from "./pages/login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { SettingsProvider } from "./hooks/useSettings.tsx";
+import { warmupApi } from "./hooks/useApiCache";
+
+// Warm up Vercel serverless immediately on page load
+// so it's ready by the time user scrolls to any section
+warmupApi();
 
 const queryClient = new QueryClient();
 

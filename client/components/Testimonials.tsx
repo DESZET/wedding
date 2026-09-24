@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useApiCache } from '../hooks/useApiCache';
 
 interface Testimonial {
   id: number;
@@ -14,44 +15,23 @@ export default function Testimonials({ refreshKey = 0 }: { refreshKey?: number }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [direction, setDirection] = useState(0);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data, loading } = useApiCache<Testimonial[]>("/testimonials");
+  const testimonials: Testimonial[] = data ?? [];
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [refreshKey]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
       { threshold: 0.1 }
     );
-
     const section = document.getElementById('testimonials');
     if (section) observer.observe(section);
-
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    const fetchTestimonials = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/testimonials');
-        const data = await response.json();
-        if (data.success) {
-          setTestimonials(data.data);
-          setCurrentIndex(0);
-        }
-      } catch (error) {
-        console.error('Error fetching testimonials:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTestimonials();
-  }, [refreshKey]);
 
   // Auto-play carousel
   useEffect(() => {

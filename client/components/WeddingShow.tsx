@@ -3,16 +3,19 @@ import { Play, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useScroll, useTransform } from "framer-motion";
 import { VenueItem, WeddingShowVideoItem } from "../../shared/api";
+import { useApiCache } from "../hooks/useApiCache";
 
 export default function WeddingShow() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isVideoVisible, setIsVideoVisible] = useState(true);
   const [isVenuesVisible, setIsVenuesVisible] = useState(true);
   const [isInfoVisible, setIsInfoVisible] = useState(true);
-  const [venues, setVenues] = useState<VenueItem[]>([]);
-  const [weddingShowVideo, setWeddingShowVideo] = useState<WeddingShowVideoItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
+
+  const { data: venuesData } = useApiCache<VenueItem[]>("/venues");
+  const { data: showVideosData } = useApiCache<WeddingShowVideoItem[]>("/wedding-show-videos");
+  const venues: VenueItem[] = venuesData ?? [];
+  const weddingShowVideo: WeddingShowVideoItem | null = showVideosData?.[0] ?? null;
+
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLDivElement>(null);
   const venuesRef = useRef<HTMLDivElement>(null);
@@ -20,37 +23,6 @@ export default function WeddingShow() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
-
-  // Fetch venues and wedding show video from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-
-        // Fetch venues
-        const venuesResponse = await fetch('/api/venues');
-        const venuesData = await venuesResponse.json();
-        if (venuesData.success) {
-          setVenues(venuesData.data);
-        }
-
-        // Fetch wedding show video
-        const weddingShowVideosResponse = await fetch('/api/wedding-show-videos');
-        const weddingShowVideosData = await weddingShowVideosResponse.json();
-        if (weddingShowVideosData.success && weddingShowVideosData.data.length > 0) {
-          // Take the first wedding show video
-          setWeddingShowVideo(weddingShowVideosData.data[0]);
-        }
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
   }, []);
 
   // Parallax effect for background

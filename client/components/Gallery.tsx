@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useApiCache } from "../hooks/useApiCache";
 
 interface GalleryImage {
   id: number;
@@ -79,8 +80,14 @@ export default function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [filter, setFilter] = useState<string>("All");
   const [isVisible, setIsVisible] = useState(false);
-  const [galleryItems, setGalleryItems] = useState<GalleryImage[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data: rawItems, loading } = useApiCache<GalleryImage[]>("/gallery");
+  const galleryItems: GalleryImage[] = (rawItems ?? []).filter(
+    (item) =>
+      item.image &&
+      !item.image.startsWith('/uploads/') &&
+      !item.image.startsWith('uploads/')
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -94,29 +101,6 @@ export default function Gallery() {
     const section = document.getElementById("gallery");
     if (section) observer.observe(section);
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const fetchGallery = async () => {
-      try {
-        const response = await fetch('/api/gallery');
-        const data = await response.json();
-        if (data.success) {
-          const validItems = (data.data as GalleryImage[]).filter(
-            (item) =>
-              item.image &&
-              !item.image.startsWith('/uploads/') &&
-              !item.image.startsWith('uploads/')
-          );
-          setGalleryItems(validItems);
-        }
-      } catch (error) {
-        console.error('Error fetching gallery:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGallery();
   }, []);
 
   const categories = ["All", "Dekorasi", "Tratag/Tarub", "Makeup", "Percetakan", "Umrah"];
