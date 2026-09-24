@@ -6,11 +6,12 @@ import SectionWrapper from "@/components/SectionWrapper";
 export default function GalleryPage() {
   return (
     <div className="min-h-screen bg-background">
-      <SectionWrapper id="gallery-photos" delay={100} animationType="fade-in-up">
-        <Gallery />
-      </SectionWrapper>
-      <SectionWrapper id="gallery-videos" delay={300} animationType="fade-in-up">
+      {/* Video dulu — lebih menarik perhatian, tidak perlu scroll jauh */}
+      <SectionWrapper id="gallery-videos" delay={100} animationType="fade-in-up">
         <VideoShowcase />
+      </SectionWrapper>
+      <SectionWrapper id="gallery-photos" delay={200} animationType="fade-in-up">
+        <Gallery />
       </SectionWrapper>
       <Footer />
     </div>
