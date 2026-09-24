@@ -10,6 +10,39 @@ export interface CloudinaryResult {
 }
 
 /**
+ * Transforms a Cloudinary image URL to auto-compress and resize.
+ * Returns original URL if not a Cloudinary URL.
+ *
+ * Usage:
+ *   cloudinaryImage(url, 600)  → thumbnail 600px wide, auto format & quality
+ *   cloudinaryImage(url, 1600) → full-size lightbox, still auto format
+ */
+export function cloudinaryImage(url: string, width = 800): string {
+  if (!url) return url;
+  if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
+    return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width},c_limit/`);
+  }
+  return url;
+}
+
+/**
+ * Transforms a Cloudinary video URL to use auto quality + format.
+ * Also adds poster extraction (thumbnail at 1 second).
+ */
+export function cloudinaryVideo(url: string): { src: string; poster: string } {
+  if (!url) return { src: url, poster: "" };
+  if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
+    const src = url.replace("/upload/", "/upload/q_auto,f_auto/");
+    // Generate poster from video at 1 second, as JPEG thumbnail
+    const poster = url
+      .replace("/upload/", "/upload/so_1,f_jpg,q_auto,w_800/")
+      .replace(/\.(mp4|webm|mov|avi|mkv)$/i, ".jpg");
+    return { src, poster };
+  }
+  return { src: url, poster: "" };
+}
+
+/**
  * Upload file (video atau gambar) langsung ke Cloudinary dari browser.
  * Tidak melalui server Vercel — aman dari limit serverless.
  */
