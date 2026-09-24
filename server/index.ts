@@ -7,7 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { handleDemo } from "./routes/demo";
-import { getGallery, getGalleryItem, createGalleryItem, updateGalleryItem, deleteGalleryItem } from "./routes/gallery";
+import { getGallery, getGalleryItem, createGalleryItem, updateGalleryItem, deleteGalleryItem, cleanupBrokenGallery } from "./routes/gallery";
 import { getTestimonials, getTestimonial, createTestimonial, updateTestimonial, deleteTestimonial } from "./routes/testimonials";
 import { getPackages, getPackage, createPackage, updatePackage, deletePackage } from "./routes/packages";
 import { getVenues, getVenue, createVenue, updateVenue, deleteVenue } from "./routes/venues";
@@ -159,6 +159,7 @@ export async function createServer() {
   app.post("/api/gallery", createGalleryItem);
   app.put("/api/gallery/:id", updateGalleryItem);
   app.delete("/api/gallery/:id", deleteGalleryItem);
+  app.delete("/api/gallery-cleanup-broken", cleanupBrokenGallery);
 
   // File upload route for gallery and general images
   app.post("/api/upload", (req, res) => {

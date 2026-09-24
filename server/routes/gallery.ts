@@ -141,3 +141,26 @@ export const deleteGalleryItem: RequestHandler = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to delete gallery item' });
   }
 };
+
+// Delete all gallery items with broken /uploads/ URLs (cleanup for Vercel migration)
+export const cleanupBrokenGallery: RequestHandler = async (req, res) => {
+  try {
+    const brokenItems = await dbAll(
+      "SELECT id, image FROM gallery WHERE image LIKE '/uploads/%' OR image LIKE 'uploads/%'"
+    );
+    if (brokenItems.length === 0) {
+      return res.json({ success: true, message: 'Tidak ada foto rusak ditemukan', deleted: 0 });
+    }
+    await dbRun(
+      "DELETE FROM gallery WHERE image LIKE '/uploads/%' OR image LIKE 'uploads/%'"
+    );
+    res.json({
+      success: true,
+      message: `${brokenItems.length} foto dengan path lokal berhasil dihapus`,
+      deleted: brokenItems.length,
+    });
+  } catch (error) {
+    console.error('Error cleaning up broken gallery items:', error);
+    res.status(500).json({ success: false, error: 'Gagal membersihkan foto rusak' });
+  }
+};

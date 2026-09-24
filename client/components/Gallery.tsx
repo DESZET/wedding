@@ -41,7 +41,14 @@ export default function Gallery() {
         const response = await fetch('/api/gallery');
         const data = await response.json();
         if (data.success) {
-          setGalleryItems(data.data);
+          // Filter out broken images: skip local /uploads/ paths (not accessible on Vercel)
+          const validItems = (data.data as GalleryImage[]).filter(
+            (item) =>
+              item.image &&
+              !item.image.startsWith('/uploads/') &&
+              !item.image.startsWith('uploads/')
+          );
+          setGalleryItems(validItems);
         }
       } catch (error) {
         console.error('Error fetching gallery:', error);

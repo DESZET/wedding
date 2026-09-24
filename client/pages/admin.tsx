@@ -1579,6 +1579,12 @@ const Admin = () => {
           items={galleryItems}
           onEdit={(item) => handleEdit(item, 'gallery')}
           onDelete={(id) => handleDelete(id, 'gallery')}
+          onCleanup={() => {
+            // Refresh gallery list after cleanup
+            apiRequest('/gallery').then(res => {
+              if (res.success) setGalleryItems(res.data);
+            });
+          }}
         />;
       case 'testimonials':
         return <TestimonialsContent
@@ -4649,14 +4655,60 @@ const DashboardContent = ({
   );
 };
 
-const GalleryContent = ({ items, onEdit, onDelete }: any) => (
+const GalleryContent = ({ items, onEdit, onDelete, onCleanup }: any) => {
+  const [cleaning, setCleaning] = useState(false);
+  const brokenCount = items.filter(
+    (item: any) => item.image && (item.image.startsWith('/uploads/') || item.image.startsWith('uploads/'))
+  ).length;
+
+  const handleCleanup = async () => {
+    if (!confirm(`Hapus ${brokenCount} foto dengan path lokal (/uploads/...) yang tidak bisa ditampilkan di Vercel? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setCleaning(true);
+    try {
+      const res = await apiRequest('/gallery-cleanup-broken', { method: 'DELETE' });
+      if (res.success) {
+        alert(res.message);
+        if (onCleanup) onCleanup();
+      } else {
+        alert('Gagal cleanup: ' + (res.error || 'Unknown error'));
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan saat cleanup');
+    } finally {
+      setCleaning(false);
+    }
+  };
+
+  return (
   <div className="space-y-4">
+    {brokenCount > 0 && (
+      <div className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-sm">
+        <div className="flex items-center gap-2 text-orange-800">
+          <AlertCircle size={16} className="text-orange-500 flex-shrink-0" />
+          <span><strong>{brokenCount} foto</strong> menggunakan path lokal <code>/uploads/</code> — tidak tampil di Vercel. Hapus agar database bersih, lalu upload ulang via tombol "Tambah Baru".</span>
+        </div>
+        <button
+          onClick={handleCleanup}
+          disabled={cleaning}
+          className="ml-4 flex-shrink-0 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
+        >
+          {cleaning ? 'Menghapus...' : `Hapus ${brokenCount} Foto Rusak`}
+        </button>
+      </div>
+    )}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {items.map((item: any) => (
-        <div key={item.id} className="group bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-all">
+      {items.map((item: any) => {
+        const isBroken = item.image && (item.image.startsWith('/uploads/') || item.image.startsWith('uploads/'));
+        return (
+        <div key={item.id} className={`group bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-all ${isBroken ? 'border-orange-200 opacity-70' : 'border-slate-100'}`}>
           <div className="aspect-video bg-slate-50 relative overflow-hidden">
-            {item.image ? (
+            {item.image && !isBroken ? (
               <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            ) : isBroken ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-orange-50 gap-1">
+                <AlertCircle className="text-orange-400" size={32} />
+                <span className="text-[10px] text-orange-500 font-medium text-center px-2">Path lokal — tidak tampil</span>
+              </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Image className="text-slate-300" size={40} />
@@ -4667,6 +4719,7 @@ const GalleryContent = ({ items, onEdit, onDelete }: any) => (
           <div className="p-4">
             <h4 className="font-semibold text-sm text-slate-800 truncate">{item.title}</h4>
             <p className="text-xs text-slate-400 mt-0.5">{item.category}</p>
+            {isBroken && <p className="text-[10px] text-orange-500 mt-0.5 font-medium">⚠ Path lokal (tidak tampil)</p>}
             <div className="flex gap-2 mt-3">
               <button
                 onClick={() => onEdit(item)}
@@ -4683,10 +4736,12 @@ const GalleryContent = ({ items, onEdit, onDelete }: any) => (
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   </div>
-);
+  );
+};
 
 const TestimonialsContent = ({ items, onEdit, onDelete }: any) => {
   if (!items || items.length === 0) {
