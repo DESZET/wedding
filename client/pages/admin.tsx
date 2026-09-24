@@ -128,39 +128,63 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
 const uploadFile = async (file: File) => {
   const processed = await compressImage(file);
-  const formData = new FormData();
-  formData.append('image', processed);
-  const response = await fetch(`${API_BASE}/upload`, {
-    method: 'POST',
-    body: formData,
+  return new Promise<any>((resolve, reject) => {
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+    const formData = new FormData();
+    formData.append("file", processed);
+    formData.append("upload_preset", CLOUDINARY_PRESET);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status === 200) {
+          resolve({ success: true, data: { path: data.secure_url, url: data.secure_url } });
+        } else {
+          resolve({ success: false, error: data.error?.message || "Upload gagal" });
+        }
+      } catch { reject(new Error("Invalid response")); }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.send(formData);
   });
-  return response.json();
 };
+
+const CLOUDINARY_CLOUD = "e2bgjv9e";
+const CLOUDINARY_PRESET = "VIDEO WEDDING";
 
 const uploadVideoFile = async (
   file: File,
   onProgress?: (percent: number) => void
 ): Promise<any> => {
   return new Promise((resolve, reject) => {
+    const resourceType = file.type.startsWith("video/") ? "video" : "image";
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`;
     const formData = new FormData();
-    formData.append('video', file);
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_PRESET);
+
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${API_BASE}/upload-video`);
+    xhr.open("POST", url);
     if (onProgress) {
       xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          onProgress(Math.round((e.loaded / e.total) * 100));
-        }
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
       };
     }
     xhr.onload = () => {
       try {
-        resolve(JSON.parse(xhr.responseText));
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status === 200) {
+          // Normalize ke format yang sama dengan response lama
+          resolve({ success: true, data: { path: data.secure_url, url: data.secure_url } });
+        } else {
+          resolve({ success: false, error: data.error?.message || "Upload gagal" });
+        }
       } catch {
-        reject(new Error('Invalid response dari server'));
+        reject(new Error("Invalid response dari Cloudinary"));
       }
     };
-    xhr.onerror = () => reject(new Error('Network error saat upload video'));
+    xhr.onerror = () => reject(new Error("Network error saat upload video"));
     xhr.send(formData);
   });
 };
